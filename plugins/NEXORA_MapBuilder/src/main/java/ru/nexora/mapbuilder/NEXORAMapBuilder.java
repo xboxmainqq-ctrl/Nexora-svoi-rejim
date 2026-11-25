@@ -27,6 +27,16 @@ public final class NEXORAMapBuilder extends PluginBase {
             GLOWSTONE=89, STONE_BRICK=98, IRON_BARS=101, GLASS_PANE=102,
             WOOD_SLAB=126, QUARTZ=155, SEA_LANTERN=169, PRISMARINE=168;
     private Config locations;
+    private final java.util.Queue<BlockChange> queue = new java.util.ArrayDeque<>();
+    private int taskId = -1, ox, oy, oz, cx, cz, cy, placed, removed;
+    private Level activeLevel;
+    private Player activePlayer;
+    private boolean clearing;
+    private static final int CLEAR_RADIUS = 60, CLEAR_TOP = 127, CLEAR_BUDGET = 1200, PLACE_BUDGET = 400;
+    private static final class BlockChange {
+        final int x, y, z, id;
+        BlockChange(int x, int y, int z, int id) { this.x=x; this.y=y; this.z=z; this.id=id; }
+    }
 
     @Override public void onEnable() {
         if (!getDataFolder().exists() && !getDataFolder().mkdirs()) {
@@ -91,53 +101,92 @@ public final class NEXORAMapBuilder extends PluginBase {
     }
 
     private void buildArden(Player p) {
-        Level w=p.getLevel();
-        int ox=p.getFloorX(), oy=Math.max(5,p.getFloorY()), oz=p.getFloorZ();
-        String marker="builds.arden."+w.getFolderName();
-        if(locations.getBoolean(marker+".complete",false)){
-            p.sendMessage("§eАрден уже отмечен как построенный в этом мире. Чтобы не затереть город, повторно не запускаю.");
-            return;
+        if (taskId != -1) { p.sendMessage("§cГенератор уже работает."); return; }
+        activeLevel = p.getLevel(); activePlayer = p;
+        ox = p.getFloorX(); oy = Math.max(5, p.getFloorY()); oz = p.getFloorZ();
+        String marker = "builds.arden." + activeLevel.getFolderName();
+        if (locations.getBoolean(marker + ".complete", false)) {
+            p.sendMessage("§eАрден уже отмечен как построенный. Повторный запуск отключён, чтобы не затереть город.");
+            activeLevel = null; activePlayer = null; return;
         }
-        p.sendMessage("§6Начинается строительство Ардена. Не покидай регион до завершения.");
-        // Main city footprint, landscaped base and radial roads.
-        for(int x=-58;x<=58;x++) for(int z=-58;z<=58;z++){
-            int ax=ox+x, az=oz+z;
-            w.setBlockAt(ax,oy-1,az,STONE);
-            if(Math.abs(x)<=3 || Math.abs(z)<=3) w.setBlockAt(ax,oy,az,COBBLE);
-            else if(Math.abs(x)<54 && Math.abs(z)<54) w.setBlockAt(ax,oy,az,GRASS);
-        }
-        // Central plaza with concentric stone rings and a luminous crystal fountain.
-        plaza(w,ox,oy,oz);
-        // Royal castle, market quarter, sanctuary, guild, knowledge tower and arena.
-        castle(w,ox-30,oy,oz-29);
-        marketHouse(w,ox+23,oy,oz-29,15,13);
-        marketHouse(w,ox+39,oy,oz-13,13,15);
-        marketHouse(w,ox+23,oy,oz+5,15,13);
-        sanctuary(w,ox-34,oy,oz+25);
-        guild(w,ox+31,oy,oz+28);
-        arena(w,ox,oy,oz+43);
-        // Perimeter wall, four gate towers, lamps and planted avenues.
-        perimeter(w,ox,oy,oz);
-        avenueTrees(w,ox,oy,oz);
-        // Save useful landmarks at the actual generated coordinates.
-        putPoint("spawn",w,ox,oy+1,oz,0,0);
-        putPoint("castle",w,ox-30,oy+1,oz-29,0,0);
-        putPoint("market",w,ox+23,oy+1,oz-29,0,0);
-        putPoint("arena",w,ox,oy+1,oz+43,0,0);
-        putPoint("sanctuary",w,ox-34,oy+1,oz+25,0,0);
-        locations.set(marker+".complete",true);
-        locations.set(marker+".originX",ox); locations.set(marker+".originY",oy); locations.set(marker+".originZ",oz);
-        locations.save();
-        p.sendMessage("§aАрден построен! §fПлощадь, замок, рынок, заповедник, гильдия, арена и городские стены готовы.");
-        p.sendMessage("§eТочки сохранены: spawn, castle, market, arena, sanctuary.");
+        queue.clear(); placed = 0; removed = 0; clearing = true;
+        cx = -CLEAR_RADIUS; cz = -CLEAR_RADIUS; cy = oy;
+        locations.set(marker + ".active", true); locations.set(marker + ".originX", ox);
+        locations.set(marker + ".originY", oy); locations.set(marker + ".originZ", oz); locations.save();
+        p.sendMessage("§6[Арден] §eЭтап 1/2: постепенно очищаю круглую площадку радиусом 60 блоков.");
+        p.sendMessage("§cВнимание: территория внутри круга будет очищена от деревьев, гор, воды и построек!");
+        taskId = getServer().getScheduler().scheduleRepeatingTask(this, () -> generationTick(marker), 1).getTaskId();
     }
 
+    private void generationTick(String marker) {
+        if (activeLevel == null) { stopGeneration(); return; }
+        if (clearing) {
+            int budget = CLEAR_BUDGET;
+            while (budget-- > 0) {
+                int dx = cx, dz = cz;
+                if (dx * dx + dz * dz <= CLEAR_RADIUS * CLEAR_RADIUS) {
+                    int wx = ox + dx, wz = oz + dz;
+                    if (cy <= CLEAR_TOP) {
+                        if (activeLevel.getBlockIdAt(wx, cy, wz) != AIR) { activeLevel.setBlockAt(wx, cy, wz, AIR); removed++; }
+                        cy++; continue;
+                    }
+                    queue.add(new BlockChange(wx, oy - 1, wz, STONE));
+                }
+                cy = oy; cz++;
+                if (cz > CLEAR_RADIUS) { cz = -CLEAR_RADIUS; cx++; }
+                if (cx > CLEAR_RADIUS) {
+                    clearing = false; queueArden(marker);
+                    if (activePlayer != null) activePlayer.sendMessage("§a[Арден] Площадка очищена. §eНачинаю постепенное строительство города.");
+                    break;
+                }
+            }
+            if (activePlayer != null && removed > 0 && removed % 50000 < CLEAR_BUDGET) activePlayer.sendMessage("§e[Арден] Удалено блоков: §f" + removed);
+            return;
+        }
+        int budget = PLACE_BUDGET;
+        while (budget-- > 0 && !queue.isEmpty()) {
+            BlockChange c = queue.poll(); activeLevel.setBlockAt(c.x, c.y, c.z, c.id); placed++;
+        }
+        if (queue.isEmpty()) {
+            locations.set(marker + ".complete", true); locations.set(marker + ".active", false);
+            putPoint("spawn", activeLevel, ox, oy + 1, oz, 0, 0);
+            putPoint("castle", activeLevel, ox - 30, oy + 1, oz - 29, 0, 0);
+            putPoint("market", activeLevel, ox + 23, oy + 1, oz - 29, 0, 0);
+            putPoint("arena", activeLevel, ox, oy + 1, oz + 43, 0, 0);
+            putPoint("sanctuary", activeLevel, ox - 34, oy + 1, oz + 25, 0, 0);
+            locations.save();
+            if (activePlayer != null) activePlayer.sendMessage("§a[Арден] Город построен! Установлено блоков: §f" + placed);
+            stopGeneration();
+        } else if (activePlayer != null && placed > 0 && placed % 10000 < PLACE_BUDGET) {
+            activePlayer.sendMessage("§6[Арден] §eПоставлено: §f" + placed + " §7| в очереди: §f" + queue.size());
+        }
+    }
+
+    private void queueArden(String marker) {
+        Level w = activeLevel;
+        for (int x=-58;x<=58;x++) for (int z=-58;z<=58;z++) {
+            if (x*x+z*z > 58*58) continue;
+            b(w,ox+x,oy-1,oz+z,STONE);
+            if (Math.abs(x)<=3 || Math.abs(z)<=3) b(w,ox+x,oy,oz+z,COBBLE);
+            else if (Math.abs(x)<54 && Math.abs(z)<54) b(w,ox+x,oy,oz+z,GRASS);
+        }
+        plaza(w,ox,oy,oz); castle(w,ox-30,oy,oz-29);
+        marketHouse(w,ox+23,oy,oz-29,15,13); marketHouse(w,ox+39,oy,oz-13,13,15);
+        marketHouse(w,ox+23,oy,oz+5,15,13); sanctuary(w,ox-34,oy,oz+25);
+        guild(w,ox+31,oy,oz+28); arena(w,ox,oy,oz+43); perimeter(w,ox,oy,oz); avenueTrees(w,ox,oy,oz);
+        locations.set(marker + ".queuedBlocks", queue.size()); locations.save();
+    }
+
+    private void stopGeneration() {
+        if (taskId != -1) getServer().getScheduler().cancelTask(taskId);
+        taskId = -1; activeLevel = null; activePlayer = null; clearing = false; queue.clear();
+    }
     private void putPoint(String name,Level w,double x,double y,double z,float yaw,float pitch){
         String q="locations."+name; locations.set(q+".world",w.getFolderName());
         locations.set(q+".x",x);locations.set(q+".y",y);locations.set(q+".z",z);
         locations.set(q+".yaw",yaw);locations.set(q+".pitch",pitch);
     }
-    private void b(Level w,int x,int y,int z,int id){w.setBlockAt(x,y,z,id);}
+    private void b(Level w,int x,int y,int z,int id){queue.add(new BlockChange(x,y,z,id));}
     private void fill(Level w,int x1,int y1,int z1,int x2,int y2,int z2,int id){
         for(int x=x1;x<=x2;x++)for(int y=y1;y<=y2;y++)for(int z=z1;z<=z2;z++)b(w,x,y,z,id);
     }
@@ -281,6 +330,6 @@ public final class NEXORAMapBuilder extends PluginBase {
         s.sendMessage("§e/nexora setloc <имя> §7— сохранить точку");
         s.sendMessage("§e/nexora locations §7— список точек");
         s.sendMessage("§e/nexora tp <имя> §7— телепорт");
-        s.sendMessage("§e/nexora build arden §7— построить столицу Арден");
+        s.sendMessage("§e/nexora build arden §7— очистить место и постепенно построить Арден");
     }
 }
