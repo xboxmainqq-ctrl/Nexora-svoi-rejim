@@ -1,0 +1,15 @@
+name: NEXORA_MapBuilder
+main: ru.nexora.mapbuilder.NEXORAMapBuilder
+version: "0.1.0-SNAPSHOT"
+api: ["1.0.0"]
+author: NEXORA
+description: Persistent named locations and staged world construction
+commands:
+  nexora:
+    description: NEXORA MapBuilder commands
+    usage: "/nexora help"
+    aliases: ["nx"]
+permissions:
+  nexora.admin:
+    description: Allows administration of NEXORA world building
+    default: op
