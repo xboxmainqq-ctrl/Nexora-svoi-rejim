@@ -13,17 +13,27 @@
         "default": "geometry.nexora_dragon"
       },
       "animations": {
-        "idle": "animation.nexora_dragon.idle",
+        "rest": "animation.nexora_dragon.rest",
         "walk": "animation.nexora_dragon.walk",
-        "wings": "animation.nexora_dragon.wings"
+        "flight": "animation.nexora_dragon.flight",
+        "attack": "animation.nexora_dragon.attack",
+        "sleep": "animation.nexora_dragon.sleep"
       },
       "scripts": {
         "animate": [
-          "idle",
+          "rest",
           {
-            "walk": "query.modified_move_speed > 0.01"
+            "walk": "query.modified_move_speed > 0.01 && query.is_on_ground"
           },
-          "wings"
+          {
+            "flight": "!query.is_on_ground"
+          },
+          {
+            "attack": "query.is_attacking"
+          },
+          {
+            "sleep": "query.is_sleeping"
+          }
         ]
       },
       "render_controllers": [

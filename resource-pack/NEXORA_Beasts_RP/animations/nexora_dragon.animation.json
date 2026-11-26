@@ -1,45 +1,61 @@
 {
   "format_version": "1.8.0",
   "animations": {
-    "animation.nexora_dragon.idle": {
+    "animation.nexora_dragon.rest": {
       "loop": true,
       "bones": {
         "body": {
           "rotation": [
             "0.0",
             "0.0",
-            "math.sin(query.life_time * 2.0) * 1.5"
+            "math.sin(query.life_time * 0.7) * 1.0"
           ],
           "position": [
             "0.0",
-            "math.sin(query.life_time * 2.0) * 0.2",
+            "math.sin(query.life_time * 0.7) * 0.12",
             "0.0"
           ]
         },
         "head": {
           "rotation": [
-            "math.sin(query.life_time * 1.4) * 2.0",
-            "0.0",
-            "0.0"
-          ],
-          "position": [
-            "0.0",
-            "0.0",
+            "math.sin(query.life_time * 0.45) * 2.0",
+            "math.sin(query.life_time * 0.3) * 3.0",
             "0.0"
           ]
         },
         "tail_1": {
           "rotation": [
             "0.0",
-            "math.sin(query.life_time * 1.8) * 5.0",
+            "math.sin(query.life_time * 0.55) * 7.0",
             "0.0"
           ]
         },
         "tail_2": {
           "rotation": [
             "0.0",
-            "math.sin(query.life_time * 2.0) * 7.0",
+            "math.sin(query.life_time * 0.65) * 9.0",
             "0.0"
+          ]
+        },
+        "tail_3": {
+          "rotation": [
+            "0.0",
+            "math.sin(query.life_time * 0.8) * 11.0",
+            "0.0"
+          ]
+        },
+        "wing_left": {
+          "rotation": [
+            "0.0",
+            "0.0",
+            "-5.0"
+          ]
+        },
+        "wing_right": {
+          "rotation": [
+            "0.0",
+            "0.0",
+            "5.0"
           ]
         }
       }
@@ -47,52 +63,297 @@
     "animation.nexora_dragon.walk": {
       "loop": true,
       "bones": {
+        "body": {
+          "position": [
+            "0.0",
+            "math.abs(math.sin(query.modified_distance_moved * 0.9)) * 0.45",
+            "0.0"
+          ],
+          "rotation": [
+            "math.sin(query.modified_distance_moved * 0.9) * 2.0",
+            "0.0",
+            "0.0"
+          ]
+        },
+        "head": {
+          "rotation": [
+            "math.sin(query.modified_distance_moved * 0.9) * 3.0",
+            "0.0",
+            "0.0"
+          ]
+        },
         "leg_front_left": {
           "rotation": [
-            "math.cos(query.modified_distance_moved * 0.9) * 30.0",
+            "math.cos(query.modified_distance_moved * 0.9) * 32.0",
             "0.0",
             "0.0"
           ]
         },
         "leg_front_right": {
           "rotation": [
-            "math.cos(query.modified_distance_moved * 0.9 + 180.0) * 30.0",
+            "math.cos(query.modified_distance_moved * 0.9 + 180.0) * 32.0",
             "0.0",
             "0.0"
           ]
         },
         "leg_back_left": {
           "rotation": [
-            "math.cos(query.modified_distance_moved * 0.9 + 180.0) * 30.0",
+            "math.cos(query.modified_distance_moved * 0.9 + 180.0) * 32.0",
             "0.0",
             "0.0"
           ]
         },
         "leg_back_right": {
           "rotation": [
-            "math.cos(query.modified_distance_moved * 0.9) * 30.0",
+            "math.cos(query.modified_distance_moved * 0.9) * 32.0",
             "0.0",
+            "0.0"
+          ]
+        },
+        "tail_1": {
+          "rotation": [
+            "0.0",
+            "math.sin(query.modified_distance_moved * 0.5) * 8.0",
             "0.0"
           ]
         }
       }
     },
-    "animation.nexora_dragon.wings": {
+    "animation.nexora_dragon.flight": {
       "loop": true,
-      "animation_length": 1,
       "bones": {
+        "body": {
+          "rotation": [
+            "-12.0",
+            "0.0",
+            "math.sin(query.life_time * 3.0) * 2.0"
+          ],
+          "position": [
+            "0.0",
+            "1.0 + math.sin(query.life_time * 6.283) * 0.25",
+            "0.0"
+          ]
+        },
+        "head": {
+          "rotation": [
+            "8.0",
+            "0.0",
+            "0.0"
+          ]
+        },
         "wing_left": {
           "rotation": [
             "0.0",
             "0.0",
-            "math.sin(query.life_time * 6.283) * 28.0"
+            "-35.0 - math.sin(query.life_time * 12.0) * 42.0"
           ]
         },
         "wing_right": {
           "rotation": [
             "0.0",
             "0.0",
-            "math.sin(query.life_time * 6.283) * -28.0"
+            "35.0 + math.sin(query.life_time * 12.0) * 42.0"
+          ]
+        },
+        "leg_front_left": {
+          "rotation": [
+            "-55.0",
+            "0.0",
+            "0.0"
+          ]
+        },
+        "leg_front_right": {
+          "rotation": [
+            "-55.0",
+            "0.0",
+            "0.0"
+          ]
+        },
+        "leg_back_left": {
+          "rotation": [
+            "-35.0",
+            "0.0",
+            "0.0"
+          ]
+        },
+        "leg_back_right": {
+          "rotation": [
+            "-35.0",
+            "0.0",
+            "0.0"
+          ]
+        },
+        "tail_1": {
+          "rotation": [
+            "0.0",
+            "math.sin(query.life_time * 2.5) * 9.0",
+            "0.0"
+          ]
+        },
+        "tail_2": {
+          "rotation": [
+            "0.0",
+            "math.sin(query.life_time * 2.8) * 12.0",
+            "0.0"
+          ]
+        },
+        "tail_3": {
+          "rotation": [
+            "0.0",
+            "math.sin(query.life_time * 3.0) * 15.0",
+            "0.0"
+          ]
+        }
+      }
+    },
+    "animation.nexora_dragon.attack": {
+      "loop": "hold_on_last_frame",
+      "animation_length": 0.55,
+      "bones": {
+        "body": {
+          "rotation": [
+            "-8.0",
+            "0.0",
+            "0.0"
+          ]
+        },
+        "neck": {
+          "rotation": [
+            "-18.0",
+            "0.0",
+            "0.0"
+          ]
+        },
+        "head": {
+          "rotation": [
+            "-22.0",
+            "0.0",
+            "0.0"
+          ],
+          "position": [
+            "0.0",
+            "0.0",
+            "-1.0"
+          ]
+        },
+        "jaw": {
+          "rotation": [
+            "22.0",
+            "0.0",
+            "0.0"
+          ]
+        },
+        "wing_left": {
+          "rotation": [
+            "0.0",
+            "0.0",
+            "-18.0"
+          ]
+        },
+        "wing_right": {
+          "rotation": [
+            "0.0",
+            "0.0",
+            "18.0"
+          ]
+        },
+        "tail_1": {
+          "rotation": [
+            "0.0",
+            "-10.0",
+            "0.0"
+          ]
+        }
+      }
+    },
+    "animation.nexora_dragon.sleep": {
+      "loop": true,
+      "bones": {
+        "body": {
+          "rotation": [
+            "5.0",
+            "0.0",
+            "0.0"
+          ],
+          "position": [
+            "0.0",
+            "-0.45",
+            "0.0"
+          ]
+        },
+        "neck": {
+          "rotation": [
+            "18.0",
+            "0.0",
+            "0.0"
+          ]
+        },
+        "head": {
+          "rotation": [
+            "25.0",
+            "0.0",
+            "0.0"
+          ],
+          "position": [
+            "0.0",
+            "-1.0",
+            "1.0"
+          ]
+        },
+        "jaw": {
+          "rotation": [
+            "-3.0",
+            "0.0",
+            "0.0"
+          ]
+        },
+        "wing_left": {
+          "rotation": [
+            "0.0",
+            "0.0",
+            "-12.0"
+          ]
+        },
+        "wing_right": {
+          "rotation": [
+            "0.0",
+            "0.0",
+            "12.0"
+          ]
+        },
+        "leg_front_left": {
+          "rotation": [
+            "-12.0",
+            "0.0",
+            "0.0"
+          ]
+        },
+        "leg_front_right": {
+          "rotation": [
+            "-12.0",
+            "0.0",
+            "0.0"
+          ]
+        },
+        "tail_1": {
+          "rotation": [
+            "0.0",
+            "18.0",
+            "0.0"
+          ]
+        },
+        "tail_2": {
+          "rotation": [
+            "0.0",
+            "22.0",
+            "0.0"
+          ]
+        },
+        "tail_3": {
+          "rotation": [
+            "0.0",
+            "26.0",
+            "0.0"
           ]
         }
       }
