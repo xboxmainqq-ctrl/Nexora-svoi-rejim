@@ -198,8 +198,16 @@ public final class NEXORAMapBuilder extends PluginBase {
             plaza(w,ox,oy,oz);
         } else if(buildStage==4) {
             for(int a=0;a<360;a++) { double t=Math.toRadians(a); int x=ox+(int)Math.round(Math.cos(t)*124), z=oz+(int)Math.round(Math.sin(t)*124);
-                fill(w,x,oy+1,z,x,oy+8,z,STONE_BRICK);
-                if(a%12==0) { fill(w,x-2,oy+9,z-2,x+2,oy+12,z+2,QUARTZ); b(w,x,oy+13,z,GLOWSTONE); }
+                int nx=(int)Math.round(-Math.sin(t)), nz=(int)Math.round(Math.cos(t));
+                for(int thick=-1;thick<=1;thick++) fill(w,x+nx*thick,oy+1,z+nz*thick,x+nx*thick,oy+8,z+nz*thick,STONE_BRICK);
+                if(a%8==0) { fill(w,x-2,oy+9,z-2,x+2,oy+10,z+2,QUARTZ); b(w,x,oy+11,z,GLOWSTONE); }
+                if(a%45==0) {
+                    fill(w,x-4,oy+1,z-4,x+4,oy+17,z+4,STONE_BRICK);
+                    fill(w,x-3,oy+3,z-3,x+3,oy+14,z+3,AIR);
+                    fill(w,x-5,oy+18,z-5,x+5,oy+19,z+5,QUARTZ);
+                    for(int h=5;h<=13;h+=4) { b(w,x-4,oy+h,z,GLASS); b(w,x+4,oy+h,z,GLASS); }
+                    b(w,x,oy+20,z,GLOWSTONE);
+                }
             }
             for(int a=0;a<360;a+=90) { double t=Math.toRadians(a); int x=ox+(int)Math.round(Math.cos(t)*124),z=oz+(int)Math.round(Math.sin(t)*124);
                 for(int side=-1;side<=1;side+=2) { int tx=x+(int)Math.round(-Math.sin(t)*side*8),tz=z+(int)Math.round(Math.cos(t)*side*8);
@@ -263,8 +271,18 @@ public final class NEXORAMapBuilder extends PluginBase {
         fill(w,x,y,z,x+sx-1,y+5,z+sz-1,wall);
         fill(w,x+1,y+1,z+1,x+sx-2,y+4,z+sz-2,AIR);
         fill(w,x+1,y,z+1,x+sx-2,y,z+sz-2,PLANKS);
-        for(int xx=x+2;xx<x+sx-2;xx+=4){b(w,xx,y+2,z,GLASS);b(w,xx,y+2,z+sz-1,GLASS);}
-        for(int zz=z+2;zz<z+sz-2;zz+=4){b(w,x,y+2,zz,GLASS);b(w,x+sx-1,y+2,zz,GLASS);}
+        for(int xx=x+2;xx<x+sx-2;xx+=4){
+            b(w,xx,y+2,z,GLASS);b(w,xx,y+3,z,GLASS);b(w,xx,y+2,z+sz-1,GLASS);b(w,xx,y+3,z+sz-1,GLASS);
+        }
+        for(int zz=z+2;zz<z+sz-2;zz+=4){
+            b(w,x,y+2,zz,GLASS);b(w,x,y+3,zz,GLASS);b(w,x+sx-1,y+2,zz,GLASS);b(w,x+sx-1,y+3,zz,GLASS);
+        }
+        // Stone corner pilasters and decorative lintels make facades less box-like.
+        for(int[] c:new int[][]{{0,0},{sx-1,0},{0,sz-1},{sx-1,sz-1}}) {
+            fill(w,x+c[0],y+1,z+c[1],x+c[0],y+5,z+c[1],QUARTZ);
+        }
+        fill(w,x+1,y+5,z+1,x+sx-2,y+5,z+1,QUARTZ);
+        fill(w,x+1,y+5,z+sz-2,x+sx-2,y+5,z+sz-2,QUARTZ);
         // Layered, stepped roof gives each building a visible silhouette.
         for(int layer=0;layer<3;layer++){
             int inset=layer;
@@ -278,21 +296,41 @@ public final class NEXORAMapBuilder extends PluginBase {
         for(int xx=x+2;xx<x+sx-2;xx+=5){lamp(w,xx,y,z-2);}
     }
     private void castle(Level w,int x,int y,int z){
-        shell(w,x,y,z,27,23,STONE_BRICK,STONE_BRICK);
-        // Four tall corner towers with battlements.
-        for(int[] c:new int[][]{{0,0},{23,0},{0,19},{23,19}}){
-            fill(w,x+c[0],y+1,z+c[1],x+c[0]+3,y+17,z+c[1]+3,STONE_BRICK);
-            fill(w,x+c[0]+1,y+3,z+c[1]+1,x+c[0]+2,y+15,z+c[1]+2,AIR);
-            fill(w,x+c[0]-1,y+18,z+c[1]-1,x+c[0]+4,y+19,z+c[1]+4,QUARTZ);
-            b(w,x+c[0]+1,y+20,z+c[1]+1,GLOWSTONE);
+        // Grand keep: broad two-wing footprint, open central hall and layered roof.
+        shell(w,x,y,z,39,33,STONE_BRICK,STONE_BRICK);
+        fill(w,x+5,y+1,z+5,x+33,y+1,z+27,QUARTZ);
+        fill(w,x+8,y+2,z+8,x+30,y+5,z+24,AIR);
+        // Four massive corner towers, hollow inside, with stepped crowns.
+        for(int[] c:new int[][]{{0,0},{33,0},{0,27},{33,27}}){
+            fill(w,x+c[0],y+1,z+c[1],x+c[0]+5,y+24,z+c[1]+5,STONE_BRICK);
+            fill(w,x+c[0]+1,y+3,z+c[1]+1,x+c[0]+4,y+21,z+c[1]+4,AIR);
+            fill(w,x+c[0]-1,y+25,z+c[1]-1,x+c[0]+6,y+26,z+c[1]+6,QUARTZ);
+            fill(w,x+c[0],y+27,z+c[1],x+c[0]+5,y+29,z+c[1]+5,STONE_BRICK);
+            b(w,x+c[0]+2,y+30,z+c[1]+2,GLOWSTONE);
+            for(int h=6;h<=18;h+=4) { b(w,x+c[0],y+h,z+c[1]+2,GLASS); b(w,x+c[0]+5,y+h,z+c[1]+2,GLASS); }
         }
-        fill(w,x+10,y+1,z+9,x+16,y+4,z+13,QUARTZ);
-        fill(w,x+11,y+2,z+10,x+15,y+3,z+12,AIR);
-        for(int xx=x+4;xx<x+23;xx+=3)b(w,xx,y+8,z+11,TORCH);
-        // Courtyard garden and approach stairs.
-        fill(w,x+5,y+1,z+5,x+9,y+1,z+8,GRASS);
-        fill(w,x+17,y+1,z+5,x+21,y+1,z+8,GRASS);
-        for(int i=1;i<=8;i++)fill(w,x+12-i,y+i,z-2-i,x+14+i,y+i,z-1-i,STONE_BRICK);
+        // Main audience hall and high central roof ridge.
+        fill(w,x+12,y+2,z+10,x+26,y+11,z+22,QUARTZ);
+        fill(w,x+14,y+3,z+11,x+24,y+10,z+21,AIR);
+        for(int layer=0;layer<5;layer++)
+            fill(w,x+10+layer,y+12+layer,z+8+layer,x+28-layer,y+12+layer,z+24-layer,STONE_BRICK);
+        fill(w,x+17,y+17,z+14,x+21,y+21,z+18,PRISMARINE);
+        b(w,x+19,y+22,z+16,GLOWSTONE);
+        // Tall arched entrance, columns and royal stairs.
+        fill(w,x+17,y+1,z-1,x+21,y+7,z+1,QUARTZ);
+        fill(w,x+18,y+1,z,x+20,y+6,z+1,AIR);
+        for(int i=1;i<=12;i++) fill(w,x+15-i,y+i,z-2-i,x+23+i,y+i,z-1-i,STONE_BRICK);
+        for(int xx=x+7;xx<=x+31;xx+=4) {
+            fill(w,xx,y+2,z+1,xx+1,y+9,z+1,QUARTZ);
+            b(w,xx,y+10,z+1,GLOWSTONE);
+        }
+        // Courtyard gardens, pools and connecting covered galleries.
+        for(int[] d:new int[][]{{8,8},{27,8},{8,22},{27,22}}) {
+            fill(w,x+d[0],y+1,z+d[1],x+d[0]+3,y+1,z+d[1]+3,GRASS);
+            b(w,x+d[0]+1,y+2,z+d[1]+1,LEAVES);
+        }
+        fill(w,x+17,y+1,z+25,x+21,y+1,z+29,PRISMARINE);
+        fill(w,x+18,y+2,z+26,x+20,y+2,z+28,WATER);
     }
     private void marketHouse(Level w,int x,int y,int z,int sx,int sz){
         shell(w,x,y,z,sx,sz,BRICK,WOOL);
