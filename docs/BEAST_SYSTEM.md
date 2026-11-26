@@ -11,6 +11,8 @@ This document describes the first playable foundation of the creature system.
   - Tame a living non-player entity by interacting with it while holding a NEXORA capture sphere.
 - Active team with three slots.
 - Creature inspection and release commands.
+- Individual creature stats (vitality, power, defense) derived from rarity, level and a saved potential roll.
+- Creature training: spend one wheat to gain 25 XP; level-ups improve stats.
 - Admin commands to issue test eggs and capture spheres.
 - A ten-tier egg catalog with rarity-colored custom names and lore.
 - `/beasts giveeggs <player>` issues one preview egg for each rarity tier.
@@ -23,6 +25,7 @@ Player:
 - `/beasts team`
 - `/beasts team <1-3> <creature-id>`
 - `/beasts info <creature-id>`
+- `/beasts train <creature-id>` — spend one wheat for 25 XP.
 - `/beasts release <creature-id>`
 - `/beasts eggs`
 
@@ -35,6 +38,6 @@ Rarity identifiers: `common uncommon rare epic legendary mythic ancient divine f
 
 ## Current scope and limitations
 
-This is the first foundation, not the complete final gameplay loop. Captured entities are recorded as collection entries and removed from the world; they are not yet summoned as custom companion models. Eggs grant a creature directly to the collection on use. The ten rarities are distinguished in their custom display names and lore; unique egg artwork still requires a matching Bedrock resource pack and is not included in this build. Capture rarity is rolled using weighted probabilities. The active three-slot team is saved, but battle, stats, abilities, leveling progression, custom forms and region-specific spawn rules are future systems.
+This is the first foundation, not the complete final gameplay loop. Captured entities are recorded as collection entries and removed from the world; they are not yet summoned as custom companion models. Eggs grant a creature directly to the collection on use. The ten rarities are distinguished in their custom display names and lore; unique egg artwork still requires a matching Bedrock resource pack and is not included in this build. Capture rarity is rolled using weighted probabilities. The active three-slot team is saved, but Battle, abilities, companion summoning, custom forms and region-specific spawn rules are future systems. Hatching currently resolves immediately into the collection (no timed hatch animation yet). Training is a simple first progression loop and uses one wheat per 25 XP.
 
 The plugin targets the Nukkit-MOT Maven dependency already used by this repository. A successful GitHub Actions build and in-game test on the exact server build are still required before treating the JAR as production-ready.
