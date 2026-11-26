@@ -35,6 +35,11 @@ import ru.nexora.beasts.entity.NexoraAxolotlEntity;
 import ru.nexora.beasts.entity.NexoraHorseEntity;
 import ru.nexora.beasts.entity.NexoraPandaEntity;
 import ru.nexora.beasts.entity.NexoraPolarBearEntity;
+import ru.nexora.beasts.entity.NexoraRabbitEntity;
+import ru.nexora.beasts.entity.NexoraOcelotEntity;
+import ru.nexora.beasts.entity.NexoraTurtleEntity;
+import ru.nexora.beasts.entity.NexoraDolphinEntity;
+import ru.nexora.beasts.entity.NexoraParrotEntity;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -94,6 +99,11 @@ public final class NEXORABeasts extends PluginBase implements Listener {
         registerCustomEntity("лошадь", NexoraHorseEntity.IDENTIFIER, NexoraHorseEntity::register);
         registerCustomEntity("панда", NexoraPandaEntity.IDENTIFIER, NexoraPandaEntity::register);
         registerCustomEntity("белый медведь", NexoraPolarBearEntity.IDENTIFIER, NexoraPolarBearEntity::register);
+        registerCustomEntity("кролик", NexoraRabbitEntity.IDENTIFIER, NexoraRabbitEntity::register);
+        registerCustomEntity("оцелот", NexoraOcelotEntity.IDENTIFIER, NexoraOcelotEntity::register);
+        registerCustomEntity("черепаха", NexoraTurtleEntity.IDENTIFIER, NexoraTurtleEntity::register);
+        registerCustomEntity("дельфин", NexoraDolphinEntity.IDENTIFIER, NexoraDolphinEntity::register);
+        registerCustomEntity("попугай", NexoraParrotEntity.IDENTIFIER, NexoraParrotEntity::register);
         getServer().getPluginManager().registerEvents(this, this);
         getServer().getScheduler().scheduleRepeatingTask(this, this::tickCompanions, 5);
         getLogger().info("NEXORA_Beasts включён. Коллекция, GUI и система питомцев готовы.");
@@ -747,6 +757,11 @@ public final class NEXORABeasts extends PluginBase implements Listener {
                     case "horse" -> NexoraHorseEntity.IDENTIFIER;
                     case "panda" -> NexoraPandaEntity.IDENTIFIER;
                     case "polarbear", "polar_bear" -> NexoraPolarBearEntity.IDENTIFIER;
+                    case "rabbit" -> NexoraRabbitEntity.IDENTIFIER;
+                    case "ocelot" -> NexoraOcelotEntity.IDENTIFIER;
+                    case "turtle" -> NexoraTurtleEntity.IDENTIFIER;
+                    case "dolphin" -> NexoraDolphinEntity.IDENTIFIER;
+                    case "parrot" -> NexoraParrotEntity.IDENTIFIER;
                     default -> null;
                 };
                 String vanillaId = entityIdentifier(species);
