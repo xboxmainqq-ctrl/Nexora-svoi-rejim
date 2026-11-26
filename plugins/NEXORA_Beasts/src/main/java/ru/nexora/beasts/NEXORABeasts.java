@@ -945,6 +945,7 @@ public final class NEXORABeasts extends PluginBase implements Listener {
         String rarity = data.getString(base + ".rarity", "common");
         int level = data.getInt(base + ".level", 1);
         String details = "§7" + prettySpecies(species) + "  " + rarityColor(rarity) + "◆ " + rarityName(rarity)
+                + "\n§6Эволюция: §f" + evolutionRank(level)
                 + "\n§dПассивный навык: §f" + speciesPassiveName(species)
                 + "\n§8" + speciesPassiveDescription(species)
                 + "\n§dАктивный приём: §f" + speciesSkillName(species)
@@ -1750,8 +1751,9 @@ public final class NEXORABeasts extends PluginBase implements Listener {
     private void gainBeastXp(Player owner, String id, int amount) {
         if (amount <= 0 || !hasBeast(owner, id)) return;
         String base = beastPath(owner, id);
-        int level = data.getInt(base + ".level", 1);
-        if (level >= 100) return;
+        int oldLevel = Math.max(1, data.getInt(base + ".level", 1));
+        if (oldLevel >= 100) return;
+        int level = oldLevel;
         int xp = data.getInt(base + ".xp", 0) + amount;
         int gainedLevels = 0;
         while (level < 100 && xp >= xpToNext(level)) {
@@ -1759,14 +1761,35 @@ public final class NEXORABeasts extends PluginBase implements Listener {
             level++;
             gainedLevels++;
         }
+        if (level >= 100) xp = 0;
+        int milestoneRewards = 0;
+        int[] milestones = {10, 25, 50, 75, 100};
+        for (int milestone : milestones) {
+            if (oldLevel < milestone && level >= milestone) milestoneRewards += 2;
+        }
         data.set(base + ".level", level);
         data.set(base + ".xp", xp);
-        if (gainedLevels > 0) {
-            data.set(base + ".upgradePoints", data.getInt(base + ".upgradePoints", 0) + gainedLevels);
+        if (gainedLevels > 0 || milestoneRewards > 0) {
+            int reward = gainedLevels + milestoneRewards;
+            data.set(base + ".upgradePoints", data.getInt(base + ".upgradePoints", 0) + reward);
             owner.sendMessage("§6§lПИТОМЕЦ СТАЛ СИЛЬНЕЕ! §e" + prettySpecies(data.getString(base + ".species", "unknown"))
-                    + " §7получил уровень " + level + " и §e+" + gainedLevels + " §7очк. развития.");
+                    + " §7получил уровень " + level + " и §e+" + reward + " §7очк. развития.");
+        }
+        if (milestoneRewards > 0) {
+            owner.sendMessage("§d✦ ЭВОЛЮЦИЯ! §f" + prettySpecies(data.getString(base + ".species", "unknown"))
+                    + " §7достиг стадии «" + evolutionRank(level) + "» и получил §e+" + milestoneRewards
+                    + " §7доп. очка развития!");
         }
         data.save();
+    }
+
+    private String evolutionRank(int level) {
+        if (level >= 100) return "Абсолютный зверь";
+        if (level >= 75) return "Пробуждённый";
+        if (level >= 50) return "Вознесённый";
+        if (level >= 25) return "Закалённый";
+        if (level >= 10) return "Юный боец";
+        return "Детёныш";
     }
 
     private int xpToNext(int level) { return 50 + (Math.max(1, level) * 50); }
