@@ -1407,8 +1407,9 @@ public final class NEXORABeasts extends PluginBase implements Listener {
                 player.sendMessage("§cНе удалось призвать вид: " + species + ". Он пока не поддерживается сервером.");
                 continue;
             }
-            pet.setNameTag(rarityColor(data.getString(base + ".rarity", "common"))
-                    + prettySpecies(species) + " §8[§f" + data.getInt(base + ".level", 1) + "§8]");
+            String rarity = data.getString(base + ".rarity", "common");
+            pet.setNameTag(rarityPrefix(rarity) + " §f" + prettySpecies(species)
+                    + " §8[§f" + data.getInt(base + ".level", 1) + "§8]");
             pet.setNameTagVisible(true);
             pet.setNameTagAlwaysVisible(true);
             boolean positioned = pet.teleport(player.add(companionOffsetX(slot), 0, companionOffsetZ(slot)));
@@ -1882,6 +1883,34 @@ public final class NEXORABeasts extends PluginBase implements Listener {
     private String rarityColor(String rarity) {
         for (int i = 0; i < RARITIES.length; i++) if (RARITIES[i].equals(rarity)) return RARITY_COLORS[i];
         return "§7";
+    }
+
+    /**
+     * Bedrock-safe stepped gradient for the pet's rarity prefix.
+     * Uses legacy Bedrock palette codes instead of Java-only RGB formatting.
+     */
+    private String rarityPrefix(String rarity) {
+        String[] colors = switch (rarity.toLowerCase(Locale.ROOT)) {
+            case "uncommon" -> new String[]{"§2", "§a"};
+            case "rare" -> new String[]{"§1", "§9", "§b"};
+            case "epic" -> new String[]{"§5", "§d"};
+            case "legendary" -> new String[]{"§e", "§6"}; // yellow -> orange/gold
+            case "mythic" -> new String[]{"§5", "§d"};
+            case "ancient" -> new String[]{"§3", "§b"};
+            case "divine" -> new String[]{"§6", "§e", "§f"};
+            case "forbidden" -> new String[]{"§4", "§c", "§d"};
+            case "absolute" -> new String[]{"§4", "§c", "§6", "§e"};
+            default -> new String[]{"§8", "§7"};
+        };
+        String label = "✦ [" + rarityName(rarity).toUpperCase(Locale.ROOT) + "] ✦";
+        int[] points = label.codePoints().toArray();
+        StringBuilder result = new StringBuilder();
+        for (int i = 0; i < points.length; i++) {
+            int colorIndex = points.length <= 1 ? 0
+                    : (int) Math.round((double) i * (colors.length - 1) / (points.length - 1));
+            result.append(colors[colorIndex]).appendCodePoint(points[i]);
+        }
+        return result.append("§r").toString();
     }
 
     private String normalizeSpecies(String species) {
