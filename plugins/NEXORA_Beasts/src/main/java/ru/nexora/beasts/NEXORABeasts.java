@@ -7,6 +7,8 @@ import cn.nukkit.entity.Entity;
 import cn.nukkit.entity.EntityLiving;
 import cn.nukkit.event.EventHandler;
 import cn.nukkit.event.Listener;
+import cn.nukkit.event.entity.EntityDamageByEntityEvent;
+import cn.nukkit.event.entity.EntityDamageEvent;
 import cn.nukkit.event.player.PlayerInteractEntityEvent;
 import cn.nukkit.event.player.PlayerInteractEvent;
 import cn.nukkit.event.player.PlayerJoinEvent;
@@ -59,6 +61,7 @@ public final class NEXORABeasts extends PluginBase implements Listener {
     private Config data;
     private final Set<UUID> pendingHatches = new HashSet<>();
     private final Map<UUID, Map<Integer, Entity>> activeCompanions = new HashMap<>();
+    private final Map<String, Long> companionAttackCooldowns = new HashMap<>();
     private static final int HATCH_DELAY_TICKS = 100; // 5 seconds
 
     @Override
@@ -95,7 +98,44 @@ public final class NEXORABeasts extends PluginBase implements Listener {
 
     @EventHandler
     public void onPlayerQuit(PlayerQuitEvent event) {
+        UUID ownerId = event.getPlayer().getUniqueId();
         recallTeam(event.getPlayer(), false);
+        companionAttackCooldowns.keySet().removeIf(key -> key.startsWith(ownerId + ":"));
+    }
+
+    /**
+     * First PvE combat layer: when the owner lands a hit on a living mob,
+     * summoned companions assist with a single, cooldown-limited strike.
+     */
+    @EventHandler
+    public void onOwnerAttack(EntityDamageByEntityEvent event) {
+        if (!(event.getDamager() instanceof Player owner)) return;
+        if (!(event.getEntity() instanceof EntityLiving target) || target instanceof Player) return;
+        if (event.isCancelled()) return;
+
+        Map<Integer, Entity> companions = activeCompanions.get(owner.getUniqueId());
+        if (companions == null || companions.isEmpty()) return;
+
+        long now = System.currentTimeMillis();
+        for (Map.Entry<Integer, Entity> entry : companions.entrySet()) {
+            int slot = entry.getKey();
+            Entity pet = entry.getValue();
+            if (!(pet instanceof EntityLiving) || pet.isClosed() || pet.getLevel() != target.getLevel()) continue;
+            if (pet.distanceSquared(target) > 100) continue;
+
+            String cooldownKey = owner.getUniqueId() + ":" + slot;
+            long readyAt = companionAttackCooldowns.getOrDefault(cooldownKey, 0L);
+            if (now < readyAt) continue;
+
+            String beastId = data.getString(playerPath(owner) + ".team." + slot, "");
+            if (beastId.isEmpty() || !hasBeast(owner, beastId)) continue;
+            String base = beastPath(owner, beastId);
+            double damage = Math.max(1.0, Math.min(30.0, stat(base, "power", 5) * 0.35));
+            companionAttackCooldowns.put(cooldownKey, now + 1200L);
+
+            target.attack(new EntityDamageByEntityEvent(
+                    pet, target, EntityDamageEvent.DamageCause.ENTITY_ATTACK, damage));
+        }
     }
 
     private void tickCompanions() {
