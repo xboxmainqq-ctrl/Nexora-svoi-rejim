@@ -242,7 +242,13 @@ public final class NEXORABeasts extends PluginBase implements Listener {
                 if (now < companionAttackCooldowns.getOrDefault(cooldownKey, 0L)) return;
 
                 String beastId = "";
-                Player owner = getServer().getPlayer(ownerEntry.getKey());
+                Player owner = null;
+                for (Player online : getServer().getOnlinePlayers().values()) {
+                    if (online.getUniqueId().equals(ownerEntry.getKey())) {
+                        owner = online;
+                        break;
+                    }
+                }
                 if (owner != null) {
                     beastId = data.getString(playerPath(owner) + ".team." + petEntry.getKey(), "");
                 }
