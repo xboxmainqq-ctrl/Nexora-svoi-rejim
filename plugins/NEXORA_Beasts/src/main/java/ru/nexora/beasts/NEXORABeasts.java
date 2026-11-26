@@ -201,7 +201,11 @@ public final class NEXORABeasts extends PluginBase implements Listener {
 
     // -------------------- NEXORA touch-friendly GUI --------------------
 
-    private ElementButton iconButton(String text, String texturePath) {\n        return new ElementButton(text, new ElementButtonImageData(\n                ElementButtonImageData.IMAGE_DATA_TYPE_PATH, texturePath));\n    }\n\n    private void openMainMenu(Player player) {
+    private ElementButton iconButton(String text, String texturePath) {
+        return new ElementButton(text, new ElementButtonImageData(
+                ElementButtonImageData.IMAGE_DATA_TYPE_PATH, texturePath));
+    }
+\n    private void openMainMenu(Player player) {
         FormWindowSimple form = new FormWindowSimple("§l§0NEXORA: BEASTS", 
                 "§7Твоя связь с дикими существами.\n\n"
                 + "§fКоллекция: §b" + collectionSize(player) + " §8| §fКоманда: §b" + teamCount(player) + "/3\n"
