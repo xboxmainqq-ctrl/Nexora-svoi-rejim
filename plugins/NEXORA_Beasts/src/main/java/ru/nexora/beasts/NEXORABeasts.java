@@ -1916,7 +1916,8 @@ public final class NEXORABeasts extends PluginBase implements Listener {
             glyphs.append("§r").appendCodePoint(0xE200 + glyphOffset + letterIndex);
             letterIndex++;
         }
-        return "§6✦ §r[" + glyphs + "§r] §6✦§r";
+        String accent = RARITY_COLORS[rarityIndex];
+        return accent + "✦ §r[" + glyphs + "§r] " + accent + "✦§r";
     }
 
     private String normalizeSpecies(String species) {
