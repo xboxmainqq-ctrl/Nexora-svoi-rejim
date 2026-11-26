@@ -90,8 +90,91 @@ def make_texture():
     write_png(ROOT / "textures/entity/nexora_wolf.png", pixels)
 
 
+def make_fox_texture():
+    ink = (55, 31, 25, 255)
+    orange = (205, 105, 48, 255)
+    light = (244, 190, 116, 255)
+    cream = (247, 226, 190, 255)
+    cyan = (54, 222, 219, 255)
+    gold = (239, 184, 80, 255)
+    pixels = [[orange for _ in range(WIDTH)] for _ in range(HEIGHT)]
+    for y in range(HEIGHT):
+        for x in range(WIDTH):
+            if ((x * 5 + y * 9) % 21) < 3:
+                pixels[y][x] = light
+            elif ((x * 7 + y * 3) % 29) < 3:
+                pixels[y][x] = ink
+    # Face, cream muzzle and dark ear tips.
+    paint(pixels, 0, 0, 24, 3, ink)
+    paint(pixels, 0, 3, 24, 4, light)
+    paint(pixels, 24, 0, 16, 8, cream)
+    paint(pixels, 40, 0, 8, 8, ink)
+    paint(pixels, 42, 2, 4, 3, cyan)
+    paint(pixels, 43, 3, 2, 1, gold)
+    # Rust-red back with a pale chest stripe and magical shoulder mark.
+    paint(pixels, 0, 16, 32, 12, orange)
+    paint(pixels, 2, 18, 8, 8, cream)
+    paint(pixels, 14, 19, 4, 8, cyan)
+    paint(pixels, 13, 21, 6, 2, gold)
+    # Four legs and dark paws.
+    for x in (32, 40, 48, 56):
+        paint(pixels, x, 16, 8, 12, orange)
+        paint(pixels, x, 25, 8, 3, ink)
+        paint(pixels, x + 2, 19, 4, 2, light)
+    # Large bushy tail with a pale tip.
+    paint(pixels, 0, 40, 16, 8, orange)
+    paint(pixels, 0, 44, 16, 4, cream)
+    paint(pixels, 5, 40, 3, 4, gold)
+    for x in (20, 28, 36, 44, 52):
+        paint(pixels, x, 40, 3, 3, cyan)
+        paint(pixels, x + 1, 41, 1, 1, cream)
+    write_png(ROOT / "textures/entity/nexora_fox.png", pixels)
+
+
+def make_cat_texture():
+    ink = (30, 29, 53, 255)
+    fur = (78, 72, 111, 255)
+    light = (139, 130, 170, 255)
+    muzzle = (224, 198, 207, 255)
+    cyan = (65, 235, 222, 255)
+    gold = (239, 190, 91, 255)
+    pixels = [[fur for _ in range(WIDTH)] for _ in range(HEIGHT)]
+    for y in range(HEIGHT):
+        for x in range(WIDTH):
+            if ((x * 11 + y * 5) % 23) < 3:
+                pixels[y][x] = light
+            elif ((x * 3 + y * 7) % 31) < 3:
+                pixels[y][x] = ink
+    # Pointed ears, bright eyes and a soft muzzle.
+    paint(pixels, 0, 0, 24, 4, ink)
+    paint(pixels, 0, 4, 24, 4, fur)
+    paint(pixels, 24, 0, 16, 8, muzzle)
+    paint(pixels, 40, 0, 8, 8, cyan)
+    paint(pixels, 42, 2, 4, 3, gold)
+    # Sleek dark body with a luminous collar/rune.
+    paint(pixels, 0, 16, 32, 12, ink)
+    paint(pixels, 2, 18, 28, 3, fur)
+    paint(pixels, 14, 20, 4, 7, cyan)
+    paint(pixels, 12, 21, 8, 2, gold)
+    # Paws and leg markings.
+    for x in (32, 40, 48, 56):
+        paint(pixels, x, 16, 8, 12, fur)
+        paint(pixels, x, 25, 8, 3, ink)
+        paint(pixels, x + 2, 19, 4, 2, light)
+    # Long tail with a glowing tip.
+    paint(pixels, 0, 40, 16, 8, fur)
+    paint(pixels, 0, 44, 16, 3, ink)
+    paint(pixels, 6, 40, 3, 4, cyan)
+    for x in (20, 28, 36, 44, 52):
+        paint(pixels, x, 40, 3, 3, gold)
+        paint(pixels, x + 1, 41, 1, 1, cyan)
+    write_png(ROOT / "textures/entity/nexora_cat.png", pixels)
+
+
 def main():
     make_texture()
+    make_fox_texture()
+    make_cat_texture()
     BUILD.mkdir(parents=True, exist_ok=True)
     output = BUILD / "NEXORA_Beasts_RP.mcpack"
     with zipfile.ZipFile(output, "w", compression=zipfile.ZIP_DEFLATED) as archive:
