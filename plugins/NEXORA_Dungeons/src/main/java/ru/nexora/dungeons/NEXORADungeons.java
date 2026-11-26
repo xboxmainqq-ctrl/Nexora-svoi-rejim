@@ -42,10 +42,15 @@ public final class NEXORADungeons extends PluginBase implements Listener {
     private static final class Run {
         final Player player;
         final Difficulty difficulty;
+        final Position arenaCenter;
         final Set<Long> alive = new HashSet<>();
         final Map<Long, Entity> entities = new HashMap<>();
         int wave = 0;
-        Run(Player player, Difficulty difficulty) { this.player=player; this.difficulty=difficulty; }
+        Run(Player player, Difficulty difficulty, Position arenaCenter) {
+            this.player=player;
+            this.difficulty=difficulty;
+            this.arenaCenter=new Position(arenaCenter.x, arenaCenter.y, arenaCenter.z, arenaCenter.getLevel());
+        }
     }
 
     @Override public void onEnable() {
@@ -225,7 +230,7 @@ public final class NEXORADungeons extends PluginBase implements Listener {
             p.sendMessage("§cПодземелье ещё не настроено. Администратор должен выполнить /dungeon setspawn и /dungeon setexit.");
             return;
         }
-        Run run = new Run(p, difficulty);
+        Run run = new Run(p, difficulty, spawn);
         runs.put(p.getUniqueId(), run);
         p.teleport(spawn);
         p.sendMessage("§6✦ NEXORA §8» §fПодземелье: " + difficulty.title);
@@ -246,9 +251,13 @@ public final class NEXORADungeons extends PluginBase implements Listener {
             String type = bossWave ? "IronGolem" : switch ((run.wave + i) % 3) {
                 case 0 -> "Zombie"; case 1 -> "Skeleton"; default -> "Spider";
             };
+            // Always spawn relative to the saved arena center, never the player's
+            // moving position. This keeps every wave inside the mine walls.
             double angle = (Math.PI * 2 * i) / Math.max(1, count);
-            Position pos = new Position(run.player.getX() + Math.cos(angle) * 4,
-                    run.player.getY(), run.player.getZ() + Math.sin(angle) * 4, run.player.getLevel());
+            double radius = bossWave ? 0.0 : Math.min(7.0, 4.5 + count * 0.25);
+            Position center = run.arenaCenter;
+            Position pos = new Position(center.x + Math.cos(angle) * radius,
+                    center.y, center.z + Math.sin(angle) * radius, center.getLevel());
             Entity mob = Entity.createEntity(type, pos);
             if (mob == null) {
                 run.player.sendMessage("§cНе удалось создать противника: " + type);
