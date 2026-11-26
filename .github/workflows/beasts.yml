@@ -116,7 +116,7 @@ jobs:
                       raise SystemExit(f"Unexpected texture size in {model_path}")
                   bones = {bone["name"] for bone in model["minecraft:geometry"][0]["bones"]}
                   if not any(token in bone for bone in bones for token in
-                             ("wing", "fin", "gill", "horn", "spine", "armor", "feather", "ridge", "tuft")):
+                             ("wing", "fin", "gill", "horn", "spine", "armor", "feather", "ridge", "tuft", "ear")):
                       raise SystemExit(f"No fantasy geometry found in {model_path}")
                   texture = archive.read(f"textures/entity/nexora_{name}.png")
                   if texture[:8] != bytes([137, 80, 78, 71, 13, 10, 26, 10]):
