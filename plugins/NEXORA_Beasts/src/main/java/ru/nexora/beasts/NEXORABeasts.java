@@ -219,9 +219,17 @@ public final class NEXORABeasts extends PluginBase implements Listener {
         // Do not retaliate or dodge for hits cancelled by another plugin.
         if (event.isCancelled()) return;
 
-        // Quick companions try to evade close hostile strikes instead of standing still.
+        // Species passives: durable companions reduce incoming PvE damage.
         if (isActiveCompanion(victim) && damager instanceof EntityLiving attacker
                 && attacker != victim && isHostileMob(attacker)) {
+            String species = getCompanionSpecies(victim);
+            float damageScale = switch (species) {
+                case "turtle" -> 0.65f;
+                case "polarbear", "polar_bear" -> 0.75f;
+                case "panda" -> 0.85f;
+                default -> 1.0f;
+            };
+            if (damageScale < 1.0f) event.setDamage(event.getDamage() * damageScale);
             dodgeCompanion(victim, attacker);
         }
 
@@ -258,7 +266,9 @@ public final class NEXORABeasts extends PluginBase implements Listener {
                         : "wolf";
                 // Slow/heavy species use a short sidestep; agile species make a wider dodge.
                 double step = switch (species) {
-                    case "wolf", "ocelot", "fox", "rabbit", "bee", "parrot" -> 0.62;
+                    case "rabbit" -> 0.88;
+                    case "fox", "ocelot", "parrot" -> 0.72;
+                    case "wolf", "bee" -> 0.62;
                     case "turtle", "panda", "polar_bear", "polarbear" -> 0.22;
                     default -> 0.42;
                 };
@@ -272,7 +282,7 @@ public final class NEXORABeasts extends PluginBase implements Listener {
                 }
                 pet.move(dx / length * step, 0.08, dz / length * step);
                 pet.updateMovement();
-                companionAttackCooldowns.put(cooldownKey, now + 900L);
+                companionAttackCooldowns.put(cooldownKey, now + (species.equals("rabbit") || species.equals("fox") ? 650L : 900L));
                 return;
             }
         }
@@ -366,15 +376,19 @@ public final class NEXORABeasts extends PluginBase implements Listener {
     private void runCompanionAI(Player owner, int slot, EntityLiving pet, String beastId) {
         if (pet.isClosed() || pet.getLevel() != owner.getLevel()) return;
 
+        String base = beastPath(owner, beastId);
+        String species = data.getString(base + ".species", "wolf").toLowerCase(Locale.ROOT);
+        double searchRadius = species.equals("parrot") ? 14.0 : 10.0;
         EntityLiving target = null;
-        double nearestDistance = 10.0 * 10.0;
+        double nearestDistance = searchRadius * searchRadius;
         int enemiesNearby = 0;
-        for (Entity entity : pet.getLevel().getNearbyEntities(pet.getBoundingBox().grow(10, 6, 10), pet)) {
+        for (Entity entity : pet.getLevel().getNearbyEntities(
+                pet.getBoundingBox().grow(searchRadius, 6, searchRadius), pet)) {
             if (!(entity instanceof EntityLiving living) || living == pet || living.isClosed()
                     || living instanceof Player || isActiveCompanion(living)
                     || !isHostileMob(living)) continue;
             double distance = pet.distanceSquared(living);
-            if (distance > 100.0) continue;
+            if (distance > searchRadius * searchRadius) continue;
             enemiesNearby++;
             if (distance < nearestDistance) {
                 nearestDistance = distance;
@@ -395,8 +409,6 @@ public final class NEXORABeasts extends PluginBase implements Listener {
         }
         if (target == null) return;
 
-        String base = beastPath(owner, beastId);
-        String species = data.getString(base + ".species", "wolf").toLowerCase(Locale.ROOT);
         long now = System.currentTimeMillis();
         String attackKey = owner.getUniqueId() + ":ai:" + slot;
         long attackReady = companionAttackCooldowns.getOrDefault(attackKey, 0L);
@@ -409,8 +421,15 @@ public final class NEXORABeasts extends PluginBase implements Listener {
         };
         if (nearestDistance > attackRange * attackRange) {
             double distance = Math.sqrt(nearestDistance);
-            double step = Math.min(species.equals("horse") || species.equals("wolf") ? 0.48 : 0.34,
-                    Math.max(0.12, distance - attackRange));
+            double speciesSpeed = switch (species) {
+                case "fox", "rabbit", "dolphin" -> 1.35;
+                case "horse" -> 1.45;
+                case "parrot" -> 1.20;
+                case "turtle", "panda", "polarbear", "polar_bear" -> 0.78;
+                default -> 1.0;
+            };
+            double step = Math.min((species.equals("horse") || species.equals("wolf") ? 0.48 : 0.34)
+                            * speciesSpeed, Math.max(0.12, distance - attackRange));
             pet.move((target.x - pet.x) / distance * step,
                     (target.y - pet.y) / distance * step,
                     (target.z - pet.z) / distance * step);
@@ -418,17 +437,30 @@ public final class NEXORABeasts extends PluginBase implements Listener {
         } else if (now >= attackReady) {
             double power = stat(base, "power", 5);
             double multiplier = switch (species) {
-                case "wolf", "ocelot" -> 0.42;
-                case "horse", "polar_bear", "polarbear", "panda" -> 0.52;
-                case "bee", "parrot" -> 0.32;
-                case "turtle" -> 0.38;
+                case "wolf" -> 0.50;       // Pack Hunter
+                case "bee" -> 0.46;        // Stinging Strike
+                case "horse" -> 0.58;      // Charge
+                case "polar_bear", "polarbear" -> 0.58; // Heavy Claw
+                case "panda" -> 0.60;      // Heavy Paw
+                case "ocelot", "cat" -> 0.46; // Quick Pounce
+                case "fox" -> 0.40;
+                case "rabbit" -> 0.30;
+                case "parrot" -> 0.36;
+                case "dolphin" -> 0.40;
+                case "axolotl" -> 0.42;
+                case "turtle" -> 0.40;
                 default -> 0.35;
             };
             float damage = (float) Math.max(1.0, Math.min(24.0, power * multiplier));
             gainBeastXp(owner, beastId, 10);
             target.attack(new EntityDamageByEntityEvent(
                     pet, target, EntityDamageEvent.DamageCause.ENTITY_ATTACK, damage));
-            long delay = species.equals("wolf") || species.equals("ocelot") ? 850L : 1150L;
+            long delay = switch (species) {
+                case "cat", "ocelot", "fox", "rabbit" -> 820L;
+                case "bee" -> 900L;
+                case "panda", "polar_bear", "polarbear", "horse" -> 1350L;
+                default -> 1100L;
+            };
             companionAttackCooldowns.put(attackKey, now + delay);
         }
 
@@ -457,6 +489,56 @@ public final class NEXORABeasts extends PluginBase implements Listener {
             teamUltimateDecisionCooldowns.put(owner.getUniqueId(), now + 5000L);
             useUltimate(owner, slot);
         }
+    }
+
+    private String getCompanionSpecies(Entity companion) {
+        for (Map.Entry<UUID, Map<Integer, Entity>> ownerEntry : activeCompanions.entrySet()) {
+            for (Map.Entry<Integer, Entity> petEntry : ownerEntry.getValue().entrySet()) {
+                if (petEntry.getValue() != companion) continue;
+                String ownerPath = "players." + ownerEntry.getKey();
+                String id = data.getString(ownerPath + ".team." + petEntry.getKey(), "");
+                if (id.isEmpty()) return "";
+                return data.getString(ownerPath + ".collection." + id + ".species", "")
+                        .toLowerCase(Locale.ROOT);
+            }
+        }
+        return "";
+    }
+
+    private String speciesPassiveName(String species) {
+        return switch (species.toLowerCase(Locale.ROOT)) {
+            case "wolf" -> "§6Охотник стаи";
+            case "fox" -> "§aЛовкий следопыт";
+            case "rabbit" -> "§aПрыжок уворота";
+            case "cat", "ocelot" -> "§eБыстрые когти";
+            case "bee" -> "§6Ядовитое жало";
+            case "axolotl" -> "§bВодный боец";
+            case "horse" -> "§6Разгон";
+            case "panda" -> "§fТяжёлая лапа";
+            case "polarbear", "polar_bear" -> "§bМедвежья мощь";
+            case "turtle" -> "§2Крепкий панцирь";
+            case "dolphin" -> "§bМорской рывок";
+            case "parrot" -> "§dДозор";
+            default -> "§7Инстинкт зверя";
+        };
+    }
+
+    private String speciesPassiveDescription(String species) {
+        return switch (species.toLowerCase(Locale.ROOT)) {
+            case "wolf" -> "§7Увеличенный урон в бою рядом с хозяином.";
+            case "fox" -> "§7Быстрее сближается с целью и чаще уклоняется.";
+            case "rabbit" -> "§7Самый резкий уворот и быстрое восстановление манёвра.";
+            case "cat", "ocelot" -> "§7Быстрые атаки и повышенный урон когтями.";
+            case "bee" -> "§7Усиленная атака жалом.";
+            case "axolotl" -> "§7Сбалансированный боец с усиленной атакой.";
+            case "horse" -> "§7Быстрый разгон и мощный удар с наскока.";
+            case "panda" -> "§7Мощный удар, но медленнее атакует; получает меньше урона.";
+            case "polarbear", "polar_bear" -> "§7Тяжёлый удар и сниженный входящий урон.";
+            case "turtle" -> "§7Панцирь снижает входящий урон на 35%.";
+            case "dolphin" -> "§7Быстро перемещается к противнику.";
+            case "parrot" -> "§7Замечает врагов на большем расстоянии.";
+            default -> "§7Особый природный инстинкт.";
+        };
     }
 
     private boolean isHostileMob(EntityLiving entity) {
@@ -695,6 +777,8 @@ public final class NEXORABeasts extends PluginBase implements Listener {
         String rarity = data.getString(base + ".rarity", "common");
         int level = data.getInt(base + ".level", 1);
         String details = "§7" + prettySpecies(species) + "  " + rarityColor(rarity) + "◆ " + rarityName(rarity)
+                + "\n§dПассивный навык: §f" + speciesPassiveName(species)
+                + "\n§8" + speciesPassiveDescription(species)
                 + "\n\n§fУровень: §a" + level + "\n§fБоевой опыт: §a" + data.getInt(base + ".xp", 0)
                 + "§7 / " + xpToNext(level)
                 + "\n§fОчки развития: §e" + data.getInt(base + ".upgradePoints", 0)
