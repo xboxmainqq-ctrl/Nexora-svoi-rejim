@@ -77,6 +77,11 @@ public final class NEXORABeasts extends PluginBase implements Listener {
                     else sender.sendMessage("§cИспользование: /beasts team <слот 1-3> <ID существа>");
                 }
             }
+            case "train" -> {
+                if (!requirePlayer(sender)) return true;
+                if (args.length < 2) sender.sendMessage("§cИспользование: /beasts train <ID>");
+                else trainBeast((Player) sender, args[1]);
+            }
             case "info" -> {
                 if (!requirePlayer(sender)) return true;
                 if (args.length < 2) sender.sendMessage("§cИспользование: /beasts info <ID>");
@@ -144,8 +149,9 @@ public final class NEXORABeasts extends PluginBase implements Listener {
         String[] lore = hand.getLore();
         if (lore != null) {
             for (String line : lore) {
-                if (line.startsWith("Вид: ")) species = line.substring("Вид: ".length()).trim();
-                if (line.startsWith("Редкость: ")) rarity = line.substring("Редкость: ".length()).trim().toLowerCase(Locale.ROOT);
+                String clean = stripColors(line).trim();
+                if (clean.startsWith("NEXORA_SPECIES:")) species = clean.substring("NEXORA_SPECIES:".length()).trim();
+                if (clean.startsWith("NEXORA_RARITY:")) rarity = clean.substring("NEXORA_RARITY:".length()).trim().toLowerCase(Locale.ROOT);
             }
         }
         if (!isRarity(rarity)) rarity = "common";
@@ -225,8 +231,11 @@ public final class NEXORABeasts extends PluginBase implements Listener {
         player.sendMessage("§6§lИнформация о существе");
         player.sendMessage("§fВид: §b" + prettySpecies(species));
         player.sendMessage("§fРедкость: " + rarityColor(rarity) + rarityName(rarity));
-        player.sendMessage("§fУровень: §a" + data.getInt(base + ".level", 1));
-        player.sendMessage("§fОпыт: §a" + data.getInt(base + ".xp", 0));
+        int level = data.getInt(base + ".level", 1);
+        player.sendMessage("§fУровень: §a" + level);
+        player.sendMessage("§fОпыт: §a" + data.getInt(base + ".xp", 0) + "§7 / " + xpToNext(level));
+        player.sendMessage("§fЗдоровье: §c" + stat(base, "vitality", 20) + " §8| §fАтака: §c" + stat(base, "power", 5));
+        player.sendMessage("§fЗащита: §b" + stat(base, "defense", 2) + " §8| §fПотенциал: §d" + data.getInt(base + ".potential", 0));
         player.sendMessage("§fПолучено: §7" + data.getString(base + ".source", "unknown"));
         player.sendMessage("§fID: §7" + id);
     }
@@ -280,6 +289,8 @@ public final class NEXORABeasts extends PluginBase implements Listener {
                 "§7Вид: §f" + species,
                 "§7Редкость: " + rarityColor(rarity) + rarityName(rarity),
                 "§eНажми ПКМ, чтобы вылупить существо",
+                "§0NEXORA_SPECIES:" + species,
+                "§0NEXORA_RARITY:" + rarity,
                 "§8NEXORA: BEASTS"
         );
         return egg;
@@ -316,9 +327,61 @@ public final class NEXORABeasts extends PluginBase implements Listener {
         data.set(base + ".level", 1);
         data.set(base + ".xp", 0);
         data.set(base + ".source", source);
+        data.set(base + ".potential", ThreadLocalRandom.current().nextInt(0, 6));
         data.set(base + ".created", System.currentTimeMillis());
         data.save();
         return id;
+    }
+
+    private void trainBeast(Player player, String id) {
+        if (!hasBeast(player, id)) {
+            player.sendMessage("§cСущество не найдено в твоей коллекции.");
+            return;
+        }
+        Item food = Item.get(296, 0, 1); // Wheat
+        if (!player.getInventory().contains(food)) {
+            player.sendMessage("§cДля тренировки нужна 1 пшеница.");
+            return;
+        }
+        player.getInventory().removeItem(food);
+        String base = beastPath(player, id);
+        int level = data.getInt(base + ".level", 1);
+        int xp = data.getInt(base + ".xp", 0) + 25;
+        boolean leveled = false;
+        while (level < 100 && xp >= xpToNext(level)) {
+            xp -= xpToNext(level);
+            level++;
+            leveled = true;
+        }
+        data.set(base + ".level", level);
+        data.set(base + ".xp", xp);
+        data.save();
+        player.sendMessage("§aТренировка завершена! §f" + prettySpecies(data.getString(base + ".species", "unknown")) + " §aполучил 25 опыта.");
+        if (leveled) player.sendMessage("§6§lУРОВЕНЬ ПОВЫШЕН! §eТеперь уровень " + level + ".");
+        player.sendMessage("§7Опыт: §a" + xp + "§7 / " + xpToNext(level) + " §8| §7Нужно ещё тренировок: §f" + (int) Math.ceil((xpToNext(level) - xp) / 25.0));
+    }
+
+    private int xpToNext(int level) { return 50 + (Math.max(1, level) * 50); }
+
+    private int rarityIndex(String rarity) {
+        for (int i = 0; i < RARITIES.length; i++) if (RARITIES[i].equals(rarity)) return i;
+        return 0;
+    }
+
+    private int stat(String base, String key, int fallback) {
+        int level = Math.max(1, data.getInt(base + ".level", 1));
+        int tier = rarityIndex(data.getString(base + ".rarity", "common"));
+        int potential = data.getInt(base + ".potential", 0);
+        return switch (key) {
+            case "vitality" -> 20 + tier * 8 + (level - 1) * 4 + potential * 2;
+            case "power" -> 5 + tier * 3 + (level - 1) * 2 + potential;
+            case "defense" -> 2 + tier * 2 + (level - 1) + potential / 2;
+            default -> fallback;
+        };
+    }
+
+    private String stripColors(String value) {
+        return value.replaceAll("(?i)§[0-9A-FK-OR]", "");
     }
 
     private String rollWildRarity() {
@@ -407,6 +470,7 @@ public final class NEXORABeasts extends PluginBase implements Listener {
         sender.sendMessage("§e/beasts team §7— показать активную команду");
         sender.sendMessage("§e/beasts team <1-3> <ID> §7— назначить существо");
         sender.sendMessage("§e/beasts info <ID> §7— информация о существе");
+        sender.sendMessage("§e/beasts train <ID> §7— тренировка за 1 пшеницу (+25 опыта)");
         sender.sendMessage("§e/beasts release <ID> §7— отпустить существо");
         if (sender.isOp() || sender.hasPermission("nexora.beasts.admin")) {
             sender.sendMessage("§c/beasts giveorb <игрок> [количество] §7— выдать сферы");
