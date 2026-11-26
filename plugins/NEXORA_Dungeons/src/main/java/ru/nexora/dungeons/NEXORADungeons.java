@@ -43,6 +43,7 @@ public final class NEXORADungeons extends PluginBase implements Listener {
         final Player player;
         final Difficulty difficulty;
         final Set<Long> alive = new HashSet<>();
+        final Map<Long, Entity> entities = new HashMap<>();
         int wave = 0;
         Run(Player player, Difficulty difficulty) { this.player=player; this.difficulty=difficulty; }
     }
@@ -265,6 +266,7 @@ public final class NEXORADungeons extends PluginBase implements Listener {
             }
             mob.spawnToAll();
             run.alive.add(mob.getId());
+            run.entities.put(mob.getId(), mob);
             mobOwners.put(mob.getId(), run);
         }
         if (run.alive.isEmpty()) {
@@ -301,11 +303,12 @@ public final class NEXORADungeons extends PluginBase implements Listener {
     }
 
     private void cleanupMobs(Run run) {
-        for (Long id : new HashSet<>(run.alive)) {
-            Entity entity = getServer().getEntity(id);
+        for (Map.Entry<Long, Entity> entry : new HashMap<>(run.entities).entrySet()) {
+            Entity entity = entry.getValue();
             if (entity != null && !entity.isClosed()) entity.close();
-            mobOwners.remove(id);
+            mobOwners.remove(entry.getKey());
         }
+        run.entities.clear();
         run.alive.clear();
     }
 
