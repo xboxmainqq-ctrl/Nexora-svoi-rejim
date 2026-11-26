@@ -208,12 +208,74 @@ def make_axolotl_texture():
     write_png(ROOT / "textures/entity/nexora_axolotl.png", pixels)
 
 
+
+def make_horse_texture():
+    ink=(48,30,39,255); coat=(133,73,59,255); light=(197,128,94,255)
+    cyan=(62,222,224,255); gold=(242,190,87,255); mane=(48,38,54,255)
+    pixels=[[coat for _ in range(WIDTH)] for _ in range(HEIGHT)]
+    for y in range(HEIGHT):
+        for x in range(WIDTH):
+            if (x*5+y*3)%27<3: pixels[y][x]=light
+    paint(pixels,0,0,24,3,ink); paint(pixels,0,3,24,5,light)
+    paint(pixels,24,0,16,8,coat); paint(pixels,28,2,3,3,cyan)
+    paint(pixels,36,2,3,3,gold); paint(pixels,0,16,32,12,coat)
+    paint(pixels,12,17,8,10,mane); paint(pixels,14,18,4,8,gold)
+    paint(pixels,32,16,24,12,coat)
+    for x in (32,40,48,56):
+        paint(pixels,x,18,8,8,light); paint(pixels,x,25,8,3,ink)
+    paint(pixels,0,40,16,8,mane); paint(pixels,4,40,8,8,gold)
+    paint(pixels,20,40,12,5,cyan)
+    write_png(ROOT / "textures/entity/nexora_horse.png", pixels)
+
+
+def make_panda_texture():
+    ink=(27,32,43,255); white=(235,239,231,255); black=(42,43,55,255)
+    cyan=(55,222,220,255); gold=(235,187,89,255); grey=(158,174,184,255)
+    pixels=[[white for _ in range(WIDTH)] for _ in range(HEIGHT)]
+    for y in range(HEIGHT):
+        for x in range(WIDTH):
+            if (x*7+y*11)%31<3: pixels[y][x]=grey
+    paint(pixels,0,0,24,8,white); paint(pixels,0,0,7,8,black)
+    paint(pixels,17,0,7,8,black); paint(pixels,24,0,16,8,white)
+    paint(pixels,28,2,4,3,cyan); paint(pixels,36,2,4,3,gold)
+    paint(pixels,0,16,32,12,white); paint(pixels,4,17,8,10,black)
+    paint(pixels,20,17,8,10,black); paint(pixels,14,19,4,8,cyan)
+    paint(pixels,32,16,24,12,black)
+    for x in (32,40,48,56):
+        paint(pixels,x,16,8,12,black); paint(pixels,x+2,18,4,3,white)
+    paint(pixels,0,40,16,8,black); paint(pixels,4,41,8,4,gold)
+    paint(pixels,20,40,12,5,cyan)
+    write_png(ROOT / "textures/entity/nexora_panda.png", pixels)
+
+
+def make_polar_bear_texture():
+    ink=(42,62,91,255); ice=(213,240,247,255); snow=(246,253,255,255)
+    blue=(117,195,221,255); cyan=(55,224,230,255); gold=(236,196,111,255)
+    pixels=[[ice for _ in range(WIDTH)] for _ in range(HEIGHT)]
+    for y in range(HEIGHT):
+        for x in range(WIDTH):
+            if (x*3+y*5)%25<3: pixels[y][x]=snow
+    paint(pixels,0,0,24,3,ink); paint(pixels,0,3,24,5,snow)
+    paint(pixels,24,0,16,8,ice); paint(pixels,28,2,3,3,cyan)
+    paint(pixels,36,2,3,3,gold); paint(pixels,0,16,32,12,ice)
+    paint(pixels,12,17,8,10,blue); paint(pixels,14,18,4,8,cyan)
+    paint(pixels,32,16,24,12,ice)
+    for x in (32,40,48,56):
+        paint(pixels,x,16,8,12,ice); paint(pixels,x,25,8,3,blue)
+    paint(pixels,0,40,16,8,blue); paint(pixels,4,40,8,8,cyan)
+    paint(pixels,20,40,12,5,gold)
+    write_png(ROOT / "textures/entity/nexora_polar_bear.png", pixels)
+
+
 def main():
     make_texture()
     make_fox_texture()
     make_cat_texture()
     make_bee_texture()
     make_axolotl_texture()
+    make_horse_texture()
+    make_panda_texture()
+    make_polar_bear_texture()
     BUILD.mkdir(parents=True, exist_ok=True)
     output = BUILD / "NEXORA_Beasts_RP.mcpack"
     with zipfile.ZipFile(output, "w", compression=zipfile.ZIP_DEFLATED) as archive:
