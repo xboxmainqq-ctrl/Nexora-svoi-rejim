@@ -130,7 +130,7 @@ public final class NEXORAMapBuilder extends PluginBase {
                         if (activeLevel.getBlockIdAt(wx, cy, wz) != AIR) { activeLevel.setBlockAt(wx, cy, wz, AIR); removed++; }
                         cy++; continue;
                     }
-                    queue.add(new BlockChange(wx, oy - 1, wz, STONE));
+
                 }
                 cy = oy; cz++;
                 if (cz > CLEAR_RADIUS) { cz = -CLEAR_RADIUS; cx++; }
