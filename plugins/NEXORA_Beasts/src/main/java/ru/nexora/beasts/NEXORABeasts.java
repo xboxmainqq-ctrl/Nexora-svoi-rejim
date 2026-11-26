@@ -28,6 +28,8 @@ import cn.nukkit.form.window.FormWindowSimple;
 import cn.nukkit.plugin.PluginBase;
 import cn.nukkit.utils.Config;
 import ru.nexora.beasts.entity.NexoraWolfEntity;
+import ru.nexora.beasts.entity.NexoraFoxEntity;
+import ru.nexora.beasts.entity.NexoraCatEntity;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -79,15 +81,21 @@ public final class NEXORABeasts extends PluginBase implements Listener {
             return;
         }
         data = new Config(new File(getDataFolder(), "players.yml"), Config.YAML);
-        try {
-            NexoraWolfEntity.register();
-            getLogger().info("Зарегистрирована кастомная сущность " + NexoraWolfEntity.IDENTIFIER);
-        } catch (RuntimeException ex) {
-            getLogger().warning("Не удалось зарегистрировать кастомного волка NEXORA; будет использован ванильный вид: " + ex.getMessage());
-        }
+        registerCustomEntity("волк", NexoraWolfEntity.IDENTIFIER, NexoraWolfEntity::register);
+        registerCustomEntity("лиса", NexoraFoxEntity.IDENTIFIER, NexoraFoxEntity::register);
+        registerCustomEntity("кот", NexoraCatEntity.IDENTIFIER, NexoraCatEntity::register);
         getServer().getPluginManager().registerEvents(this, this);
         getServer().getScheduler().scheduleRepeatingTask(this, this::tickCompanions, 5);
         getLogger().info("NEXORA_Beasts включён. Коллекция, GUI и система питомцев готовы.");
+    }
+
+    private void registerCustomEntity(String displayName, String identifier, Runnable registration) {
+        try {
+            registration.run();
+            getLogger().info("Зарегистрирована кастомная сущность " + identifier);
+        } catch (RuntimeException ex) {
+            getLogger().warning("Не удалось зарегистрировать " + displayName + " NEXORA; будет использован ванильный вид: " + ex.getMessage());
+        }
     }
 
     @Override
@@ -720,16 +728,23 @@ public final class NEXORABeasts extends PluginBase implements Listener {
             String species = data.getString(base + ".species", "wolf").toLowerCase(Locale.ROOT);
             Entity pet;
             try {
-                if (species.equalsIgnoreCase("wolf")) {
+                String customId = switch (species) {
+                    case "wolf" -> NexoraWolfEntity.IDENTIFIER;
+                    case "fox" -> NexoraFoxEntity.IDENTIFIER;
+                    case "cat" -> NexoraCatEntity.IDENTIFIER;
+                    default -> null;
+                };
+                String vanillaId = entityIdentifier(species);
+                if (customId != null) {
                     try {
-                        pet = Entity.createEntity(NexoraWolfEntity.IDENTIFIER, player);
+                        pet = Entity.createEntity(customId, player);
                     } catch (RuntimeException customEx) {
-                        getLogger().warning("Кастомный волк недоступен, включён ванильный fallback: " + customEx.getMessage());
-                        pet = Entity.createEntity("minecraft:wolf", player);
+                        getLogger().warning("Кастомная сущность " + species + " недоступна, включён ванильный fallback: " + customEx.getMessage());
+                        pet = Entity.createEntity(vanillaId, player);
                     }
-                    if (pet == null) pet = Entity.createEntity("minecraft:wolf", player);
+                    if (pet == null) pet = Entity.createEntity(vanillaId, player);
                 } else {
-                    pet = Entity.createEntity(entityIdentifier(species), player);
+                    pet = Entity.createEntity(vanillaId, player);
                 }
             } catch (RuntimeException ex) {
                 getLogger().warning("Не удалось создать питомца " + species + ": " + ex.getMessage());
