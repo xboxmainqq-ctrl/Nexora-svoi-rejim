@@ -67,6 +67,18 @@ jobs:
                   "models/entity/nexora_axolotl.geo.json",
                   "animations/nexora_axolotl.animation.json",
                   "textures/entity/nexora_axolotl.png",
+                  "entity/nexora_horse.entity.json",
+                  "models/entity/nexora_horse.geo.json",
+                  "animations/nexora_horse.animation.json",
+                  "textures/entity/nexora_horse.png",
+                  "entity/nexora_panda.entity.json",
+                  "models/entity/nexora_panda.geo.json",
+                  "animations/nexora_panda.animation.json",
+                  "textures/entity/nexora_panda.png",
+                  "entity/nexora_polar_bear.entity.json",
+                  "models/entity/nexora_polar_bear.geo.json",
+                  "animations/nexora_polar_bear.animation.json",
+                  "textures/entity/nexora_polar_bear.png",
               }
               missing = required - names
               if missing:
