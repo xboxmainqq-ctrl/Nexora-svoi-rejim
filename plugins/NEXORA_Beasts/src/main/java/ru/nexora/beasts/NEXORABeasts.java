@@ -14,6 +14,10 @@ import cn.nukkit.event.player.PlayerInteractEvent;
 import cn.nukkit.event.player.PlayerJoinEvent;
 import cn.nukkit.event.player.PlayerQuitEvent;
 import cn.nukkit.item.Item;
+import cn.nukkit.level.ParticleEffect;
+import cn.nukkit.level.Sound;
+import cn.nukkit.level.particle.FlameParticle;
+import cn.nukkit.math.Vector3;
 import cn.nukkit.form.element.ElementButton;
 import cn.nukkit.form.element.ElementButtonImageData;
 import cn.nukkit.form.element.ElementDropdown;
@@ -62,6 +66,8 @@ public final class NEXORABeasts extends PluginBase implements Listener {
     private final Set<UUID> pendingHatches = new HashSet<>();
     private final Map<UUID, Map<Integer, Entity>> activeCompanions = new HashMap<>();
     private final Map<String, Long> companionAttackCooldowns = new HashMap<>();
+    private final Map<String, Long> ultimateCooldowns = new HashMap<>();
+    private static final long ULTIMATE_COOLDOWN_MS = 45_000L;
     private static final int HATCH_DELAY_TICKS = 100; // 5 seconds
 
     @Override
@@ -101,6 +107,7 @@ public final class NEXORABeasts extends PluginBase implements Listener {
         UUID ownerId = event.getPlayer().getUniqueId();
         recallTeam(event.getPlayer(), false);
         companionAttackCooldowns.keySet().removeIf(key -> key.startsWith(ownerId + ":"));
+        ultimateCooldowns.keySet().removeIf(key -> key.startsWith(ownerId + ":"));
     }
 
     /**
@@ -134,7 +141,7 @@ public final class NEXORABeasts extends PluginBase implements Listener {
             companionAttackCooldowns.put(cooldownKey, now + 1200L);
 
             target.attack(new EntityDamageByEntityEvent(
-                    pet, target, EntityDamageEvent.DamageCause.ENTITY_ATTACK, damage));
+                    pet, target, EntityDamageEvent.DamageCause.ENTITY_ATTACK, (float) damage));
         }
     }
 
@@ -190,6 +197,14 @@ public final class NEXORABeasts extends PluginBase implements Listener {
             }
             case "recall", "hide" -> {
                 if (requirePlayer(sender)) recallTeam((Player) sender, true);
+            }
+            case "ultimate", "ult" -> {
+                if (!requirePlayer(sender)) return true;
+                if (args.length < 2) sender.sendMessage("§cИспользование: /beasts ultimate <слот 1-3>");
+                else {
+                    try { useUltimate((Player) sender, Integer.parseInt(args[1])); }
+                    catch (NumberFormatException ex) { sender.sendMessage("§cУкажи слот от 1 до 3."); }
+                }
             }
             case "team" -> {
                 if (requirePlayer(sender)) {
@@ -415,6 +430,7 @@ public final class NEXORABeasts extends PluginBase implements Listener {
         }
         form.addButton(new ElementButton("§a✦ ПРИЗВАТЬ КОМАНДУ"));
         form.addButton(new ElementButton("§c✕ ОТОЗВАТЬ ПИТОМЦЕВ"));
+        form.addButton(new ElementButton("§d✹ УЛЬТА ПИТОМЦА\n§8Мощная атака по области · перезарядка 45 сек"));
         form.addButton(new ElementButton("§7← ГЛАВНОЕ МЕНЮ"));
         form.addHandler(FormResponseHandler.withoutPlayer(ignored -> {
             if (form.wasClosed()) return;
@@ -422,9 +438,131 @@ public final class NEXORABeasts extends PluginBase implements Listener {
             if (selected < 3) openSelectBeastForSlot(player, selected + 1);
             else if (selected == 3) summonTeam(player);
             else if (selected == 4) { recallTeam(player, true); openTeamMenu(player); }
+            else if (selected == 5) openUltimateSlotMenu(player);
             else openMainMenu(player);
         }));
         player.showFormWindow(form);
+    }
+
+
+    private void openUltimateSlotMenu(Player player) {
+        FormWindowSimple form = new FormWindowSimple("§l§5ПРОБУЖДЕНИЕ",
+                "§7Выбери питомца, который выпустит свою ультимативную силу.\n§8Нужен призванный питомец в активной команде.");
+        List<Integer> slots = new ArrayList<>();
+        for (int slot = 1; slot <= 3; slot++) {
+            String id = data.getString(playerPath(player) + ".team." + slot, "");
+            Map<Integer, Entity> active = activeCompanions.get(player.getUniqueId());
+            Entity pet = active == null ? null : active.get(slot);
+            if (!id.isEmpty() && hasBeast(player, id) && pet != null && !pet.isClosed()) {
+                String base = beastPath(player, id);
+                form.addButton(new ElementButton("§d✹ СЛОТ " + slot + " · " +
+                        prettySpecies(data.getString(base + ".species", "unknown")) +
+                        "\n§8Сила ульты: " + Math.min(70, stat(base, "power", 5) * 2)));
+                slots.add(slot);
+            }
+        }
+        form.addButton(new ElementButton("§7← НАЗАД"));
+        form.addHandler(FormResponseHandler.withoutPlayer(ignored -> {
+            if (form.wasClosed()) return;
+            int selected = form.getResponse().getClickedButtonId();
+            if (selected < slots.size()) useUltimate(player, slots.get(selected));
+            else openTeamMenu(player);
+        }));
+        player.showFormWindow(form);
+    }
+
+    private void useUltimate(Player player, int slot) {
+        if (slot < 1 || slot > 3) {
+            player.sendMessage("§cСлот должен быть от 1 до 3.");
+            return;
+        }
+        String id = data.getString(playerPath(player) + ".team." + slot, "");
+        Map<Integer, Entity> active = activeCompanions.get(player.getUniqueId());
+        Entity pet = active == null ? null : active.get(slot);
+        if (id.isEmpty() || !hasBeast(player, id) || !(pet instanceof EntityLiving) || pet.isClosed()) {
+            player.sendMessage("§cСначала назначь и призови питомца в этот слот.");
+            return;
+        }
+
+        String cooldownKey = player.getUniqueId() + ":" + slot;
+        long now = System.currentTimeMillis();
+        long readyAt = ultimateCooldowns.getOrDefault(cooldownKey, 0L);
+        if (now < readyAt) {
+            long seconds = (readyAt - now + 999L) / 1000L;
+            player.sendMessage("§d✹ Ульта перезаряжается: §f" + seconds + " сек.");
+            return;
+        }
+
+        String base = beastPath(player, id);
+        int power = stat(base, "power", 5);
+        double damage = Math.max(8.0, Math.min(70.0, power * 2.0));
+        double centerX = pet.x;
+        double centerY = pet.y + 1.0;
+        double centerZ = pet.z;
+        EntityLiving nearest = null;
+        double nearestDistance = 12.0 * 12.0;
+
+        for (var chunk : pet.getLevel().getChunks().values()) {
+            for (Entity entity : chunk.getEntities().values()) {
+                if (!(entity instanceof EntityLiving living) || entity instanceof Player || entity == pet || entity.isClosed()) continue;
+                if (isActiveCompanion(entity)) continue;
+                double distance = pet.distanceSquared(entity);
+                if (distance < nearestDistance) {
+                    nearestDistance = distance;
+                    nearest = living;
+                }
+            }
+        }
+        if (nearest != null) {
+            centerX = nearest.x;
+            centerY = nearest.y + 1.0;
+            centerZ = nearest.z;
+        }
+
+        Vector3 center = new Vector3(centerX, centerY, centerZ);
+        var level = pet.getLevel();
+        level.addSound(center, Sound.BLOCK_BELL_HIT, 1.4f, 0.65f);
+        level.addParticleEffect(center, ParticleEffect.ENDROD);
+        level.addParticleEffect(center, ParticleEffect.EXPLOSION);
+
+        // Two luminous rings and a rising energy burst.
+        for (int i = 0; i < 32; i++) {
+            double angle = Math.PI * 2.0 * i / 32.0;
+            Vector3 outer = new Vector3(centerX + Math.cos(angle) * 3.2, centerY, centerZ + Math.sin(angle) * 3.2);
+            Vector3 inner = new Vector3(centerX + Math.cos(angle) * 1.7, centerY + 0.65, centerZ + Math.sin(angle) * 1.7);
+            level.addParticle(new FlameParticle(outer));
+            level.addParticleEffect(inner, ParticleEffect.ENDROD);
+        }
+        for (int i = 0; i < 12; i++) {
+            double angle = Math.PI * 2.0 * i / 12.0;
+            Vector3 rising = new Vector3(centerX + Math.cos(angle) * 1.1, centerY + 1.3, centerZ + Math.sin(angle) * 1.1);
+            level.addParticleEffect(rising, ParticleEffect.ENDROD);
+        }
+
+        int hitCount = 0;
+        for (var chunk : level.getChunks().values()) {
+            for (Entity entity : chunk.getEntities().values()) {
+                if (!(entity instanceof EntityLiving target) || entity instanceof Player || entity == pet || entity.isClosed()) continue;
+                if (isActiveCompanion(entity)) continue;
+                double dx = entity.x - centerX;
+                double dy = entity.y - centerY;
+                double dz = entity.z - centerZ;
+                if (dx * dx + dy * dy + dz * dz > 25.0) continue;
+                target.attack(new EntityDamageByEntityEvent(pet, target, EntityDamageEvent.DamageCause.MAGIC, (float) damage));
+                hitCount++;
+            }
+        }
+
+        ultimateCooldowns.put(cooldownKey, now + ULTIMATE_COOLDOWN_MS);
+        player.sendMessage("§d§l✹ ПРОБУЖДЕНИЕ! §r§f" + prettySpecies(data.getString(base + ".species", "питомец"))
+                + " §dобрушил энергию на область! §7Урон: §c" + (int) damage + " §8· §7Целей: §f" + hitCount);
+    }
+
+    private boolean isActiveCompanion(Entity entity) {
+        for (Map<Integer, Entity> team : activeCompanions.values()) {
+            if (team.containsValue(entity)) return true;
+        }
+        return false;
     }
 
     private void openSelectBeastForSlot(Player player, int slot) {
@@ -878,6 +1016,7 @@ public final class NEXORABeasts extends PluginBase implements Listener {
         sender.sendMessage("§e/beasts team <1-3> <ID> §7— назначить существо");
         sender.sendMessage("§e/beasts summon §7— призвать активную команду");
         sender.sendMessage("§e/beasts recall §7— отозвать питомцев");
+        sender.sendMessage("§d/beasts ultimate <1-3> §7— ульта призванного питомца (45 сек.)");
         sender.sendMessage("§e/beasts info <ID> §7— информация о существе");
         sender.sendMessage("§e/beasts train <ID> §7— тренировка за 1 пшеницу (+25 опыта)");
         sender.sendMessage("§e/beasts release <ID> §7— отпустить существо");
