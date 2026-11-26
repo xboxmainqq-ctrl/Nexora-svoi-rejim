@@ -526,6 +526,7 @@ public final class NEXORABeasts extends PluginBase implements Listener {
         float bonusDamage = (float) Math.max(2.0, Math.min(32.0, power * bonusMultiplier));
         target.attack(new EntityDamageByEntityEvent(
                 pet, target, EntityDamageEvent.DamageCause.MAGIC, bonusDamage));
+        applySpeciesSkillMotion(pet, target, species);
 
         int[] rgb = switch (species) {
             case "wolf" -> new int[]{115, 205, 255};
@@ -549,6 +550,67 @@ public final class NEXORABeasts extends PluginBase implements Listener {
             target.getLevel().addParticle(new DustParticle(point, rgb[0], rgb[1], rgb[2]));
         }
         companionAttackCooldowns.put(key, now + 7000L);
+    }
+
+    /**
+     * Species skills have distinct combat control, not only different names and damage.
+     * Motion is deliberately short and bounded so mobs are displaced without being launched
+     * across the map or into dangerous voids.
+     */
+    private void applySpeciesSkillMotion(EntityLiving pet, EntityLiving target, String species) {
+        double dx = target.x - pet.x;
+        double dz = target.z - pet.z;
+        double length = Math.sqrt(dx * dx + dz * dz);
+        if (length < 0.001) {
+            dx = 1.0;
+            dz = 0.0;
+            length = 1.0;
+        }
+        double nx = dx / length;
+        double nz = dz / length;
+        double vx = 0.0;
+        double vz = 0.0;
+        double vy = 0.12;
+        switch (species) {
+            case "wolf" -> { // stagger the prey with a firm pack hit
+                vx = nx * 0.42; vz = nz * 0.42; vy = 0.16;
+            }
+            case "fox" -> { // sidestep-like lateral feint
+                vx = -nz * 0.34; vz = nx * 0.34; vy = 0.12;
+            }
+            case "rabbit" -> { // quick moon-jump
+                vx = nx * 0.12; vz = nz * 0.12; vy = 0.48;
+            }
+            case "cat", "ocelot" -> { // short disruptive shadow swipe
+                vx = nx * 0.24; vz = nz * 0.24; vy = 0.10;
+            }
+            case "bee" -> { // sting lifts the target briefly
+                vx = nx * 0.08; vz = nz * 0.08; vy = 0.34;
+            }
+            case "axolotl" -> { // tidal pulse pushes away
+                vx = nx * 0.32; vz = nz * 0.32; vy = 0.20;
+            }
+            case "horse" -> { // heavy forward charge
+                vx = nx * 0.72; vz = nz * 0.72; vy = 0.24;
+            }
+            case "panda" -> { // powerful but controlled body-check
+                vx = nx * 0.52; vz = nz * 0.52; vy = 0.14;
+            }
+            case "polarbear", "polar_bear" -> { // strongest impact
+                vx = nx * 0.82; vz = nz * 0.82; vy = 0.28;
+            }
+            case "turtle" -> { // defensive shell burst
+                vx = nx * 0.38; vz = nz * 0.38; vy = 0.30;
+            }
+            case "dolphin" -> { // fast water-like dash
+                vx = nx * 0.58; vz = nz * 0.58; vy = 0.18;
+            }
+            case "parrot" -> { // feather gust
+                vx = nx * 0.18; vz = nz * 0.18; vy = 0.26;
+            }
+            default -> { return; }
+        }
+        target.setMotion(new Vector3(vx, vy, vz));
     }
 
     private String getCompanionDataPath(Entity companion) {
@@ -594,7 +656,21 @@ public final class NEXORABeasts extends PluginBase implements Listener {
     }
 
     private String speciesSkillDescription(String species) {
-        return "§7С вероятностью 22% наносит дополнительный особый урон. Повтор: примерно раз в 7 сек.";
+        return switch (species.toLowerCase(Locale.ROOT)) {
+            case "wolf" -> "§7Сильный удар стаи отталкивает цель. Шанс 22%, перезарядка 7 сек.";
+            case "fox" -> "§7Боковой финт сбивает цель с позиции. Шанс 22%, перезарядка 7 сек.";
+            case "rabbit" -> "§7Лунный прыжок подбрасывает врага вверх. Шанс 22%, перезарядка 7 сек.";
+            case "cat", "ocelot" -> "§7Теневой коготь слегка отбрасывает врага. Шанс 22%, перезарядка 7 сек.";
+            case "bee" -> "§7Жало приподнимает цель коротким импульсом. Шанс 22%, перезарядка 7 сек.";
+            case "axolotl" -> "§7Приливный импульс отталкивает противника. Шанс 22%, перезарядка 7 сек.";
+            case "horse" -> "§7Громовой натиск мощно отбрасывает цель. Шанс 22%, перезарядка 7 сек.";
+            case "panda" -> "§7Нефритовый кулак сбивает врага с ног. Шанс 22%, перезарядка 7 сек.";
+            case "polarbear", "polar_bear" -> "§7Ледяной удар наносит самый сильный толчок. Шанс 22%, перезарядка 7 сек.";
+            case "turtle" -> "§7Взрыв панциря подбрасывает и отталкивает врага. Шанс 22%, перезарядка 7 сек.";
+            case "dolphin" -> "§7Морской рывок резко отталкивает цель. Шанс 22%, перезарядка 7 сек.";
+            case "parrot" -> "§7Шквал перьев приподнимает противника. Шанс 22%, перезарядка 7 сек.";
+            default -> "§7Особый удар отталкивает цель. Шанс 22%, перезарядка 7 сек.";
+        };
     }
 
     private String speciesPassiveName(String species) {
