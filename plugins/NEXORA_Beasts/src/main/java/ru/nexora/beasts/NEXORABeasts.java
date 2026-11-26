@@ -575,6 +575,28 @@ public final class NEXORABeasts extends PluginBase implements Listener {
         return base.isEmpty() ? fallback : stat(base, key, fallback);
     }
 
+    private String speciesSkillName(String species) {
+        return switch (species.toLowerCase(Locale.ROOT)) {
+            case "wolf" -> "Разрыв стаи";
+            case "fox" -> "Огненный финт";
+            case "rabbit" -> "Лунный удар";
+            case "cat", "ocelot" -> "Теневой коготь";
+            case "bee" -> "Пронзающее жало";
+            case "axolotl" -> "Приливный импульс";
+            case "horse" -> "Громовой натиск";
+            case "panda" -> "Нефритовый кулак";
+            case "polarbear", "polar_bear" -> "Ледяная сокрушительная атака";
+            case "turtle" -> "Взрыв панциря";
+            case "dolphin" -> "Морской рывок";
+            case "parrot" -> "Шквал перьев";
+            default -> "Особый удар";
+        };
+    }
+
+    private String speciesSkillDescription(String species) {
+        return "§7С вероятностью 22% наносит дополнительный особый урон. Повтор: примерно раз в 7 сек.";
+    }
+
     private String speciesPassiveName(String species) {
         return switch (species.toLowerCase(Locale.ROOT)) {
             case "wolf" -> "§6Охотник стаи";
@@ -849,6 +871,8 @@ public final class NEXORABeasts extends PluginBase implements Listener {
         String details = "§7" + prettySpecies(species) + "  " + rarityColor(rarity) + "◆ " + rarityName(rarity)
                 + "\n§dПассивный навык: §f" + speciesPassiveName(species)
                 + "\n§8" + speciesPassiveDescription(species)
+                + "\n§dАктивный приём: §f" + speciesSkillName(species)
+                + "\n§8" + speciesSkillDescription(species)
                 + "\n\n§fУровень: §a" + level + "\n§fБоевой опыт: §a" + data.getInt(base + ".xp", 0)
                 + "§7 / " + xpToNext(level)
                 + "\n§fОчки развития: §e" + data.getInt(base + ".upgradePoints", 0)
@@ -985,7 +1009,7 @@ public final class NEXORABeasts extends PluginBase implements Listener {
 
         for (Entity entity : pet.getLevel().getNearbyEntities(pet.getBoundingBox().grow(12, 12, 12), pet)) {
             if (!(entity instanceof EntityLiving living) || entity instanceof Player || entity == pet || entity.isClosed()) continue;
-            if (isActiveCompanion(entity)) continue;
+            if (isActiveCompanion(entity) || !isHostileMob(living)) continue;
             double distance = pet.distanceSquared(entity);
             if (distance < nearestDistance) {
                 nearestDistance = distance;
@@ -1009,7 +1033,7 @@ public final class NEXORABeasts extends PluginBase implements Listener {
         // Search only nearby entities instead of iterating every loaded chunk on the server.
         for (Entity entity : level.getNearbyEntities(pet.getBoundingBox().grow(17, 17, 17), pet)) {
             if (!(entity instanceof EntityLiving target) || entity instanceof Player || entity == pet || entity.isClosed()) continue;
-            if (isActiveCompanion(entity)) continue;
+            if (isActiveCompanion(entity) || !isHostileMob(target)) continue;
             double dx = entity.x - centerX;
             double dy = entity.y - centerY;
             double dz = entity.z - centerZ;
@@ -1558,6 +1582,7 @@ public final class NEXORABeasts extends PluginBase implements Listener {
         data.set(base + ".level", 1);
         data.set(base + ".xp", 0);
         data.set(base + ".upgradePoints", 0);
+        data.set(base + ".ultimateLevel", 0);
         data.set(base + ".bonus.vitality", 0);
         data.set(base + ".bonus.power", 0);
         data.set(base + ".bonus.defense", 0);
