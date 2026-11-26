@@ -8,6 +8,7 @@ on:
   pull_request:
     paths:
       - "plugins/NEXORA_Beasts/**"
+      - "resource-pack/**"
       - ".github/workflows/beasts.yml"
   workflow_dispatch:
 jobs:
