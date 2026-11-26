@@ -215,12 +215,59 @@ public final class NEXORABeasts extends PluginBase implements Listener {
             return;
         }
 
-        // Do not retaliate for hits cancelled by another plugin.
+        // Do not retaliate or dodge for hits cancelled by another plugin.
         if (event.isCancelled()) return;
+
+        // Quick companions try to evade close hostile strikes instead of standing still.
+        if (isActiveCompanion(victim) && damager instanceof EntityLiving attacker
+                && attacker != victim && isHostileMob(attacker)) {
+            dodgeCompanion(victim, attacker);
+        }
 
         // If someone (mob or player) attacks the owner, the owner's team retaliates.
         if (victim instanceof Player owner && !(damager instanceof EntityLiving living && isActiveCompanion(living))) {
             defendOwner(owner, damager);
+        }
+    }
+
+    private void dodgeCompanion(Entity companion, EntityLiving attacker) {
+        if (!(companion instanceof EntityLiving pet) || pet.isClosed()
+                || attacker.isClosed() || pet.getLevel() != attacker.getLevel()) return;
+
+        for (Map.Entry<UUID, Map<Integer, Entity>> ownerEntry : activeCompanions.entrySet()) {
+            for (Map.Entry<Integer, Entity> petEntry : ownerEntry.getValue().entrySet()) {
+                if (petEntry.getValue() != companion) continue;
+                String cooldownKey = ownerEntry.getKey() + ":dodge:" + petEntry.getKey();
+                long now = System.currentTimeMillis();
+                if (now < companionAttackCooldowns.getOrDefault(cooldownKey, 0L)) return;
+
+                String beastId = "";
+                Player owner = getServer().getPlayer(ownerEntry.getKey());
+                if (owner != null) {
+                    beastId = data.getString(playerPath(owner) + ".team." + petEntry.getKey(), "");
+                }
+                String species = owner != null && !beastId.isEmpty() && hasBeast(owner, beastId)
+                        ? data.getString(beastPath(owner, beastId) + ".species", "wolf").toLowerCase(Locale.ROOT)
+                        : "wolf";
+                // Slow/heavy species use a short sidestep; agile species make a wider dodge.
+                double step = switch (species) {
+                    case "wolf", "ocelot", "fox", "rabbit", "bee", "parrot" -> 0.62;
+                    case "turtle", "panda", "polar_bear", "polarbear" -> 0.22;
+                    default -> 0.42;
+                };
+                double dx = pet.x - attacker.x;
+                double dz = pet.z - attacker.z;
+                double length = Math.sqrt(dx * dx + dz * dz);
+                if (length < 0.001) {
+                    dx = 1.0;
+                    dz = 0.0;
+                    length = 1.0;
+                }
+                pet.move(dx / length * step, 0.08, dz / length * step);
+                pet.updateMovement();
+                companionAttackCooldowns.put(cooldownKey, now + 900L);
+                return;
+            }
         }
     }
 
