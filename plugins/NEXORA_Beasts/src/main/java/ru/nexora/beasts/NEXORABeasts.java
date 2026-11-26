@@ -364,14 +364,9 @@ public final class NEXORABeasts extends PluginBase implements Listener {
             tier = Math.max(tier, rarityIndex(rarity));
         }
         if (tier < 0) return;
-        // Resource-pack particles (magic circles, sparkles, petals...): refreshed every 2nd step.
-        if (getConfig().getBoolean("custom-particles", true) && RarityAuras.customAvailable()) {
-            if (companionAuraTicks % 2 == 0
-                    && RarityAuras.sendCustom(player.getLevel(), player.x, player.y, player.z, tier)) {
-                return;
-            }
-            if (RarityAuras.customAvailable()) return;   // between refreshes while custom works
-        }
+        // Use native Bedrock particles: the optional resource-pack aura identifiers
+        // are not guaranteed to exist on the client, even when the packet API accepts them.
+        // Keep the existing ten aura designs, but always render them with visible native particles.
         RarityAuras.render(player.getLevel(), player.x, player.y, player.z, tier, companionAuraTicks * 0.35);
     }
 
