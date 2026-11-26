@@ -47,6 +47,7 @@ jobs:
               names = set(archive.namelist())
               required = {
                   "manifest.json",
+                  "font/glyph_E2.png",
                   "entity/nexora_wolf.entity.json",
                   "models/entity/nexora_wolf.geo.json",
                   "animations/nexora_wolf.animation.json",
