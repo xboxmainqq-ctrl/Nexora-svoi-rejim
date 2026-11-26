@@ -171,15 +171,17 @@ public final class NEXORABeasts extends PluginBase implements Listener {
         }
 
         pendingHatches.add(playerId);
+        final String hatchSpecies = species;
+        final String hatchRarity = rarity;
         consumeOne(player, hand);
         player.sendMessage("§6§lВылупление началось!");
         player.sendMessage("§7Яйцо заряжается магией... §eПодожди 5 секунд.");
         getServer().getScheduler().scheduleDelayedTask(this, () -> {
             pendingHatches.remove(playerId);
-            String id = addBeast(player, normalizeSpecies(species), rarity, "egg");
+            String id = addBeast(player, normalizeSpecies(hatchSpecies), hatchRarity, "egg");
             if (player.isOnline()) {
                 player.sendMessage("§a§lЯЙЦО ВЫЛУПИЛОСЬ!");
-                player.sendMessage("§f" + prettySpecies(species) + " §7[" + rarityColor(rarity) + rarityName(rarity) + "§7]");
+                player.sendMessage("§f" + prettySpecies(hatchSpecies) + " §7[" + rarityColor(hatchRarity) + rarityName(hatchRarity) + "§7]");
                 player.sendMessage("§7Новое существо добавлено в коллекцию. ID: §f" + id);
                 player.sendMessage("§7Характеристики можно посмотреть: §f/beasts info " + id);
             }
