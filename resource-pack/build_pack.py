@@ -356,6 +356,127 @@ def make_parrot_texture():
 
 
 
+# Species palettes and UV-aware texture painter. The previous prototype painted
+# arbitrary rectangles that did not match each model's actual cube UV layout.
+SPECIES_PALETTES = {
+    "wolf": ((87, 105, 126, 255), (151, 171, 190, 255), (37, 51, 69, 255), (64, 218, 215, 255), (226, 232, 235, 255)),
+    "fox": ((190, 91, 43, 255), (244, 178, 105, 255), (76, 39, 31, 255), (255, 205, 103, 255), (250, 229, 193, 255)),
+    "cat": ((79, 72, 104, 255), (164, 151, 181, 255), (35, 31, 52, 255), (88, 225, 218, 255), (226, 207, 218, 255)),
+    "bee": ((232, 177, 47, 255), (255, 222, 111, 255), (38, 43, 57, 255), (75, 221, 218, 255), (255, 241, 190, 255)),
+    "axolotl": ((151, 125, 190, 255), (219, 184, 218, 255), (62, 52, 100, 255), (83, 225, 224, 255), (255, 151, 190, 255)),
+    "horse": ((127, 73, 55, 255), (202, 139, 103, 255), (49, 36, 43, 255), (241, 188, 85, 255), (229, 207, 177, 255)),
+    "panda": ((225, 231, 225, 255), (255, 255, 246, 255), (37, 42, 48, 255), (86, 194, 145, 255), (177, 190, 187, 255)),
+    "polar_bear": ((211, 231, 241, 255), (250, 255, 255, 255), (74, 108, 135, 255), (80, 207, 229, 255), (166, 218, 235, 255)),
+    "rabbit": ((172, 153, 187, 255), (231, 216, 233, 255), (67, 54, 83, 255), (244, 143, 184, 255), (248, 233, 238, 255)),
+    "ocelot": ((210, 157, 82, 255), (250, 219, 158, 255), (82, 52, 42, 255), (73, 207, 193, 255), (245, 229, 194, 255)),
+    "turtle": ((91, 151, 112, 255), (157, 205, 151, 255), (34, 72, 64, 255), (62, 220, 208, 255), (202, 229, 174, 255)),
+    "dolphin": ((73, 137, 171, 255), (177, 222, 230, 255), (34, 70, 98, 255), (73, 222, 222, 255), (235, 249, 246, 255)),
+    "parrot": ((127, 85, 173, 255), (192, 145, 219, 255), (48, 39, 82, 255), (67, 218, 211, 255), (245, 193, 91, 255)),
+}
+
+
+def _rect(pixels, x, y, w, h, color):
+    x0, y0 = int(round(x)), int(round(y))
+    x1, y1 = int(round(x + w)), int(round(y + h))
+    for py in range(max(0, y0), min(HEIGHT, y1)):
+        for px in range(max(0, x0), min(WIDTH, x1)):
+            pixels[py][px] = color
+
+
+def _shade(color, factor):
+    return tuple(max(0, min(255, int(channel * factor))) for channel in color[:3]) + (color[3],)
+
+
+def make_entity_texture(species):
+    """Paint each cuboid into its real Bedrock UV net, with species details."""
+    model_path = ROOT / "models/entity" / f"nexora_{species}.geo.json"
+    model = json.loads(model_path.read_text(encoding="utf-8"))
+    geometry = model["minecraft:geometry"][0]
+    base, light, dark, accent, cream = SPECIES_PALETTES[species]
+    pixels = [[(0, 0, 0, 0) for _ in range(WIDTH)] for _ in range(HEIGHT)]
+
+    for bone in geometry["bones"]:
+        bone_name = bone["name"].lower()
+        for cube_index, cube in enumerate(bone.get("cubes", [])):
+            uv = cube.get("uv")
+            if not isinstance(uv, list) or len(uv) != 2:
+                continue
+            u, v = uv
+            w, h, d = cube["size"]
+            # Standard Bedrock box UV net: left/front/right/back + top/bottom.
+            faces = [
+                ("left", u, v + d, d, h, 0.78),
+                ("front", u + d, v + d, w, h, 1.00),
+                ("right", u + d + w, v + d, d, h, 0.86),
+                ("back", u + 2 * d + w, v + d, w, h, 0.68),
+                ("top", u + d, v, w, d, 1.12),
+                ("bottom", u + d + w, v, w, d, 0.62),
+            ]
+            for face, fx, fy, fw, fh, factor in faces:
+                color = _shade(light if face == "top" else base, factor)
+                if "shell" in bone_name:
+                    color = _shade((116, 174, 119, 255) if face == "top" else base, factor)
+                if "mane" in bone_name or "leg" in bone_name and species == "horse":
+                    color = _shade(dark, 1.08 if face == "top" else 0.9)
+                if "wing" in bone_name or "fin" in bone_name or "gill" in bone_name:
+                    color = _shade(accent if "gill" in bone_name else light, factor)
+                if "scarf" in bone_name:
+                    color = _shade(accent, factor)
+                if "ear" in bone_name:
+                    color = _shade(accent if species in ("rabbit", "cat", "fox") else dark, factor)
+                if "tail" in bone_name:
+                    color = _shade(light if face == "top" else base, factor)
+                _rect(pixels, fx, fy, fw, fh, color)
+
+                # Fur grain and species markings are painted only inside mapped faces.
+                x0, y0 = int(round(fx)), int(round(fy))
+                x1, y1 = int(round(fx + fw)), int(round(fy + fh))
+                for py in range(max(0, y0 + 1), min(HEIGHT, y1 - 1)):
+                    for px in range(max(0, x0 + 1), min(WIDTH, x1 - 1)):
+                        seed = (px * 17 + py * 29 + len(bone_name) * 7 + cube_index * 13)
+                        if species == "ocelot" and seed % 17 < 3 and "body" in bone_name:
+                            pixels[py][px] = dark
+                        elif species == "bee" and "body" in bone_name and (py // 2) % 3 == 1:
+                            pixels[py][px] = dark
+                        elif species == "panda" and ("leg" in bone_name or "body" in bone_name and cube_index == 0):
+                            if seed % 23 < 4:
+                                pixels[py][px] = dark
+                        elif species == "parrot" and (px + py) % 7 < 2:
+                            pixels[py][px] = _shade(accent, 0.9)
+                        elif seed % 31 < 2:
+                            pixels[py][px] = light
+
+                # Dark seam and a fine highlight make cube edges read cleanly in-game.
+                _rect(pixels, fx, fy, fw, 1, _shade(dark, 0.9))
+                _rect(pixels, fx, fy + fh - 1, fw, 1, _shade(dark, 0.82))
+
+                # Face details on the first head cube: eyes, muzzle and nose.
+                if bone_name == "head" and cube_index == 0 and face == "front" and fw >= 4 and fh >= 4:
+                    eye_y = fy + max(1, round(fh * 0.34))
+                    eye_left = fx + max(1, round(fw * 0.22))
+                    eye_right = fx + min(round(fw - 2), round(fw * 0.78))
+                    for eye_x in (eye_left, eye_right):
+                        _rect(pixels, eye_x, eye_y, 1, 1, dark)
+                        if eye_y + 1 < fy + fh:
+                            _rect(pixels, eye_x, eye_y + 1, 1, 1, accent)
+                    muzzle_y = fy + max(2, round(fh * 0.64))
+                    _rect(pixels, fx + max(1, round(fw * 0.28)), muzzle_y, max(1, round(fw * 0.44)), max(1, round(fh * 0.22)), cream)
+                    _rect(pixels, fx + round(fw / 2), muzzle_y, 1, 1, dark)
+
+                # Tail tips, paws, gill edges and decorative species markings.
+                if "leg" in bone_name and fh >= 3:
+                    _rect(pixels, fx, fy + fh - 2, fw, 2, dark)
+                if "tail" in bone_name and fw >= 2 and fh >= 2:
+                    _rect(pixels, fx + max(0, round(fw * 0.35)), fy + max(0, round(fh * 0.35)), max(1, round(fw * 0.3)), max(1, round(fh * 0.3)), accent)
+                if "gill" in bone_name or "fin" in bone_name or "wing" in bone_name:
+                    _rect(pixels, fx, fy, fw, 1, cream)
+                if "shell" in bone_name and face == "top":
+                    for sy in range(int(fy) + 1, int(fy + fh) - 1, 3):
+                        _rect(pixels, fx + 1, sy, max(1, fw - 2), 1, _shade(dark, 0.72))
+
+    write_png(ROOT / "textures/entity" / f"nexora_{species}.png", pixels)
+
+
 # Per-letter rarity font for Bedrock name tags.
 # Every rarity label gets its own PUA glyph sequence so each character can
 # carry a different baked-in color without animation or § formatting codes.
@@ -405,32 +526,43 @@ def make_rarity_font():
     def blend(start, end, amount):
         return tuple(round(start[i] + (end[i] - start[i]) * amount) for i in range(3))
 
-    yellow = (255, 231, 92)
-    orange = (255, 132, 35)
-    shadow = (83, 43, 20, 180)
+    # Each rarity has its own two-tone identity; legendary keeps the
+    # requested yellow-to-orange gradient while the other ranks are distinct.
+    rarity_gradients = [
+        ((205, 216, 226), (105, 121, 141)),  # common: steel
+        ((171, 246, 139), (36, 157, 91)),    # uncommon: green
+        ((120, 232, 255), (37, 112, 218)),   # rare: blue
+        ((222, 163, 255), (117, 58, 196)),   # epic: violet
+        ((255, 239, 112), (255, 132, 35)),   # legendary: yellow -> orange
+        ((255, 157, 218), (171, 49, 190)),   # mythic: pink -> magenta
+        ((143, 246, 218), (20, 119, 128)),   # ancient: jade
+        ((255, 251, 207), (205, 160, 66)),   # divine: pearl -> gold
+        ((255, 132, 132), (137, 24, 45)),    # forbidden: crimson
+        ((255, 255, 255), (126, 111, 229)),  # absolute: white -> astral violet
+    ]
+    shadow = (29, 24, 38, 220)
 
-    for label in RARITY_LABELS:
+    for rarity_index, label in enumerate(RARITY_LABELS):
+        start_color, end_color = rarity_gradients[rarity_index]
         for position, char in enumerate(label):
             pattern = FONT_5X7[char]
             t = position / max(1, len(label) - 1)
-            rgb = blend(yellow, orange, t)
+            rgb = blend(start_color, end_color, t)
             col = glyph_index % 16
             row = glyph_index // 16
-            ox = col * cell + 3
-            oy = row * cell + 1
+            # Compact 5x7 lettering instead of the oversized 10x14 version.
+            ox = col * cell + 5
+            oy = row * cell + 4
 
-            # Two-pixel pixel-art scaling with a subtle one-pixel shadow.
             for py, line in enumerate(pattern):
                 for px, bit in enumerate(line):
                     if bit != "1":
                         continue
-                    x = ox + px * 2
-                    y = oy + py * 2
-                    for sy in range(2):
-                        for sx in range(2):
-                            if 0 <= x + sx + 1 < size and 0 <= y + sy + 1 < size:
-                                pixels[y + sy + 1][x + sx + 1] = shadow
-                            pixels[y + sy][x + sx] = (*rgb, 255)
+                    x = ox + px
+                    y = oy + py
+                    if 0 <= x + 1 < size and 0 <= y + 1 < size:
+                        pixels[y + 1][x + 1] = shadow
+                    pixels[y][x] = (*rgb, 255)
             glyph_index += 1
 
     # PNG uses a 16x16 grid of 16px cells, matching Bedrock glyph sheets.
@@ -446,19 +578,11 @@ def make_rarity_font():
 
 
 def main():
-    make_texture()
-    make_fox_texture()
-    make_cat_texture()
-    make_bee_texture()
-    make_axolotl_texture()
-    make_horse_texture()
-    make_panda_texture()
-    make_polar_bear_texture()
-    make_rabbit_texture()
-    make_ocelot_texture()
-    make_turtle_texture()
-    make_dolphin_texture()
-    make_parrot_texture()
+    for species in (
+        "wolf", "fox", "cat", "bee", "axolotl", "horse", "panda",
+        "polar_bear", "rabbit", "ocelot", "turtle", "dolphin", "parrot",
+    ):
+        make_entity_texture(species)
     make_rarity_font()
     BUILD.mkdir(parents=True, exist_ok=True)
     output = BUILD / "NEXORA_Beasts_RP.mcpack"
