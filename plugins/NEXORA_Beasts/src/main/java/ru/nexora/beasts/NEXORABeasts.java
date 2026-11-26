@@ -81,6 +81,8 @@ public final class NEXORABeasts extends PluginBase implements Listener {
     private final Map<UUID, Map<Integer, Entity>> activeCompanions = new HashMap<>();
     private final Map<String, Long> companionAttackCooldowns = new HashMap<>();
     private final Map<String, Long> ultimateCooldowns = new HashMap<>();
+    private final Map<UUID, EntityLiving> ownerFocusTargets = new HashMap<>();
+    private final Map<UUID, Long> teamUltimateDecisionCooldowns = new HashMap<>();
     private static final long ULTIMATE_COOLDOWN_MS = 45_000L;
     private static final int HATCH_DELAY_TICKS = 100; // 5 seconds
     private int companionAuraTicks;
@@ -145,6 +147,8 @@ public final class NEXORABeasts extends PluginBase implements Listener {
         recallTeam(event.getPlayer(), false);
         companionAttackCooldowns.keySet().removeIf(key -> key.startsWith(ownerId + ":"));
         ultimateCooldowns.keySet().removeIf(key -> key.startsWith(ownerId + ":"));
+        ownerFocusTargets.remove(ownerId);
+        teamUltimateDecisionCooldowns.remove(ownerId);
     }
 
     /**
@@ -159,6 +163,9 @@ public final class NEXORABeasts extends PluginBase implements Listener {
 
         Map<Integer, Entity> companions = activeCompanions.get(owner.getUniqueId());
         if (companions == null || companions.isEmpty()) return;
+        // Remember the hostile mob the owner deliberately attacks so every pet
+        // in the squad can coordinate on the same priority target.
+        if (isHostileMob(target)) ownerFocusTargets.put(owner.getUniqueId(), target);
 
         long now = System.currentTimeMillis();
         for (Map.Entry<Integer, Entity> entry : companions.entrySet()) {
@@ -320,6 +327,18 @@ public final class NEXORABeasts extends PluginBase implements Listener {
                 target = living;
             }
         }
+
+        // Squad focus: prefer the hostile mob the owner is currently fighting.
+        EntityLiving focused = ownerFocusTargets.get(owner.getUniqueId());
+        if (focused != null && (focused.isClosed() || focused.getLevel() != pet.getLevel()
+                || !isHostileMob(focused))) {
+            ownerFocusTargets.remove(owner.getUniqueId());
+            focused = null;
+        }
+        if (focused != null && pet.distanceSquared(focused) <= 196.0) {
+            target = focused;
+            nearestDistance = pet.distanceSquared(focused);
+        }
         if (target == null) return;
 
         String base = beastPath(owner, beastId);
@@ -358,17 +377,30 @@ public final class NEXORABeasts extends PluginBase implements Listener {
             companionAttackCooldowns.put(attackKey, now + delay);
         }
 
-        // The AI saves the ultimate for a group fight, or a dangerous close-range encounter.
+        // Count enemies clustered around the chosen target, not scattered across
+        // the whole search radius; this prevents wasting an ultimate on a loose group.
+        int clusteredEnemies = 0;
+        for (Entity entity : target.getLevel().getNearbyEntities(
+                target.getBoundingBox().grow(5, 4, 5), target)) {
+            if (entity instanceof EntityLiving living && living != target && !living.isClosed()
+                    && !(living instanceof Player) && !isActiveCompanion(living)
+                    && isHostileMob(living) && target.distanceSquared(living) <= 25.0) {
+                clusteredEnemies++;
+            }
+        }
+
+        // The AI saves the ultimate for a real cluster or a dangerous close-range fight.
         String rarity = data.getString(base + ".rarity", "common").toLowerCase(Locale.ROOT);
         boolean highRarity = List.of("epic", "legendary", "mythic", "ancient",
                 "divine", "forbidden", "absolute").contains(rarity);
-        boolean groupFight = enemiesNearby >= 2;
+        boolean groupFight = clusteredEnemies >= 2;
         boolean closeDanger = nearestDistance <= 2.25 && highRarity;
-        if (groupFight || closeDanger) {
-            String ultimateKey = owner.getUniqueId() + ":" + slot;
-            if (now >= ultimateCooldowns.getOrDefault(ultimateKey, 0L)) {
-                useUltimate(owner, slot);
-            }
+        String ultimateKey = owner.getUniqueId() + ":" + slot;
+        long teamDecisionReady = teamUltimateDecisionCooldowns.getOrDefault(owner.getUniqueId(), 0L);
+        if ((groupFight || closeDanger) && now >= teamDecisionReady
+                && now >= ultimateCooldowns.getOrDefault(ultimateKey, 0L)) {
+            teamUltimateDecisionCooldowns.put(owner.getUniqueId(), now + 5000L);
+            useUltimate(owner, slot);
         }
     }
 
