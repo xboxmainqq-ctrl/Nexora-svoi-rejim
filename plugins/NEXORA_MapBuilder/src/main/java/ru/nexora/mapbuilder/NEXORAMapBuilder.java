@@ -32,7 +32,8 @@ public final class NEXORAMapBuilder extends PluginBase {
     private Level activeLevel;
     private Player activePlayer;
     private boolean clearing;
-    private static final int CLEAR_RADIUS = 60, CLEAR_TOP = 127, CLEAR_BUDGET = 1200, PLACE_BUDGET = 400;
+    private static final int CLEAR_RADIUS = 128, CLEAR_TOP = 255, CLEAR_BUDGET = 5000, PLACE_BUDGET = 1200;
+    private int buildStage = 1;
     private static final class BlockChange {
         final int x, y, z, id;
         BlockChange(int x, int y, int z, int id) { this.x=x; this.y=y; this.z=z; this.id=id; }
@@ -103,18 +104,18 @@ public final class NEXORAMapBuilder extends PluginBase {
     private void buildArden(Player p) {
         if (taskId != -1) { p.sendMessage("§cГенератор уже работает."); return; }
         activeLevel = p.getLevel(); activePlayer = p;
-        ox = p.getFloorX(); oy = Math.max(5, p.getFloorY()); oz = p.getFloorZ();
+        ox = p.getFloorX(); oy = 64; oz = p.getFloorZ();
         String marker = "builds.arden." + activeLevel.getFolderName();
         if (locations.getBoolean(marker + ".complete", false)) {
             p.sendMessage("§eАрден уже отмечен как построенный. Повторный запуск отключён, чтобы не затереть город.");
             activeLevel = null; activePlayer = null; return;
         }
-        queue.clear(); placed = 0; removed = 0; clearing = true;
+        queue.clear(); placed = 0; removed = 0; clearing = true; buildStage = 1;
         cx = -CLEAR_RADIUS; cz = -CLEAR_RADIUS; cy = oy;
         locations.set(marker + ".active", true); locations.set(marker + ".originX", ox);
         locations.set(marker + ".originY", oy); locations.set(marker + ".originZ", oz); locations.save();
-        p.sendMessage("§6[Арден] §eЭтап 1/2: постепенно очищаю круглую площадку радиусом 60 блоков.");
-        p.sendMessage("§cВнимание: территория внутри круга будет очищена от деревьев, гор, воды и построек!");
+        p.sendMessage("§6[Арден] §eЭтап 1/8: очищаю круглую территорию диаметром 256 блоков.");
+        p.sendMessage("§cВНИМАНИЕ: будут удалены блоки внутри круга радиусом 128 блоков от Y=64 до Y=255, включая постройки!");
         taskId = getServer().getScheduler().scheduleRepeatingTask(this, () -> generationTick(marker), 1).getTaskId();
     }
 
@@ -135,8 +136,9 @@ public final class NEXORAMapBuilder extends PluginBase {
                 cy = oy; cz++;
                 if (cz > CLEAR_RADIUS) { cz = -CLEAR_RADIUS; cx++; }
                 if (cx > CLEAR_RADIUS) {
-                    clearing = false; queueArden(marker);
-                    if (activePlayer != null) activePlayer.sendMessage("§a[Арден] Площадка очищена. §eНачинаю постепенное строительство города.");
+                    clearing = false; buildStage = 2; locations.set(marker + ".stage", buildStage); locations.save();
+                    if (activePlayer != null) activePlayer.sendMessage("§a[Арден] Этап 1/8 завершён. Начинаю выравнивание (2/8).");
+                    queueArden(marker);
                     break;
                 }
             }
@@ -148,33 +150,83 @@ public final class NEXORAMapBuilder extends PluginBase {
             BlockChange c = queue.poll(); activeLevel.setBlockAt(c.x, c.y, c.z, c.id); placed++;
         }
         if (queue.isEmpty()) {
-            locations.set(marker + ".complete", true); locations.set(marker + ".active", false);
-            putPoint("spawn", activeLevel, ox, oy + 1, oz, 0, 0);
-            putPoint("castle", activeLevel, ox - 30, oy + 1, oz - 29, 0, 0);
-            putPoint("market", activeLevel, ox + 23, oy + 1, oz - 29, 0, 0);
-            putPoint("arena", activeLevel, ox, oy + 1, oz + 43, 0, 0);
-            putPoint("sanctuary", activeLevel, ox - 34, oy + 1, oz + 25, 0, 0);
+            if (buildStage < 7) {
+                buildStage++; locations.set(marker + ".stage", buildStage); locations.save();
+                if (activePlayer != null) activePlayer.sendMessage("§6[Арден] Этап " + buildStage + "/8: " + stageName(buildStage));
+                queueArden(marker); return;
+            }
+            putPoint("spawn", activeLevel, ox, oy + 2, oz, 0, 0);
+            putPoint("castle", activeLevel, ox, oy + 2, oz - 78, 0, 0);
+            putPoint("market", activeLevel, ox + 65, oy + 2, oz - 10, 0, 0);
+            putPoint("arena", activeLevel, ox, oy + 2, oz + 75, 0, 0);
+            putPoint("sanctuary", activeLevel, ox - 65, oy + 2, oz + 10, 0, 0);
+            locations.set(marker + ".stage", 8); locations.set(marker + ".complete", true); locations.set(marker + ".active", false);
             locations.save();
-            if (activePlayer != null) activePlayer.sendMessage("§a[Арден] Город построен! Установлено блоков: §f" + placed);
+            if (activePlayer != null) activePlayer.sendMessage("§a[Арден] Этап 8/8 завершён! Арден готов. Блоков: §f" + placed);
             stopGeneration();
-        } else if (activePlayer != null && placed > 0 && placed % 10000 < PLACE_BUDGET) {
-            activePlayer.sendMessage("§6[Арден] §eПоставлено: §f" + placed + " §7| в очереди: §f" + queue.size());
+        } else if (activePlayer != null && placed > 0 && placed % 50000 < PLACE_BUDGET) {
+            activePlayer.sendMessage("§6[Арден] Этап " + buildStage + "/8 | блоков: §f" + placed + " §7| очередь: §f" + queue.size());
         }
     }
 
+    private String stageName(int n) {
+        return switch(n) {
+            case 2 -> "выравнивание круглой площадки";
+            case 3 -> "центральная площадь и кольцевые дороги";
+            case 4 -> "круговая стена, башни и ворота";
+            case 5 -> "главные здания столицы";
+            case 6 -> "жилые кварталы";
+            case 7 -> "сады, фонари и декор";
+            default -> "финальная отделка";
+        };
+    }
+
     private void queueArden(String marker) {
-        Level w = activeLevel;
-        for (int x=-58;x<=58;x++) for (int z=-58;z<=58;z++) {
-            if (x*x+z*z > 58*58) continue;
-            b(w,ox+x,oy-1,oz+z,STONE);
-            if (Math.abs(x)<=3 || Math.abs(z)<=3) b(w,ox+x,oy,oz+z,COBBLE);
-            else if (Math.abs(x)<54 && Math.abs(z)<54) b(w,ox+x,oy,oz+z,GRASS);
+        Level w=activeLevel;
+        if(buildStage==2) {
+            for(int x=-CLEAR_RADIUS;x<=CLEAR_RADIUS;x++) for(int z=-CLEAR_RADIUS;z<=CLEAR_RADIUS;z++)
+                if(x*x+z*z<=CLEAR_RADIUS*CLEAR_RADIUS) b(w,ox+x,oy-1,oz+z,STONE);
+        } else if(buildStage==3) {
+            for(int r=24;r<=116;r+=24) for(int a=0;a<360;a+=2) {
+                double t=Math.toRadians(a); int x=ox+(int)Math.round(Math.cos(t)*r), z=oz+(int)Math.round(Math.sin(t)*r);
+                fill(w,x-2,oy,z-2,x+2,oy,z+2,STONE_BRICK);
+            }
+            for(int a=0;a<360;a+=45) { double t=Math.toRadians(a); for(int r=10;r<=124;r++) {
+                int x=ox+(int)Math.round(Math.cos(t)*r), z=oz+(int)Math.round(Math.sin(t)*r);
+                fill(w,x-2,oy,z-2,x+2,oy,z+2,COBBLE);
+            }}
+            plaza(w,ox,oy,oz);
+        } else if(buildStage==4) {
+            for(int a=0;a<360;a++) { double t=Math.toRadians(a); int x=ox+(int)Math.round(Math.cos(t)*124), z=oz+(int)Math.round(Math.sin(t)*124);
+                fill(w,x,oy+1,z,x,oy+8,z,STONE_BRICK);
+                if(a%12==0) { fill(w,x-2,oy+9,z-2,x+2,oy+12,z+2,QUARTZ); b(w,x,oy+13,z,GLOWSTONE); }
+            }
+            for(int a=0;a<360;a+=90) { double t=Math.toRadians(a); int x=ox+(int)Math.round(Math.cos(t)*124),z=oz+(int)Math.round(Math.sin(t)*124);
+                for(int side=-1;side<=1;side+=2) { int tx=x+(int)Math.round(-Math.sin(t)*side*8),tz=z+(int)Math.round(Math.cos(t)*side*8);
+                    fill(w,tx-3,oy+1,tz-3,tx+3,oy+18,tz+3,STONE_BRICK); fill(w,tx-4,oy+19,tz-4,tx+4,oy+19,tz+4,QUARTZ); b(w,tx,oy+20,tz,GLOWSTONE);
+                }
+            }
+        } else if(buildStage==5) {
+            castle(w,ox-18,oy,oz-104); marketHouse(w,ox+54,oy,oz-28,19,17); marketHouse(w,ox+75,oy,oz-8,17,19);
+            marketHouse(w,ox+54,oy,oz+14,19,17); sanctuary(w,ox-94,oy,oz+20); guild(w,ox+72,oy,oz+55); arena(w,ox,oy,oz+82);
+            shell(w,ox-92,oy,oz-60,23,21,STONE_BRICK,QUARTZ);
+            shell(w,ox+38,oy,oz+82,23,21,BRICK,WOOL);
+            shell(w,ox-38,oy,oz+84,23,21,STONE_BRICK,PRISMARINE);
+        } else if(buildStage==6) {
+            int n=0;
+            for(int x=-108;x<=108;x+=15) for(int z=-108;z<=108;z+=15) {
+                int d=x*x+z*z; if(d<43*43||d>116*116||(Math.abs(x)<24&&Math.abs(z)<24)) continue;
+                if((Math.abs(x)<30&&Math.abs(z-82)<28)||(Math.abs(x+94)<18&&Math.abs(z-20)<20)) continue;
+                int sx=9+(n%3)*2,sz=9+((n/3)%3)*2,bx=ox+x-sx/2,bz=oz+z-sz/2;
+                shell(w,bx,oy,bz,sx,sz,n%4==0?STONE_BRICK:BRICK,n%3==0?QUARTZ:WOOL); n++;
+            }
+        } else if(buildStage==7) {
+            for(int r=42;r<=108;r+=22) for(int a=0;a<360;a+=12) { double t=Math.toRadians(a); int x=ox+(int)Math.round(Math.cos(t)*r),z=oz+(int)Math.round(Math.sin(t)*r);
+                lamp(w,x,oy,z); if(a%24==0) { fill(w,x-2,oy,z-2,x+2,oy,z+2,GRASS); fill(w,x,oy+1,z,x,oy+4,z,LOG); fill(w,x-2,oy+4,z-2,x+2,oy+6,z+2,LEAVES); }
+            }
+            avenueTrees(w,ox,oy,oz);
         }
-        plaza(w,ox,oy,oz); castle(w,ox-30,oy,oz-29);
-        marketHouse(w,ox+23,oy,oz-29,15,13); marketHouse(w,ox+39,oy,oz-13,13,15);
-        marketHouse(w,ox+23,oy,oz+5,15,13); sanctuary(w,ox-34,oy,oz+25);
-        guild(w,ox+31,oy,oz+28); arena(w,ox,oy,oz+43); perimeter(w,ox,oy,oz); avenueTrees(w,ox,oy,oz);
-        locations.set(marker + ".queuedBlocks", queue.size()); locations.save();
+        locations.set(marker+".stage",buildStage); locations.set(marker+".queuedBlocks",queue.size()); locations.save();
     }
 
     private void stopGeneration() {
@@ -330,6 +382,6 @@ public final class NEXORAMapBuilder extends PluginBase {
         s.sendMessage("§e/nexora setloc <имя> §7— сохранить точку");
         s.sendMessage("§e/nexora locations §7— список точек");
         s.sendMessage("§e/nexora tp <имя> §7— телепорт");
-        s.sendMessage("§e/nexora build arden §7— очистить место и постепенно построить Арден");
+        s.sendMessage("§e/nexora build arden §7— круглая столица Арден, 8 этапов");
     }
 }
