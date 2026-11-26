@@ -273,15 +273,18 @@ public final class NEXORABeasts extends PluginBase implements Listener {
                 cn.nukkit.math.Vector3 target = player.add(
                         companionOffsetX(entry.getKey()), 0, companionOffsetZ(entry.getKey()));
                 double dx = target.x - pet.x;
+                double dy = target.y - pet.y;
                 double dz = target.z - pet.z;
-                double distanceSquared = dx * dx + dz * dz;
+                double distanceSquared = dx * dx + dy * dy + dz * dz;
 
-                if (distanceSquared > 144) {
+                // Follow in 3D so companions do not get stranded when the owner
+                // climbs, jumps down, or changes elevation.
+                if (distanceSquared > 144 || Math.abs(dy) > 6.0) {
                     pet.teleport(target);
                 } else if (distanceSquared > 2.25) {
                     double distance = Math.sqrt(distanceSquared);
                     double step = Math.min(0.32, distance - 1.0);
-                    pet.move(dx / distance * step, 0, dz / distance * step);
+                    pet.move(dx / distance * step, dy / distance * step, dz / distance * step);
                     pet.updateMovement();
                 }
             }
