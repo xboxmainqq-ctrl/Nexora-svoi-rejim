@@ -88,7 +88,9 @@ public final class NEXORABeasts extends PluginBase implements Listener {
     @EventHandler
     public void onPlayerJoin(PlayerJoinEvent event) {
         Player player = event.getPlayer();
-        getServer().getScheduler().scheduleDelayedTask(this, () -> summonTeam(player), 20);
+        getServer().getScheduler().scheduleDelayedTask(this, () -> {
+            if (player.isOnline() && teamCount(player) > 0) summonTeam(player);
+        }, 20);
     }
 
     @EventHandler
