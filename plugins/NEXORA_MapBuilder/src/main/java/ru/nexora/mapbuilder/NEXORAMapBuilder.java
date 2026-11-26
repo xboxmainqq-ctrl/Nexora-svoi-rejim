@@ -249,6 +249,7 @@ public final class NEXORAMapBuilder extends PluginBase {
                 double t=Math.toRadians(a); int gx=ox+(int)Math.round(Math.cos(t)*110),gz=oz+(int)Math.round(Math.sin(t)*110);
                 for(int side=-1;side<=1;side+=2){int px=gx+(int)Math.round(-Math.sin(t)*side*4),pz=gz+(int)Math.round(Math.cos(t)*side*4);fill(w,px,oy+1,pz,px,oy+8,pz,QUARTZ);b(w,px,oy+9,pz,GLOWSTONE);}
             }
+            microDetails(w,ox,oy,oz);
         }
         locations.set(marker+".stage",buildStage); locations.set(marker+".queuedBlocks",queue.size()); locations.save();
     }
@@ -337,6 +338,52 @@ public final class NEXORAMapBuilder extends PluginBase {
         for(int xx=door-2;xx<=door+2;xx+=2)b(w,xx,y+7,z-1,FENCE);
         for(int xx=x+2;xx<x+sx-2;xx+=4)lamp(w,xx,y,z-2);
     }
+    private void microDetails(Level w,int x,int y,int z) {
+        // Small street furniture and planted corners around the civic districts.
+        for(int r=34;r<=94;r+=20) {
+            for(int a=0;a<360;a+=30) {
+                double t=Math.toRadians(a);
+                int px=x+(int)Math.round(Math.cos(t)*r), pz=z+(int)Math.round(Math.sin(t)*r);
+                if(a%60==0) {
+                    fill(w,px-1,y,pz-1,px+1,y,pz+1,GRASS);
+                    b(w,px,y+1,pz,LEAVES);
+                    b(w,px-1,y+1,pz,WOOL); b(w,px+1,y+1,pz,WOOL);
+                } else {
+                    b(w,px,y+1,pz,COBBLE);
+                    b(w,px,y+2,pz,QUARTZ);
+                }
+            }
+        }
+        // Four small covered wayfinding posts at the principal approaches.
+        for(int a=0;a<4;a++) {
+            double t=Math.toRadians(a*90+45);
+            int px=x+(int)Math.round(Math.cos(t)*103), pz=z+(int)Math.round(Math.sin(t)*103);
+            fill(w,px,y+1,pz,px,y+5,pz,LOG);
+            fill(w,px-2,y+5,pz-2,px+2,y+5,pz+2,QUARTZ);
+            b(w,px-1,y+4,pz,WOOL); b(w,px+1,y+4,pz,WOOL);
+            lamp(w,px+3,y,pz);
+        }
+        // Decorative paving rings make the central square read as a designed plaza.
+        for(int r=15;r<=19;r+=2) {
+            for(int a=0;a<360;a+=10) {
+                double t=Math.toRadians(a);
+                int px=x+(int)Math.round(Math.cos(t)*r), pz=z+(int)Math.round(Math.sin(t)*r);
+                b(w,px,y+1,pz,(r==15?PRISMARINE:QUARTZ));
+            }
+        }
+        // Low flower beds beside the four garden courts.
+        for(int a=0;a<4;a++) {
+            double t=Math.toRadians(a*90+45);
+            int gx=x+(int)Math.round(Math.cos(t)*53), gz=z+(int)Math.round(Math.sin(t)*53);
+            for(int side=-1;side<=1;side+=2) {
+                int bx=gx+(int)Math.round(-Math.sin(t)*side*8);
+                int bz=gz+(int)Math.round(Math.cos(t)*side*8);
+                fill(w,bx-2,y+1,bz-1,bx+2,y+1,bz+1,GRASS);
+                for(int k=-1;k<=1;k++) b(w,bx+k,y+2,bz,LEAVES);
+            }
+        }
+    }
+
     private void bench(Level w,int x,int y,int z) {
         b(w,x,y+1,z,PLANKS);b(w,x+1,y+1,z,PLANKS);b(w,x,y+2,z-1,FENCE);b(w,x+1,y+2,z-1,FENCE);
     }
