@@ -10,7 +10,6 @@ import cn.nukkit.event.Listener;
 import cn.nukkit.event.player.PlayerInteractEntityEvent;
 import cn.nukkit.event.player.PlayerInteractEvent;
 import cn.nukkit.event.player.PlayerJoinEvent;
-import cn.nukkit.event.player.PlayerMoveEvent;
 import cn.nukkit.event.player.PlayerQuitEvent;
 import cn.nukkit.item.Item;
 import cn.nukkit.form.element.ElementButton;
@@ -71,6 +70,7 @@ public final class NEXORABeasts extends PluginBase implements Listener {
         }
         data = new Config(new File(getDataFolder(), "players.yml"), Config.YAML);
         getServer().getPluginManager().registerEvents(this, this);
+        getServer().getScheduler().scheduleRepeatingTask(this, this::tickCompanions, 5);
         getLogger().info("NEXORA_Beasts включён. Коллекция, GUI и система питомцев готовы.");
     }
 
@@ -98,16 +98,33 @@ public final class NEXORABeasts extends PluginBase implements Listener {
         recallTeam(event.getPlayer(), false);
     }
 
-    @EventHandler
-    public void onPlayerMove(PlayerMoveEvent event) {
-        Player player = event.getPlayer();
-        Map<Integer, Entity> companions = activeCompanions.get(player.getUniqueId());
-        if (companions == null || companions.isEmpty()) return;
-        for (Map.Entry<Integer, Entity> entry : companions.entrySet()) {
-            Entity pet = entry.getValue();
-            if (pet == null || pet.isClosed()) continue;
-            if (pet.getLevel() != player.getLevel() || pet.distanceSquared(player) > 25) {
-                pet.teleport(player.add(companionOffsetX(entry.getKey()), 0, companionOffsetZ(entry.getKey())));
+    private void tickCompanions() {
+        for (Player player : getServer().getOnlinePlayers().values()) {
+            Map<Integer, Entity> companions = activeCompanions.get(player.getUniqueId());
+            if (companions == null || companions.isEmpty()) continue;
+            for (Map.Entry<Integer, Entity> entry : companions.entrySet()) {
+                Entity pet = entry.getValue();
+                if (pet == null || pet.isClosed()) continue;
+
+                if (pet.getLevel() != player.getLevel()) {
+                    pet.teleport(player.add(companionOffsetX(entry.getKey()), 0, companionOffsetZ(entry.getKey())));
+                    continue;
+                }
+
+                cn.nukkit.math.Vector3 target = player.add(
+                        companionOffsetX(entry.getKey()), 0, companionOffsetZ(entry.getKey()));
+                double dx = target.x - pet.x;
+                double dz = target.z - pet.z;
+                double distanceSquared = dx * dx + dz * dz;
+
+                if (distanceSquared > 144) {
+                    pet.teleport(target);
+                } else if (distanceSquared > 2.25) {
+                    double distance = Math.sqrt(distanceSquared);
+                    double step = Math.min(0.32, distance - 1.0);
+                    pet.move(dx / distance * step, 0, dz / distance * step);
+                    pet.updateMovement();
+                }
             }
         }
     }
@@ -547,9 +564,19 @@ public final class NEXORABeasts extends PluginBase implements Listener {
                 player.sendMessage("§cЭто существо уже стоит в слоте " + i + "."); return;
             }
         }
+        Map<Integer, Entity> active = activeCompanions.get(player.getUniqueId());
+        if (active != null) {
+            Entity previous = active.remove(slot);
+            if (previous != null && !previous.isClosed()) previous.close();
+        }
         data.set(playerPath(player) + ".team." + slot, id);
         data.save();
         player.sendMessage("§aСущество назначено в слот команды " + slot + ".");
+        if (active != null) {
+            getServer().getScheduler().scheduleDelayedTask(this, () -> {
+                if (player.isOnline()) summonTeam(player);
+            }, 1);
+        }
     }
 
     private void showBeastInfo(Player player, String id) {
@@ -571,6 +598,16 @@ public final class NEXORABeasts extends PluginBase implements Listener {
 
     private void releaseBeast(Player player, String id) {
         if (!hasBeast(player, id)) { player.sendMessage("§cСущество не найдено."); return; }
+        Map<Integer, Entity> companions = activeCompanions.get(player.getUniqueId());
+        if (companions != null) {
+            for (int slot = 1; slot <= 3; slot++) {
+                if (id.equals(data.getString(playerPath(player) + ".team." + slot, ""))) {
+                    Entity active = companions.remove(slot);
+                    if (active != null && !active.isClosed()) active.close();
+                }
+            }
+            if (companions.isEmpty()) activeCompanions.remove(player.getUniqueId());
+        }
         String base = beastPath(player, id);
         data.remove(base);
         for (int slot = 1; slot <= 3; slot++) {
