@@ -1,1 +1,46 @@
-{"format_version":"1.10.0","minecraft:client_entity":{"description":{"identifier":"nexora:beast_ocelot","materials":{"default":"entity_alphatest"},"textures":{"default":"textures/entity/nexora_ocelot"},"geometry":{"default":"geometry.nexora_ocelot"},"animations":{"idle":"animation.nexora_ocelot.idle","move":"animation.nexora_ocelot.move"},"scripts":{"animate":["idle",{"move":"query.modified_move_speed > 0.01"}]},"render_controllers":["controller.render.nexora_ocelot"]}}}
+{
+  "format_version": "1.10.0",
+  "minecraft:client_entity": {
+    "description": {
+      "identifier": "nexora:beast_ocelot",
+      "materials": {
+        "default": "entity_alphatest"
+      },
+      "textures": {
+        "default": "textures/entity/nexora_ocelot",
+        "look_epic": "textures/entity/looks/nexora_epic",
+        "look_legendary": "textures/entity/looks/nexora_legendary"
+      },
+      "geometry": {
+        "default": "geometry.nexora_ocelot",
+        "look_epic": "geometry.nexora_look_epic",
+        "look_legendary": "geometry.nexora_look_legendary"
+      },
+      "animations": {
+        "idle": "animation.nexora_ocelot.idle",
+        "move": "animation.nexora_ocelot.move",
+        "look_idle": "animation.nexora_look.idle",
+        "look_walk": "animation.nexora_look.walk",
+        "look_wings": "animation.nexora_look.wings"
+      },
+      "scripts": {
+        "animate": [
+          "idle",
+          {
+            "move": "query.modified_move_speed > 0.01"
+          },
+          "look_wings",
+          "look_wings",
+          "look_idle",
+          {
+            "look_walk": "query.modified_move_speed > 0.01"
+          },
+          "look_wings"
+        ]
+      },
+      "render_controllers": [
+        "controller.render.nexora_ocelot"
+      ]
+    }
+  }
+}

@@ -7,21 +7,33 @@
         "default": "entity_alphatest"
       },
       "textures": {
-        "default": "textures/entity/nexora_fox"
+        "default": "textures/entity/nexora_fox",
+        "look_mythic": "textures/entity/looks/nexora_mythic"
       },
       "geometry": {
-        "default": "geometry.nexora_fox"
+        "default": "geometry.nexora_fox",
+        "look_mythic": "geometry.nexora_look_mythic"
       },
       "animations": {
         "idle": "animation.nexora_fox.idle",
-        "walk": "animation.nexora_fox.walk"
+        "walk": "animation.nexora_fox.walk",
+        "look_idle": "animation.nexora_look.idle",
+        "look_walk": "animation.nexora_look.walk",
+        "look_wings": "animation.nexora_look.wings"
       },
       "scripts": {
         "animate": [
           "idle",
           {
             "walk": "query.modified_move_speed > 0.01"
-          }
+          },
+          "look_wings",
+          "look_wings",
+          "look_idle",
+          {
+            "look_walk": "query.modified_move_speed > 0.01"
+          },
+          "look_wings"
         ]
       },
       "render_controllers": [

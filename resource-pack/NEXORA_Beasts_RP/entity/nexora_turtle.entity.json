@@ -1,1 +1,44 @@
-{"format_version":"1.10.0","minecraft:client_entity":{"description":{"identifier":"nexora:beast_turtle","materials":{"default":"entity_alphatest"},"textures":{"default":"textures/entity/nexora_turtle"},"geometry":{"default":"geometry.nexora_turtle"},"animations":{"idle":"animation.nexora_turtle.idle","move":"animation.nexora_turtle.move"},"scripts":{"animate":["idle",{"move":"query.modified_move_speed > 0.01"}]},"render_controllers":["controller.render.nexora_turtle"]}}}
+{
+  "format_version": "1.10.0",
+  "minecraft:client_entity": {
+    "description": {
+      "identifier": "nexora:beast_turtle",
+      "materials": {
+        "default": "entity_alphatest"
+      },
+      "textures": {
+        "default": "textures/entity/nexora_turtle",
+        "look_uncommon": "textures/entity/looks/nexora_uncommon"
+      },
+      "geometry": {
+        "default": "geometry.nexora_turtle",
+        "look_uncommon": "geometry.nexora_look_uncommon"
+      },
+      "animations": {
+        "idle": "animation.nexora_turtle.idle",
+        "move": "animation.nexora_turtle.move",
+        "look_idle": "animation.nexora_look.idle",
+        "look_walk": "animation.nexora_look.walk",
+        "look_wings": "animation.nexora_look.wings"
+      },
+      "scripts": {
+        "animate": [
+          "idle",
+          {
+            "move": "query.modified_move_speed > 0.01"
+          },
+          "look_wings",
+          "look_wings",
+          "look_idle",
+          {
+            "look_walk": "query.modified_move_speed > 0.01"
+          },
+          "look_wings"
+        ]
+      },
+      "render_controllers": [
+        "controller.render.nexora_turtle"
+      ]
+    }
+  }
+}

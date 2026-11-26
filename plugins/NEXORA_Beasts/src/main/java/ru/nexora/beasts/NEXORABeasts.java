@@ -4,6 +4,8 @@ import cn.nukkit.Player;
 import cn.nukkit.command.Command;
 import cn.nukkit.command.CommandSender;
 import cn.nukkit.entity.Entity;
+import cn.nukkit.entity.custom.CustomEntity;
+import cn.nukkit.entity.data.IntEntityData;
 import cn.nukkit.entity.EntityLiving;
 import cn.nukkit.event.EventHandler;
 import cn.nukkit.event.Listener;
@@ -76,6 +78,18 @@ public final class NEXORABeasts extends PluginBase implements Listener {
             "Panda", "PolarBear", "Ocelot", "Turtle", "Dolphin", "Parrot"
     };
 
+    // Rarity looks (see resource-pack/rarity_looks.py): client entity + variant per rarity.
+    private static final String[] LOOK_ENTITY = {
+            "wolf", "turtle", "wolf", "ocelot", "ocelot", "fox", "horse", "wolf", "wolf", "wolf"
+    };
+    private static final int[] LOOK_VARIANT = {1, 1, 2, 1, 2, 1, 1, 3, 4, 5};
+    private static final String[] LOOK_TITLES = {
+            "Волк", "Черепаха", "Лазурный волк", "Тигр", "Лев",
+            "Кицунэ", "Древний олень", "Ангел", "Дракон Бездны", "Звёздный дракон"
+    };
+    /** First glyph index of every rarity word inside font/glyph_E2.png (U+E200 + index). */
+    private static final int GLYPH_BASE = 0xE200;
+
     private Config data;
     private final Set<UUID> pendingHatches = new HashSet<>();
     private final Map<UUID, Map<Integer, Entity>> activeCompanions = new HashMap<>();
@@ -94,6 +108,7 @@ public final class NEXORABeasts extends PluginBase implements Listener {
             getServer().getPluginManager().disablePlugin(this);
             return;
         }
+        saveDefaultConfig();
         data = new Config(new File(getDataFolder(), "players.yml"), Config.YAML);
         registerCustomEntity("волк", NexoraWolfEntity.IDENTIFIER, NexoraWolfEntity::register);
         registerCustomEntity("лиса", NexoraFoxEntity.IDENTIFIER, NexoraFoxEntity::register);
@@ -1389,9 +1404,12 @@ public final class NEXORABeasts extends PluginBase implements Listener {
             }
             String base = beastPath(player, id);
             String species = data.getString(base + ".species", "wolf").toLowerCase(Locale.ROOT);
+            int lookIdx = getConfig().getBoolean("rarity-looks", true)
+                    ? rarityIndex(data.getString(base + ".rarity", "common").toLowerCase(Locale.ROOT)) : -1;
+            String modelSpecies = lookIdx >= 0 ? LOOK_ENTITY[lookIdx] : species;
             Entity pet;
             try {
-                String customId = switch (species) {
+                String customId = switch (modelSpecies) {
                     case "wolf" -> NexoraWolfEntity.IDENTIFIER;
                     case "fox" -> NexoraFoxEntity.IDENTIFIER;
                     case "cat" -> NexoraCatEntity.IDENTIFIER;
@@ -1407,7 +1425,7 @@ public final class NEXORABeasts extends PluginBase implements Listener {
                     case "parrot" -> NexoraParrotEntity.IDENTIFIER;
                     default -> null;
                 };
-                String vanillaId = entityIdentifier(species);
+                String vanillaId = entityIdentifier(modelSpecies);
                 if (customId != null) {
                     try {
                         pet = Entity.createEntity(customId, player);
@@ -1428,7 +1446,10 @@ public final class NEXORABeasts extends PluginBase implements Listener {
                 continue;
             }
             String rarity = data.getString(base + ".rarity", "common");
-            pet.setNameTag(rarityPrefix(rarity) + " §f" + prettySpecies(species)
+            if (lookIdx >= 0 && pet instanceof CustomEntity) {
+                pet.setDataProperty(new IntEntityData(Entity.DATA_VARIANT, LOOK_VARIANT[lookIdx]));
+            }
+            pet.setNameTag(rarityPrefix(rarity) + " §f" + (lookIdx >= 0 ? LOOK_TITLES[lookIdx] : prettySpecies(species))
                     + " §8[§f" + data.getInt(base + ".level", 1) + "§8]");
             pet.setNameTagVisible(true);
             pet.setNameTagAlwaysVisible(true);
@@ -1921,6 +1942,14 @@ public final class NEXORABeasts extends PluginBase implements Listener {
             if (RARITIES[i].equalsIgnoreCase(rarity)) { rarityIndex = i; break; }
         }
         String label = RARITY_NAMES[rarityIndex].toUpperCase(Locale.ROOT);
+        if (getConfig().getBoolean("gradient-glyphs", false)) {
+            // Gradient lettering from the NEXORA resource pack (font/glyph_E2.png).
+            int offset = 0;
+            for (int i = 0; i < rarityIndex; i++) offset += RARITY_NAMES[i].length();
+            StringBuilder glyphs = new StringBuilder("§f");
+            for (int j = 0; j < label.length(); j++) glyphs.append((char) (GLYPH_BASE + offset + j));
+            return glyphs.append("§r").toString();
+        }
         // Use native Bedrock formatting instead of custom PUA glyphs: unsupported
         // glyph atlases can inflate name tags dramatically on mobile clients.
         String[] gradient = switch (rarityIndex) {

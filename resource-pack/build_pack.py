@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
 """Build the NEXORA BEASTS Bedrock resource pack without third-party packages."""
 from pathlib import Path
+import sys
 import json
 import struct
 import zlib
 import zipfile
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 ROOT = Path(__file__).resolve().parent / "NEXORA_Beasts_RP"
 BUILD = Path(__file__).resolve().parent / "build"
 WIDTH = HEIGHT = 128
@@ -529,105 +531,6 @@ def make_entity_texture(species):
 # Per-letter rarity font for Bedrock name tags.
 # Every rarity label gets its own PUA glyph sequence so each character can
 # carry a different baked-in color without animation or § formatting codes.
-RARITY_LABELS = [
-    "ОБЫЧНОЕ", "НЕОБЫЧНОЕ", "РЕДКОЕ", "ЭПИЧЕСКОЕ", "ЛЕГЕНДАРНОЕ",
-    "МИФИЧЕСКОЕ", "ДРЕВНЕЕ", "БОЖЕСТВЕННОЕ", "ЗАПРЕТНОЕ", "АБСОЛЮТНОЕ",
-]
-
-# Compact 5x7 bitmap alphabet. Cyrillic forms are drawn in a blocky style
-# that remains readable above a pet at normal Bedrock name-tag scale.
-FONT_5X7 = {
-    "А": ["01110","10001","10001","11111","10001","10001","10001"],
-    "Б": ["11111","10000","10000","11110","10001","10001","11110"],
-    "В": ["11110","10001","10001","11110","10001","10001","11110"],
-    "Г": ["11111","10000","10000","10000","10000","10000","10000"],
-    "Д": ["00110","01010","01010","01010","10001","11111","10001"],
-    "Е": ["11111","10000","10000","11110","10000","10000","11111"],
-    "Ж": ["10101","10101","01110","00100","01110","10101","10101"],
-    "З": ["11110","00001","00001","01110","00001","00001","11110"],
-    "И": ["10001","10011","10101","10101","11001","10001","10001"],
-    "К": ["10001","10010","10100","11000","10100","10010","10001"],
-    "Л": ["00111","01001","01001","01001","10001","10001","10001"],
-    "М": ["10001","11011","10101","10101","10001","10001","10001"],
-    "Н": ["10001","10001","10001","11111","10001","10001","10001"],
-    "О": ["01110","10001","10001","10001","10001","10001","01110"],
-    "П": ["11111","10001","10001","10001","10001","10001","10001"],
-    "Р": ["11110","10001","10001","11110","10000","10000","10000"],
-    "С": ["01111","10000","10000","10000","10000","10000","01111"],
-    "Т": ["11111","00100","00100","00100","00100","00100","00100"],
-    "У": ["10001","10001","10001","01111","00001","00010","11100"],
-    "Ф": ["00100","01110","10101","10101","10101","01110","00100"],
-    "Ы": ["10001","10001","10001","11101","10011","10011","11101"],
-    "Ч": ["10001","10001","10001","01111","00001","00001","00001"],
-    "Э": ["01110","10001","00001","00111","00001","10001","01110"],
-    "Ю": ["10010","10101","10101","11101","10101","10101","10010"],
-    "Я": ["01111","10001","10001","01111","00101","01001","10001"],
-}
-
-def make_rarity_font():
-    """Write glyph_E2.png (U+E200+) with a static yellow-to-orange gradient."""
-    size = 256
-    cell = 16
-    pixels = [[(0, 0, 0, 0) for _ in range(size)] for _ in range(size)]
-    total = sum(len(label) for label in RARITY_LABELS)
-    glyph_index = 0
-
-    def blend(start, end, amount):
-        return tuple(round(start[i] + (end[i] - start[i]) * amount) for i in range(3))
-
-    # Each rarity has its own two-tone identity; legendary keeps the
-    # requested yellow-to-orange gradient while the other ranks are distinct.
-    rarity_gradients = [
-        ((205, 216, 226), (105, 121, 141)),  # common: steel
-        ((171, 246, 139), (36, 157, 91)),    # uncommon: green
-        ((120, 232, 255), (37, 112, 218)),   # rare: blue
-        ((222, 163, 255), (117, 58, 196)),   # epic: violet
-        ((255, 239, 112), (255, 132, 35)),   # legendary: yellow -> orange
-        ((255, 157, 218), (171, 49, 190)),   # mythic: pink -> magenta
-        ((143, 246, 218), (20, 119, 128)),   # ancient: jade
-        ((255, 251, 207), (205, 160, 66)),   # divine: pearl -> gold
-        ((255, 132, 132), (137, 24, 45)),    # forbidden: crimson
-        ((255, 255, 255), (126, 111, 229)),  # absolute: white -> astral violet
-    ]
-    shadow = (29, 24, 38, 220)
-
-    for rarity_index, label in enumerate(RARITY_LABELS):
-        start_color, end_color = rarity_gradients[rarity_index]
-        for position, char in enumerate(label):
-            pattern = FONT_5X7[char]
-            t = position / max(1, len(label) - 1)
-            rgb = blend(start_color, end_color, t)
-            col = glyph_index % 16
-            row = glyph_index // 16
-            # Compact 5x7 lettering instead of the oversized 10x14 version.
-            ox = col * cell + 5
-            oy = row * cell + 4
-
-            for py, line in enumerate(pattern):
-                for px, bit in enumerate(line):
-                    if bit != "1":
-                        continue
-                    x = ox + px
-                    y = oy + py
-                    if 0 <= x + 1 < size and 0 <= y + 1 < size:
-                        pixels[y + 1][x + 1] = shadow
-                    pixels[y][x] = (*rgb, 255)
-            glyph_index += 1
-
-    # PNG uses a 16x16 grid of 16px cells, matching Bedrock glyph sheets.
-    raw = b"".join(b"\x00" + bytes(channel for pixel in row for channel in pixel) for row in pixels)
-    data = (b"\x89PNG\r\n\x1a\n"
-            + chunk(b"IHDR", struct.pack(">IIBBBBB", size, size, 8, 6, 0, 0, 0))
-            + chunk(b"IDAT", zlib.compress(raw, 9))
-            + chunk(b"IEND", b""))
-    path = ROOT / "font/glyph_E2.png"
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_bytes(data)
-    print(f"Created {path} with {glyph_index}/{total} static gradient glyphs")
-
-
-
-
 # Fantasy silhouette pass: add recognizable NEXORA details to the base animals.
 # These are real Bedrock geometry cubes attached to animated species bones,
 # not painted decals, so horns, fins, wings and armor have visible volume.
@@ -730,7 +633,11 @@ def main():
         "polar_bear", "rabbit", "ocelot", "turtle", "dolphin", "parrot",
     ):
         make_entity_texture(species)
-    make_rarity_font()
+    # Rarity-specific creatures (models, textures, variant wiring).
+    import rarity_looks
+    rarity_looks.build_all(ROOT, chunk, zlib, struct)
+    # font/glyph_E2.png (gradient rarity lettering) is committed; regenerate it
+    # with tools/make_gradient_font.py when the labels or colours change.
     BUILD.mkdir(parents=True, exist_ok=True)
     output = BUILD / "NEXORA_Beasts_RP.mcpack"
     with zipfile.ZipFile(output, "w", compression=zipfile.ZIP_DEFLATED) as archive:

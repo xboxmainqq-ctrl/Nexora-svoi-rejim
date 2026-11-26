@@ -101,6 +101,12 @@ jobs:
                   "animations/nexora_parrot.animation.json",
                   "textures/entity/nexora_parrot.png",
               }
+              looks = ("common", "uncommon", "rare", "epic", "legendary",
+                       "mythic", "ancient", "divine", "forbidden", "absolute")
+              required |= {"animations/nexora_looks.animation.json"}
+              for look in looks:
+                  required |= {f"models/entity/nexora_look_{look}.geo.json",
+                               f"textures/entity/looks/nexora_{look}.png"}
               missing = required - names
               if missing:
                   raise SystemExit(f"Missing pack files: {sorted(missing)}")
@@ -125,6 +131,17 @@ jobs:
                   height = int.from_bytes(texture[20:24], "big")
                   if (width, height) != (128, 128):
                       raise SystemExit(f"Unexpected texture dimensions for {name}: {width}x{height}")
+
+              for look in looks:
+                  geo = json.loads(archive.read(f"models/entity/nexora_look_{look}.geo.json"))
+                  bones = geo["minecraft:geometry"][0]["bones"]
+                  if not any(b.get("cubes") for b in bones):
+                      raise SystemExit(f"Empty rarity look geometry: {look}")
+              for entity, count in (("wolf", 6), ("turtle", 2), ("ocelot", 3), ("fox", 2), ("horse", 2)):
+                  rc = json.loads(archive.read(f"render_controllers/nexora_{entity}.render.json"))
+                  ctrl = next(iter(rc["render_controllers"].values()))
+                  if len(ctrl["arrays"]["geometries"]["Array.geo"]) != count:
+                      raise SystemExit(f"Wrong look variant count for {entity}")
 
               bad = archive.testzip()
               if bad:

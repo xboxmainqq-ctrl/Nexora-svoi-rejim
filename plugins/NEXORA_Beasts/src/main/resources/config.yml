@@ -1,0 +1,13 @@
+# NEXORA: BEASTS settings
+
+# true  - every pet looks like the creature of its rarity (resource pack
+#         "rarity looks": wolf, turtle, blue wolf, tiger, lion, kitsune,
+#         stag, angel, abyss dragon, star dragon).
+# false - pets keep the look of their species.
+rarity-looks: true
+
+# true  - rarity word above the pet is drawn with the gradient letters from the
+#         NEXORA resource pack (font/glyph_E2.png). Needs the pack on the client;
+#         without it the client shows empty squares.
+# false - classic coloured text (works everywhere).
+gradient-glyphs: false

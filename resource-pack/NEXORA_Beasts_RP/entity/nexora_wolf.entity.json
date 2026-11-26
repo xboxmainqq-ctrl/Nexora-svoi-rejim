@@ -7,21 +7,41 @@
         "default": "entity_alphatest"
       },
       "textures": {
-        "default": "textures/entity/nexora_wolf"
+        "default": "textures/entity/nexora_wolf",
+        "look_common": "textures/entity/looks/nexora_common",
+        "look_rare": "textures/entity/looks/nexora_rare",
+        "look_divine": "textures/entity/looks/nexora_divine",
+        "look_forbidden": "textures/entity/looks/nexora_forbidden",
+        "look_absolute": "textures/entity/looks/nexora_absolute"
       },
       "geometry": {
-        "default": "geometry.nexora_wolf"
+        "default": "geometry.nexora_wolf",
+        "look_common": "geometry.nexora_look_common",
+        "look_rare": "geometry.nexora_look_rare",
+        "look_divine": "geometry.nexora_look_divine",
+        "look_forbidden": "geometry.nexora_look_forbidden",
+        "look_absolute": "geometry.nexora_look_absolute"
       },
       "animations": {
         "idle": "animation.nexora_wolf.idle",
-        "walk": "animation.nexora_wolf.walk"
+        "walk": "animation.nexora_wolf.walk",
+        "look_idle": "animation.nexora_look.idle",
+        "look_walk": "animation.nexora_look.walk",
+        "look_wings": "animation.nexora_look.wings"
       },
       "scripts": {
         "animate": [
           "idle",
           {
             "walk": "query.modified_move_speed > 0.01"
-          }
+          },
+          "look_wings",
+          "look_wings",
+          "look_idle",
+          {
+            "look_walk": "query.modified_move_speed > 0.01"
+          },
+          "look_wings"
         ]
       },
       "render_controllers": [

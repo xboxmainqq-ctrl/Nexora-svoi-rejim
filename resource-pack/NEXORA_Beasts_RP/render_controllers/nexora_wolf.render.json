@@ -2,14 +2,36 @@
   "format_version": "1.8.0",
   "render_controllers": {
     "controller.render.nexora_wolf": {
-      "geometry": "Geometry.default",
+      "arrays": {
+        "geometries": {
+          "Array.geo": [
+            "Geometry.default",
+            "Geometry.look_common",
+            "Geometry.look_rare",
+            "Geometry.look_divine",
+            "Geometry.look_forbidden",
+            "Geometry.look_absolute"
+          ]
+        },
+        "textures": {
+          "Array.tex": [
+            "Texture.default",
+            "Texture.look_common",
+            "Texture.look_rare",
+            "Texture.look_divine",
+            "Texture.look_forbidden",
+            "Texture.look_absolute"
+          ]
+        }
+      },
+      "geometry": "Array.geo[query.variant]",
       "materials": [
         {
           "*": "Material.default"
         }
       ],
       "textures": [
-        "Texture.default"
+        "Array.tex[query.variant]"
       ]
     }
   }

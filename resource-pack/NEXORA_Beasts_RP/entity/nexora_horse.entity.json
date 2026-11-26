@@ -1,1 +1,44 @@
-{"format_version":"1.10.0","minecraft:client_entity":{"description":{"identifier":"nexora:beast_horse","materials":{"default":"entity_alphatest"},"textures":{"default":"textures/entity/nexora_horse"},"geometry":{"default":"geometry.nexora_horse"},"animations":{"idle":"animation.nexora_horse.idle","move":"animation.nexora_horse.gallop"},"scripts":{"animate":["idle",{"move":"query.modified_move_speed > 0.01"}]},"render_controllers":["controller.render.nexora_horse"]}}}
+{
+  "format_version": "1.10.0",
+  "minecraft:client_entity": {
+    "description": {
+      "identifier": "nexora:beast_horse",
+      "materials": {
+        "default": "entity_alphatest"
+      },
+      "textures": {
+        "default": "textures/entity/nexora_horse",
+        "look_ancient": "textures/entity/looks/nexora_ancient"
+      },
+      "geometry": {
+        "default": "geometry.nexora_horse",
+        "look_ancient": "geometry.nexora_look_ancient"
+      },
+      "animations": {
+        "idle": "animation.nexora_horse.idle",
+        "move": "animation.nexora_horse.gallop",
+        "look_idle": "animation.nexora_look.idle",
+        "look_walk": "animation.nexora_look.walk",
+        "look_wings": "animation.nexora_look.wings"
+      },
+      "scripts": {
+        "animate": [
+          "idle",
+          {
+            "move": "query.modified_move_speed > 0.01"
+          },
+          "look_wings",
+          "look_wings",
+          "look_idle",
+          {
+            "look_walk": "query.modified_move_speed > 0.01"
+          },
+          "look_wings"
+        ]
+      },
+      "render_controllers": [
+        "controller.render.nexora_horse"
+      ]
+    }
+  }
+}

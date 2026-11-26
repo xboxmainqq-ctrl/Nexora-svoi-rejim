@@ -2,14 +2,28 @@
   "format_version": "1.8.0",
   "render_controllers": {
     "controller.render.nexora_fox": {
-      "geometry": "Geometry.default",
+      "arrays": {
+        "geometries": {
+          "Array.geo": [
+            "Geometry.default",
+            "Geometry.look_mythic"
+          ]
+        },
+        "textures": {
+          "Array.tex": [
+            "Texture.default",
+            "Texture.look_mythic"
+          ]
+        }
+      },
+      "geometry": "Array.geo[query.variant]",
       "materials": [
         {
           "*": "Material.default"
         }
       ],
       "textures": [
-        "Texture.default"
+        "Array.tex[query.variant]"
       ]
     }
   }
