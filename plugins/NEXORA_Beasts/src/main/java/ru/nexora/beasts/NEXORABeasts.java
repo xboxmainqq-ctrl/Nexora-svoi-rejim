@@ -350,9 +350,12 @@ public final class NEXORABeasts extends PluginBase implements Listener {
      * Hidden while sneaking; switch off with {@code player-aura: false} in config.yml.
      */
     private void renderPlayerAura(Player player, Map<Integer, Entity> companions) {
-        if (!getConfig().getBoolean("player-aura", true) || player.isSneaking()) return;
-        int tier = -1;
-        for (Map.Entry<Integer, Entity> entry : companions.entrySet()) {
+        String auraPath = playerPath(player) + ".aura";
+        if (!getConfig().getBoolean("player-aura", true)
+                || !data.getBoolean(auraPath + ".enabled", true) || player.isSneaking()) return;
+        int tier = data.getInt(auraPath + ".tier", -1);
+        // -1 keeps the original automatic behaviour: use the rarest summoned companion.
+        if (tier < 0) for (Map.Entry<Integer, Entity> entry : companions.entrySet()) {
             Entity pet = entry.getValue();
             if (pet == null || pet.isClosed()) continue;
             String beastId = data.getString(playerPath(player) + ".team." + entry.getKey(), "");
@@ -376,8 +379,10 @@ public final class NEXORABeasts extends PluginBase implements Listener {
         boolean auraTick = (++companionAuraTicks % 4 == 0); // scheduler runs every 5 ticks
         for (Player player : getServer().getOnlinePlayers().values()) {
             Map<Integer, Entity> companions = activeCompanions.get(player.getUniqueId());
-            if (companions == null || companions.isEmpty()) continue;
+            if (companions == null) companions = Map.of();
+            // The standalone aura menu can enable a selected effect without a summoned pet.
             renderPlayerAura(player, companions);
+            if (companions.isEmpty()) continue;
             for (Map.Entry<Integer, Entity> entry : companions.entrySet()) {
                 Entity pet = entry.getValue();
                 if (pet == null || pet.isClosed()) continue;
@@ -926,6 +931,10 @@ public final class NEXORABeasts extends PluginBase implements Listener {
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+        if (command.getName().equalsIgnoreCase("aura") || command.getName().equalsIgnoreCase("auras")) {
+            if (requirePlayer(sender)) openAuraMenu((Player) sender);
+            return true;
+        }
         if (args.length == 0 || args[0].equalsIgnoreCase("help")) {
             if (sender instanceof Player player) openMainMenu(player);
             else sendHelp(sender);
@@ -939,6 +948,9 @@ public final class NEXORABeasts extends PluginBase implements Listener {
             }
             case "collection", "list" -> {
                 if (requirePlayer(sender)) openCollectionMenu((Player) sender);
+            }
+            case "aura", "auras" -> {
+                if (requirePlayer(sender)) openAuraMenu((Player) sender);
             }
             case "summon", "call" -> {
                 if (requirePlayer(sender)) summonTeam((Player) sender);
@@ -1073,6 +1085,52 @@ public final class NEXORABeasts extends PluginBase implements Listener {
     private ElementButton iconButton(String text, String texturePath) {
         return new ElementButton(text, new ElementButtonImageData(
                 ElementButtonImageData.IMAGE_DATA_TYPE_PATH, texturePath));
+    }
+
+    private void openAuraMenu(Player player) {
+        String path = playerPath(player) + ".aura";
+        boolean enabled = data.getBoolean(path + ".enabled", true);
+        int selectedTier = data.getInt(path + ".tier", -1);
+        String selectedName = selectedTier < 0 ? "Авто · по редкости питомца"
+                : RARITY_NAMES[Math.max(0, Math.min(9, selectedTier))];
+        FormWindowSimple form = new FormWindowSimple("§l§0✧ АУРЫ NEXORA",
+                "§7Персональная магическая аура вокруг персонажа.\n"
+                + "§8Эффекты и частицы из оригинальной системы сохранены.\n\n"
+                + "§fСтатус: " + (enabled ? "§aВКЛЮЧЕНА" : "§cВЫКЛЮЧЕНА")
+                + "\n§fВыбор: §d" + selectedName
+                + "\n\n§7Выбери режим или одну из десяти редкостей.");
+        form.addButton(new ElementButton((enabled ? "§c✕ ВЫКЛЮЧИТЬ АУРУ" : "§a✦ ВКЛЮЧИТЬ АУРУ")
+                + "\n§8Переключить отображение"));
+        form.addButton(new ElementButton("§b✧ АВТОМАТИЧЕСКАЯ АУРА\n§8Самая редкая из активных питомцев"));
+        for (int i = 0; i < RARITIES.length; i++) {
+            String active = selectedTier == i ? " §a✓ ВЫБРАНА" : "";
+            form.addButton(new ElementButton(RARITY_COLORS[i] + "✦ " + RARITY_NAMES[i] + active
+                    + "\n§8" + RARITIES[i].toUpperCase(Locale.ROOT) + " · " + (i + 1) + "/10"));
+        }
+        form.addButton(new ElementButton("§7← ЗАКРЫТЬ"));
+        form.addHandler(FormResponseHandler.withoutPlayer(ignored -> {
+            if (form.wasClosed()) return;
+            int choice = form.getResponse().getClickedButtonId();
+            if (choice == 0) {
+                data.set(path + ".enabled", !enabled);
+                data.save();
+                openAuraMenu(player);
+            } else if (choice == 1) {
+                data.set(path + ".tier", -1);
+                data.set(path + ".enabled", true);
+                data.save();
+                player.sendMessage("§b✧ Автоматическая аура включена.");
+                openAuraMenu(player);
+            } else if (choice >= 2 && choice < 12) {
+                int tier = choice - 2;
+                data.set(path + ".tier", tier);
+                data.set(path + ".enabled", true);
+                data.save();
+                player.sendMessage(RARITY_COLORS[tier] + "✦ Аура «" + RARITY_NAMES[tier] + "» активирована!");
+                openAuraMenu(player);
+            }
+        }));
+        player.showFormWindow(form);
     }
 
     private void openMainMenu(Player player) {
@@ -2175,6 +2233,7 @@ public final class NEXORABeasts extends PluginBase implements Listener {
         sender.sendMessage("§6§lNEXORA: BEASTS");
         sender.sendMessage("§e/beasts eggs §7— каталог 10 редкостей яиц");
         sender.sendMessage("§e/beasts collection §7— открыть коллекцию");
+        sender.sendMessage("§d/aura §7— отдельное меню аур (вкл/выкл и выбор эффекта)");
         sender.sendMessage("§e/beasts team §7— показать активную команду");
         sender.sendMessage("§e/beasts team <1-3> <ID> §7— назначить существо");
         sender.sendMessage("§e/beasts summon §7— призвать активную команду");
