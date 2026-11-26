@@ -523,7 +523,7 @@ public final class NEXORABeasts extends PluginBase implements Listener {
         var level = pet.getLevel();
         level.addSound(center, Sound.BLOCK_BELL_HIT, 1.4f, 0.65f);
         level.addParticleEffect(center, ParticleEffect.ENDROD);
-        level.addParticleEffect(center, ParticleEffect.EXPLOSION);
+        level.addParticleEffect(center, ParticleEffect.HUGE_EXPLOSION_LEVEL);
 
         // Two luminous rings and a rising energy burst.
         for (int i = 0; i < 32; i++) {
