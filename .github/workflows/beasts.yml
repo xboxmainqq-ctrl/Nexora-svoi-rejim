@@ -100,6 +100,10 @@ jobs:
                   "models/entity/nexora_parrot.geo.json",
                   "animations/nexora_parrot.animation.json",
                   "textures/entity/nexora_parrot.png",
+                  "entity/nexora_dragon.entity.json",
+                  "models/entity/nexora_dragon.geo.json",
+                  "animations/nexora_dragon.animation.json",
+                  "textures/entity/nexora_dragon.png",
               }
               looks = ("common", "uncommon", "rare", "epic", "legendary",
                        "mythic", "ancient", "divine", "forbidden", "absolute")
@@ -131,6 +135,38 @@ jobs:
                   height = int.from_bytes(texture[20:24], "big")
                   if (width, height) != (128, 128):
                       raise SystemExit(f"Unexpected texture dimensions for {name}: {width}x{height}")
+
+              # The dedicated dragon uses its own 256x256 texture and articulated bones.
+              dragon_model_path = "models/entity/nexora_dragon.geo.json"
+              dragon_model = json.loads(archive.read(dragon_model_path))
+              dragon_desc = dragon_model["minecraft:geometry"][0]["description"]
+              if (dragon_desc["texture_width"], dragon_desc["texture_height"]) != (256, 256):
+                  raise SystemExit("Dragon geometry must use a 256x256 texture atlas")
+              dragon_bones = {bone["name"] for bone in dragon_model["minecraft:geometry"][0]["bones"]}
+              dragon_required_bones = {
+                  "body", "chest", "neck", "head", "jaw", "horn_left", "horn_right",
+                  "wing_left", "wing_right", "leg_front_left", "leg_front_right",
+                  "leg_back_left", "leg_back_right", "tail_1", "tail_2", "tail_3",
+              }
+              missing_dragon_bones = dragon_required_bones - dragon_bones
+              if missing_dragon_bones:
+                  raise SystemExit(f"Dragon model is missing bones: {sorted(missing_dragon_bones)}")
+              dragon_texture = archive.read("textures/entity/nexora_dragon.png")
+              if dragon_texture[:8] != bytes([137, 80, 78, 71, 13, 10, 26, 10]):
+                  raise SystemExit("Invalid PNG texture for dragon")
+              dragon_width = int.from_bytes(dragon_texture[16:20], "big")
+              dragon_height = int.from_bytes(dragon_texture[20:24], "big")
+              if (dragon_width, dragon_height) != (256, 256):
+                  raise SystemExit(f"Unexpected dragon texture dimensions: {dragon_width}x{dragon_height}")
+              dragon_entity = json.loads(archive.read("entity/nexora_dragon.entity.json"))
+              dragon_animations = json.loads(archive.read("animations/nexora_dragon.animation.json"))
+              animation_names = dragon_entity["minecraft:client_entity"]["description"]["animations"]
+              expected_animations = {"rest", "walk", "flight", "attack", "sleep"}
+              if set(animation_names) != expected_animations:
+                  raise SystemExit(f"Dragon animation map mismatch: {sorted(animation_names)}")
+              for animation in expected_animations:
+                  if f"animation.nexora_dragon.{animation}" not in dragon_animations["animations"]:
+                      raise SystemExit(f"Missing dragon animation: {animation}")
 
               for look in looks:
                   geo = json.loads(archive.read(f"models/entity/nexora_look_{look}.geo.json"))
