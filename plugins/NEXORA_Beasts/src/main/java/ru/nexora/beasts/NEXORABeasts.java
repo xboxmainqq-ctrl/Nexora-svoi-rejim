@@ -265,6 +265,12 @@ public final class NEXORABeasts extends PluginBase implements Listener {
                     }
                 }
 
+                String beastId = data.getString(playerPath(player) + ".team." + entry.getKey(), "");
+                if (!beastId.isEmpty() && hasBeast(player, beastId)
+                        && pet instanceof EntityLiving) {
+                    runCompanionAI(player, entry.getKey(), (EntityLiving) pet, beastId);
+                }
+
                 if (pet.getLevel() != player.getLevel()) {
                     pet.teleport(player.add(companionOffsetX(entry.getKey()), 0, companionOffsetZ(entry.getKey())));
                     continue;
@@ -291,6 +297,86 @@ public final class NEXORABeasts extends PluginBase implements Listener {
         }
     }
 
+
+    /**
+     * Autonomous combat brain: acquire nearby hostile mobs, close distance, attack,
+     * and decide when the species ultimate is worth spending.
+     */
+    private void runCompanionAI(Player owner, int slot, EntityLiving pet, String beastId) {
+        if (pet.isClosed() || pet.getLevel() != owner.getLevel()) return;
+
+        EntityLiving target = null;
+        double nearestDistance = 10.0 * 10.0;
+        int enemiesNearby = 0;
+        for (Entity entity : pet.getLevel().getNearbyEntities(pet.getBoundingBox().grow(10, 6, 10), pet)) {
+            if (!(entity instanceof EntityLiving living) || living == pet || living.isClosed()
+                    || living instanceof Player || isActiveCompanion(living)
+                    || !isHostileMob(living)) continue;
+            double distance = pet.distanceSquared(living);
+            if (distance > 100.0) continue;
+            enemiesNearby++;
+            if (distance < nearestDistance) {
+                nearestDistance = distance;
+                target = living;
+            }
+        }
+        if (target == null) return;
+
+        String base = beastPath(owner, beastId);
+        String species = data.getString(base + ".species", "wolf").toLowerCase(Locale.ROOT);
+        long now = System.currentTimeMillis();
+        String attackKey = owner.getUniqueId() + ":ai:" + slot;
+        long attackReady = companionAttackCooldowns.getOrDefault(attackKey, 0L);
+
+        // Fast species reposition more aggressively; heavy species hold a little closer.
+        double attackRange = switch (species) {
+            case "bee", "dolphin", "parrot" -> 3.2;
+            case "turtle", "panda", "polarbear", "polar_bear", "horse" -> 2.6;
+            default -> 2.2;
+        };
+        if (nearestDistance > attackRange * attackRange) {
+            double distance = Math.sqrt(nearestDistance);
+            double step = Math.min(species.equals("horse") || species.equals("wolf") ? 0.48 : 0.34,
+                    Math.max(0.12, distance - attackRange));
+            pet.move((target.x - pet.x) / distance * step,
+                    (target.y - pet.y) / distance * step,
+                    (target.z - pet.z) / distance * step);
+            pet.updateMovement();
+        } else if (now >= attackReady) {
+            double power = stat(base, "power", 5);
+            double multiplier = switch (species) {
+                case "wolf", "ocelot" -> 0.42;
+                case "horse", "polar_bear", "polarbear", "panda" -> 0.52;
+                case "bee", "parrot" -> 0.32;
+                case "turtle" -> 0.38;
+                default -> 0.35;
+            };
+            float damage = (float) Math.max(1.0, Math.min(24.0, power * multiplier));
+            target.attack(new EntityDamageByEntityEvent(
+                    pet, target, EntityDamageEvent.DamageCause.ENTITY_ATTACK, damage));
+            long delay = species.equals("wolf") || species.equals("ocelot") ? 850L : 1150L;
+            companionAttackCooldowns.put(attackKey, now + delay);
+        }
+
+        // The AI saves the ultimate for a group fight, or a dangerous close-range encounter.
+        String rarity = data.getString(base + ".rarity", "common").toLowerCase(Locale.ROOT);
+        boolean highRarity = List.of("epic", "legendary", "mythic", "ancient",
+                "divine", "forbidden", "absolute").contains(rarity);
+        boolean groupFight = enemiesNearby >= 2;
+        boolean closeDanger = nearestDistance <= 2.25 && highRarity;
+        if (groupFight || closeDanger) {
+            String ultimateKey = owner.getUniqueId() + ":" + slot;
+            if (now >= ultimateCooldowns.getOrDefault(ultimateKey, 0L)) {
+                useUltimate(owner, slot);
+            }
+        }
+    }
+
+    private boolean isHostileMob(EntityLiving entity) {
+        String className = entity.getClass().getName().toLowerCase(Locale.ROOT);
+        // Passive wildlife is deliberately ignored; only Nukkit monster entities are hunted.
+        return className.contains(".monster.") || className.contains(".hostile.");
+    }
 
     /**
      * Lightweight rarity aura: four colored dust motes per active pet once per second.
