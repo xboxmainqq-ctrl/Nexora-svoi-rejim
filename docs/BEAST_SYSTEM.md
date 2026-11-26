@@ -12,8 +12,9 @@ This document describes the current playable foundation of the creature system.
   - Use a NEXORA egg (right-click air or a block). Hatching takes five seconds; each player can hatch one egg at a time.
   - Interact with a living non-player entity while holding a NEXORA capture sphere. The creature is recorded in the collection and removed from the world.
 - Active team with three saved slots.
-- Summon the active team as visible in-world companion entities; companions are re-created on player join and follow by teleporting back when they fall more than five blocks behind.
+- Summon the active team as visible in-world companion entities; companions are re-created on player join, walk toward the player in short movement steps, and teleport back only when very far away or in another world.
 - Recall companions to the collection from the team menu or with `/beasts recall`.
+- Replacing a team slot refreshes that active companion; releasing a creature also removes its summoned entity.
 - Creature inspection and release.
 - Individual vitality, power and defense values derived from rarity, level and saved potential.
 - Training: spend one wheat for 25 XP; each level-up improves stats. Maximum level is 100.
