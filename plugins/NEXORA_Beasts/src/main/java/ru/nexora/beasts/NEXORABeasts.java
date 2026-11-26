@@ -17,6 +17,7 @@ import cn.nukkit.item.Item;
 import cn.nukkit.level.ParticleEffect;
 import cn.nukkit.level.Sound;
 import cn.nukkit.level.particle.FlameParticle;
+import cn.nukkit.level.particle.DustParticle;
 import cn.nukkit.math.Vector3;
 import cn.nukkit.form.element.ElementButton;
 import cn.nukkit.form.element.ElementButtonImageData;
@@ -82,6 +83,7 @@ public final class NEXORABeasts extends PluginBase implements Listener {
     private final Map<String, Long> ultimateCooldowns = new HashMap<>();
     private static final long ULTIMATE_COOLDOWN_MS = 45_000L;
     private static final int HATCH_DELAY_TICKS = 100; // 5 seconds
+    private int companionAuraTicks;
 
     @Override
     public void onEnable() {
@@ -246,12 +248,19 @@ public final class NEXORABeasts extends PluginBase implements Listener {
     }
 
     private void tickCompanions() {
+        boolean auraTick = (++companionAuraTicks % 4 == 0); // scheduler runs every 5 ticks
         for (Player player : getServer().getOnlinePlayers().values()) {
             Map<Integer, Entity> companions = activeCompanions.get(player.getUniqueId());
             if (companions == null || companions.isEmpty()) continue;
             for (Map.Entry<Integer, Entity> entry : companions.entrySet()) {
                 Entity pet = entry.getValue();
                 if (pet == null || pet.isClosed()) continue;
+                if (auraTick) {
+                    String beastId = data.getString(playerPath(player) + ".team." + entry.getKey(), "");
+                    if (!beastId.isEmpty() && hasBeast(player, beastId)) {
+                        spawnRarityAura(pet, data.getString(beastPath(player, beastId) + ".rarity", "common"));
+                    }
+                }
 
                 if (pet.getLevel() != player.getLevel()) {
                     pet.teleport(player.add(companionOffsetX(entry.getKey()), 0, companionOffsetZ(entry.getKey())));
@@ -273,6 +282,35 @@ public final class NEXORABeasts extends PluginBase implements Listener {
                     pet.updateMovement();
                 }
             }
+        }
+    }
+
+
+    /**
+     * Lightweight rarity aura: four colored dust motes per active pet once per second.
+     * This is visual only and does not affect combat or entity targeting.
+     */
+    private void spawnRarityAura(Entity pet, String rarity) {
+        int[] rgb = switch (rarity.toLowerCase(Locale.ROOT)) {
+            case "uncommon" -> new int[]{75, 220, 105};
+            case "rare" -> new int[]{65, 210, 245};
+            case "epic" -> new int[]{175, 85, 235};
+            case "legendary" -> new int[]{255, 190, 55};
+            case "mythic" -> new int[]{245, 80, 190};
+            case "ancient" -> new int[]{45, 190, 175};
+            case "divine" -> new int[]{255, 235, 145};
+            case "forbidden" -> new int[]{235, 55, 65};
+            case "absolute" -> new int[]{225, 245, 255};
+            default -> new int[]{155, 155, 165};
+        };
+        double y = pet.y + Math.max(0.35, pet.getHeight() * 0.55);
+        for (int i = 0; i < 4; i++) {
+            double angle = (Math.PI * 2.0 * i) / 4.0;
+            Vector3 point = new Vector3(
+                    pet.x + Math.cos(angle) * 0.42,
+                    y + (i % 2 == 0 ? 0.12 : -0.08),
+                    pet.z + Math.sin(angle) * 0.42);
+            pet.getLevel().addParticle(new DustParticle(point, rgb[0], rgb[1], rgb[2]));
         }
     }
 
