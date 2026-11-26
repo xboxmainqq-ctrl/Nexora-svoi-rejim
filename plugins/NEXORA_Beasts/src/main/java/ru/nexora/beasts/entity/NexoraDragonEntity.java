@@ -22,6 +22,15 @@ public final class NexoraDragonEntity extends EntityWolf implements CustomEntity
         super(chunk, nbt);
     }
 
+    /**
+     * Dragons are controlled by the companion flight controller. Keeping gravity
+     * disabled lets them hold altitude without using noClip, so blocks still collide.
+     */
+    @Override
+    public float getGravity() {
+        return 0.0f;
+    }
+
     public static synchronized void register() {
         EntityDefinition existing = EntityManager.get().getDefinition(IDENTIFIER);
         if (existing != null) {
