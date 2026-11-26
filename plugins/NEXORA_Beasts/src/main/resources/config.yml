@@ -11,3 +11,7 @@ rarity-looks: true
 #         without it the client shows empty squares.
 # false - classic coloured text (works everywhere).
 gradient-glyphs: false
+
+# true  - a particle aura around the owner, shape/colour by the highest rarity
+#         among summoned pets (hidden while sneaking).
+player-aura: true

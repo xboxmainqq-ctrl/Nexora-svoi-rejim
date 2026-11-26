@@ -30,6 +30,7 @@ import cn.nukkit.form.window.FormWindowModal;
 import cn.nukkit.form.window.FormWindowSimple;
 import cn.nukkit.plugin.PluginBase;
 import cn.nukkit.utils.Config;
+import ru.nexora.beasts.aura.RarityAuras;
 import ru.nexora.beasts.entity.NexoraWolfEntity;
 import ru.nexora.beasts.entity.NexoraFoxEntity;
 import ru.nexora.beasts.entity.NexoraCatEntity;
@@ -342,11 +343,31 @@ public final class NEXORABeasts extends PluginBase implements Listener {
         }
     }
 
+    /**
+     * Player aura: shape and colour follow the highest rarity among the summoned pets.
+     * Hidden while sneaking; switch off with {@code player-aura: false} in config.yml.
+     */
+    private void renderPlayerAura(Player player, Map<Integer, Entity> companions) {
+        if (!getConfig().getBoolean("player-aura", true) || player.isSneaking()) return;
+        int tier = -1;
+        for (Map.Entry<Integer, Entity> entry : companions.entrySet()) {
+            Entity pet = entry.getValue();
+            if (pet == null || pet.isClosed()) continue;
+            String beastId = data.getString(playerPath(player) + ".team." + entry.getKey(), "");
+            if (beastId.isEmpty() || !hasBeast(player, beastId)) continue;
+            String rarity = data.getString(beastPath(player, beastId) + ".rarity", "common").toLowerCase(Locale.ROOT);
+            tier = Math.max(tier, rarityIndex(rarity));
+        }
+        if (tier < 0) return;
+        RarityAuras.render(player.getLevel(), player.x, player.y, player.z, tier, companionAuraTicks * 0.35);
+    }
+
     private void tickCompanions() {
         boolean auraTick = (++companionAuraTicks % 4 == 0); // scheduler runs every 5 ticks
         for (Player player : getServer().getOnlinePlayers().values()) {
             Map<Integer, Entity> companions = activeCompanions.get(player.getUniqueId());
             if (companions == null || companions.isEmpty()) continue;
+            renderPlayerAura(player, companions);
             for (Map.Entry<Integer, Entity> entry : companions.entrySet()) {
                 Entity pet = entry.getValue();
                 if (pet == null || pet.isClosed()) continue;
