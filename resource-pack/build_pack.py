@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Build the NEXORA BEASTS Bedrock resource pack without third-party packages."""
 from pathlib import Path
+import json
 import struct
 import zlib
 import zipfile
