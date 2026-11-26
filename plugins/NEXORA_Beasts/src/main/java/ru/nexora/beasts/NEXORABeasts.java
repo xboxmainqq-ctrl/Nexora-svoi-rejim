@@ -343,15 +343,19 @@ public final class NEXORABeasts extends PluginBase implements Listener {
                 }
 
                 String beastId = data.getString(playerPath(player) + ".team." + entry.getKey(), "");
+                boolean fighting = false;
                 if (!beastId.isEmpty() && hasBeast(player, beastId)
-                        && pet instanceof EntityLiving) {
-                    runCompanionAI(player, entry.getKey(), (EntityLiving) pet, beastId);
+                        && pet instanceof EntityLiving livingPet) {
+                    fighting = runCompanionAI(player, entry.getKey(), livingPet, beastId);
                 }
 
                 if (pet.getLevel() != player.getLevel()) {
                     pet.teleport(player.add(companionOffsetX(entry.getKey()), 0, companionOffsetZ(entry.getKey())));
                     continue;
                 }
+
+                // Do not pull a pet back into its owner while it is chasing or attacking.
+                if (fighting) continue;
 
                 cn.nukkit.math.Vector3 target = player.add(
                         companionOffsetX(entry.getKey()), 0, companionOffsetZ(entry.getKey()));
@@ -364,9 +368,9 @@ public final class NEXORABeasts extends PluginBase implements Listener {
                 // climbs, jumps down, or changes elevation.
                 if (distanceSquared > 144 || Math.abs(dy) > 6.0) {
                     pet.teleport(target);
-                } else if (distanceSquared > 2.25) {
+                } else if (distanceSquared > 4.0) {
                     double distance = Math.sqrt(distanceSquared);
-                    double step = Math.min(0.32, distance - 1.0);
+                    double step = Math.min(0.62, distance - 2.0);
                     pet.move(dx / distance * step, dy / distance * step, dz / distance * step);
                     pet.updateMovement();
                 }
@@ -379,8 +383,8 @@ public final class NEXORABeasts extends PluginBase implements Listener {
      * Autonomous combat brain: acquire nearby hostile mobs, close distance, attack,
      * and decide when the species ultimate is worth spending.
      */
-    private void runCompanionAI(Player owner, int slot, EntityLiving pet, String beastId) {
-        if (pet.isClosed() || pet.getLevel() != owner.getLevel()) return;
+    private boolean runCompanionAI(Player owner, int slot, EntityLiving pet, String beastId) {
+        if (pet.isClosed() || pet.getLevel() != owner.getLevel()) return false;
 
         String base = beastPath(owner, beastId);
         String species = data.getString(base + ".species", "wolf").toLowerCase(Locale.ROOT);
@@ -413,7 +417,7 @@ public final class NEXORABeasts extends PluginBase implements Listener {
             target = focused;
             nearestDistance = pet.distanceSquared(focused);
         }
-        if (target == null) return;
+        if (target == null) return false;
 
         long now = System.currentTimeMillis();
         String attackKey = owner.getUniqueId() + ":ai:" + slot;
@@ -434,7 +438,7 @@ public final class NEXORABeasts extends PluginBase implements Listener {
                 case "turtle", "panda", "polarbear", "polar_bear" -> 0.78;
                 default -> 1.0;
             };
-            double step = Math.min((species.equals("horse") || species.equals("wolf") ? 0.48 : 0.34)
+            double step = Math.min((species.equals("horse") || species.equals("wolf") ? 0.78 : 0.62)
                             * speciesSpeed, Math.max(0.12, distance - attackRange));
             pet.move((target.x - pet.x) / distance * step,
                     (target.y - pet.y) / distance * step,
@@ -496,6 +500,7 @@ public final class NEXORABeasts extends PluginBase implements Listener {
             teamUltimateDecisionCooldowns.put(owner.getUniqueId(), now + 5000L);
             useUltimate(owner, slot);
         }
+        return true;
     }
 
     /**
@@ -710,9 +715,24 @@ public final class NEXORABeasts extends PluginBase implements Listener {
     }
 
     private boolean isHostileMob(EntityLiving entity) {
+        if (entity == null || entity.isClosed() || entity instanceof Player) return false;
         String className = entity.getClass().getName().toLowerCase(Locale.ROOT);
-        // Passive wildlife is deliberately ignored; only Nukkit monster entities are hunted.
-        return className.contains(".monster.") || className.contains(".hostile.");
+        String simpleName = entity.getClass().getSimpleName().toLowerCase(Locale.ROOT);
+        // Nukkit-MOT versions place hostile mobs in different packages (often .mob.),
+        // so package-only checks miss zombies and several other standard enemies.
+        if (className.contains(".monster.") || className.contains(".hostile.")) return true;
+        String[] hostileTypes = {
+                "zombie", "husk", "drowned", "skeleton", "stray", "wither_skeleton",
+                "creeper", "spider", "cave_spider", "enderman", "witch", "slime",
+                "magma_cube", "blaze", "ghast", "guardian", "elder_guardian",
+                "phantom", "silverfish", "endermite", "pillager", "vindicator",
+                "evoker", "ravager", "vex", "warden", "wither", "ender_dragon",
+                "zoglin", "hoglin", "piglin_brute"
+        };
+        for (String type : hostileTypes) {
+            if (simpleName.contains(type)) return true;
+        }
+        return false;
     }
 
     /**
@@ -1342,11 +1362,11 @@ public final class NEXORABeasts extends PluginBase implements Listener {
     // -------------------- Summoned companions --------------------
 
     private double companionOffsetX(int slot) {
-        return slot == 1 ? 1.6 : slot == 2 ? -1.6 : 0.0;
+        return slot == 1 ? 2.4 : slot == 2 ? -2.4 : 0.0;
     }
 
     private double companionOffsetZ(int slot) {
-        return slot == 3 ? 1.8 : 0.0;
+        return slot == 3 ? 2.4 : 0.0;
     }
 
     private String entityIdentifier(String species) {
@@ -1898,26 +1918,32 @@ public final class NEXORABeasts extends PluginBase implements Listener {
     private String rarityPrefix(String rarity) {
         int rarityIndex = 0;
         for (int i = 0; i < RARITIES.length; i++) {
-            if (RARITIES[i].equalsIgnoreCase(rarity)) {
-                rarityIndex = i;
-                break;
-            }
+            if (RARITIES[i].equalsIgnoreCase(rarity)) { rarityIndex = i; break; }
         }
-
         String label = RARITY_NAMES[rarityIndex].toUpperCase(Locale.ROOT);
-        int glyphOffset = 0;
-        for (int i = 0; i < rarityIndex; i++) {
-            glyphOffset += RARITY_NAMES[i].codePointCount(0, RARITY_NAMES[i].length());
-        }
-
-        StringBuilder glyphs = new StringBuilder();
-        int letterIndex = 0;
+        // Use native Bedrock formatting instead of custom PUA glyphs: unsupported
+        // glyph atlases can inflate name tags dramatically on mobile clients.
+        String[] gradient = switch (rarityIndex) {
+            case 1 -> new String[]{"§a", "§2"};
+            case 2 -> new String[]{"§b", "§3"};
+            case 3 -> new String[]{"§d", "§5"};
+            case 4 -> new String[]{"§e", "§6", "§c"};
+            case 5 -> new String[]{"§d", "§c"};
+            case 6 -> new String[]{"§b", "§3"};
+            case 7 -> new String[]{"§f", "§e"};
+            case 8 -> new String[]{"§c", "§4"};
+            case 9 -> new String[]{"§f", "§d"};
+            default -> new String[]{"§7"};
+        };
+        StringBuilder result = new StringBuilder("§l✦ ");
+        int index = 0;
+        int length = Math.max(1, label.codePointCount(0, label.length()));
         for (int codePoint : label.codePoints().toArray()) {
-            glyphs.append("§r").appendCodePoint(0xE200 + glyphOffset + letterIndex);
-            letterIndex++;
+            int color = Math.min(gradient.length - 1, index * gradient.length / length);
+            result.append(gradient[color]).appendCodePoint(codePoint);
+            index++;
         }
-        String accent = RARITY_COLORS[rarityIndex];
-        return accent + "✦ §r[" + glyphs + "§r] " + accent + "✦§r";
+        return result.append("§r").toString();
     }
 
     private String normalizeSpecies(String species) {
