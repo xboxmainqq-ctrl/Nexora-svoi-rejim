@@ -25,6 +25,7 @@ import java.util.regex.Pattern;
 public final class NEXORABeasts extends PluginBase implements Listener {
     private static final String ORB_NAME = "§bЛовчая сфера NEXORA";
     private static final String EGG_NAME = "§6Яйцо NEXORA";
+    private static final String EGG_PREFIX = "§6Яйцо NEXORA · ";
     private static final Pattern SAFE_ID = Pattern.compile("[a-zA-Z0-9_-]{1,32}");
     private static final String[] RARITIES = {
             "common", "uncommon", "rare", "epic", "legendary",
@@ -91,6 +92,12 @@ public final class NEXORABeasts extends PluginBase implements Listener {
                 if (args.length < 2) sender.sendMessage("§cИспользование: /beasts giveorb <игрок> [количество]");
                 else giveOrb(sender, args);
             }
+            case "eggs" -> showEggCatalog(sender);
+            case "giveeggs" -> {
+                if (!requireAdmin(sender)) return true;
+                if (args.length < 2) sender.sendMessage("§cИспользование: /beasts giveeggs <игрок>");
+                else giveEggShowcase(sender, args[1]);
+            }
             case "giveegg" -> {
                 if (!requireAdmin(sender)) return true;
                 if (args.length < 4) sender.sendMessage("§cИспользование: /beasts giveegg <игрок> <вид|random> <редкость>");
@@ -129,7 +136,8 @@ public final class NEXORABeasts extends PluginBase implements Listener {
 
         Player player = event.getPlayer();
         Item hand = player.getInventory().getItemInHand();
-        if (hand == null || !EGG_NAME.equals(hand.getCustomName())) return;
+        if (hand == null || hand.getCustomName() == null
+                || !(EGG_NAME.equals(hand.getCustomName()) || hand.getCustomName().startsWith(EGG_PREFIX))) return;
 
         String species = "random";
         String rarity = "common";
@@ -261,11 +269,41 @@ public final class NEXORABeasts extends PluginBase implements Listener {
             return;
         }
         if (!isRarity(rarity)) { sender.sendMessage("§cНеизвестная редкость. Используй: " + String.join(", ", RARITIES)); return; }
+        target.getInventory().addItem(createEgg(species, rarity));
+        sender.sendMessage("§aВыдано " + rarityColor(rarity) + rarityName(rarity) + "§a яйцо игроку " + target.getName() + ".");
+    }
+
+    private Item createEgg(String species, String rarity) {
         Item egg = Item.get(344, 0, 1);
-        egg.setCustomName(EGG_NAME);
-        egg.setLore("Вид: " + species, "Редкость: " + rarity, "§8NEXORA: BEASTS");
-        target.getInventory().addItem(egg);
-        sender.sendMessage("§aЯйцо выдано игроку " + target.getName() + ".");
+        egg.setCustomName(EGG_PREFIX + rarityColor(rarity) + rarityName(rarity));
+        egg.setLore(
+                "§7Вид: §f" + species,
+                "§7Редкость: " + rarityColor(rarity) + rarityName(rarity),
+                "§eНажми ПКМ, чтобы вылупить существо",
+                "§8NEXORA: BEASTS"
+        );
+        return egg;
+    }
+
+    private void giveEggShowcase(CommandSender sender, String playerName) {
+        Player target = getServer().getPlayer(playerName);
+        if (target == null) {
+            sender.sendMessage("§cИгрок не найден или не в сети.");
+            return;
+        }
+        for (String rarity : RARITIES) {
+            target.getInventory().addItem(createEgg("random", rarity));
+        }
+        sender.sendMessage("§aВыдан набор из 10 яиц NEXORA игроку " + target.getName() + ".");
+        target.sendMessage("§6Тебе выдан набор для просмотра всех 10 редкостей яиц NEXORA!");
+    }
+
+    private void showEggCatalog(CommandSender sender) {
+        sender.sendMessage("§6§lЯйца NEXORA — каталог редкостей");
+        for (int i = 0; i < RARITIES.length; i++) {
+            sender.sendMessage("§8• " + RARITY_COLORS[i] + RARITY_NAMES[i] + " §7(" + RARITIES[i] + ")");
+        }
+        sender.sendMessage("§7Администратор может выдать набор: §f/beasts giveeggs <игрок>");
     }
 
     private String addBeast(Player player, String species, String rarity, String source) {
@@ -364,6 +402,7 @@ public final class NEXORABeasts extends PluginBase implements Listener {
 
     private void sendHelp(CommandSender sender) {
         sender.sendMessage("§6§lNEXORA: BEASTS");
+        sender.sendMessage("§e/beasts eggs §7— каталог 10 редкостей яиц");
         sender.sendMessage("§e/beasts collection §7— открыть коллекцию");
         sender.sendMessage("§e/beasts team §7— показать активную команду");
         sender.sendMessage("§e/beasts team <1-3> <ID> §7— назначить существо");
@@ -372,6 +411,7 @@ public final class NEXORABeasts extends PluginBase implements Listener {
         if (sender.isOp() || sender.hasPermission("nexora.beasts.admin")) {
             sender.sendMessage("§c/beasts giveorb <игрок> [количество] §7— выдать сферы");
             sender.sendMessage("§c/beasts giveegg <игрок> <вид|random> <редкость> §7— выдать яйцо");
+            sender.sendMessage("§c/beasts giveeggs <игрок> §7— выдать набор из 10 яиц");
         }
     }
 }
