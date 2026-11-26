@@ -104,6 +104,28 @@ jobs:
               missing = required - names
               if missing:
                   raise SystemExit(f"Missing pack files: {sorted(missing)}")
+              species = (
+                  "wolf", "fox", "cat", "bee", "axolotl", "horse", "panda",
+                  "polar_bear", "rabbit", "ocelot", "turtle", "dolphin", "parrot",
+              )
+              for name in species:
+                  model_path = f"models/entity/nexora_{name}.geo.json"
+                  model = json.loads(archive.read(model_path))
+                  desc = model["minecraft:geometry"][0]["description"]
+                  if desc["texture_width"] != 128 or desc["texture_height"] != 128:
+                      raise SystemExit(f"Unexpected texture size in {model_path}")
+                  bones = {bone["name"] for bone in model["minecraft:geometry"][0]["bones"]}
+                  if not any(token in bone for bone in bones for token in
+                             ("wing", "fin", "gill", "horn", "spine", "armor", "feather", "ridge", "tuft")):
+                      raise SystemExit(f"No fantasy geometry found in {model_path}")
+                  texture = archive.read(f"textures/entity/nexora_{name}.png")
+                  if texture[:8] != bytes([137, 80, 78, 71, 13, 10, 26, 10]):
+                      raise SystemExit(f"Invalid PNG texture for {name}")
+                  width = int.from_bytes(texture[16:20], "big")
+                  height = int.from_bytes(texture[20:24], "big")
+                  if (width, height) != (128, 128):
+                      raise SystemExit(f"Unexpected texture dimensions for {name}: {width}x{height}")
+
               bad = archive.testzip()
               if bad:
                   raise SystemExit(f"Corrupt archive member: {bad}")
