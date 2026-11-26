@@ -171,10 +171,49 @@ def make_cat_texture():
     write_png(ROOT / "textures/entity/nexora_cat.png", pixels)
 
 
+
+def make_bee_texture():
+    ink=(31,37,49,255); yellow=(246,190,55,255); pale=(255,226,112,255)
+    cyan=(64,229,225,255); wing=(173,236,238,190); gold=(240,157,48,255)
+    pixels=[[yellow for _ in range(WIDTH)] for _ in range(HEIGHT)]
+    for y in range(HEIGHT):
+        for x in range(WIDTH):
+            if (x+y*2)%17<3: pixels[y][x]=pale
+    # Abdomen bands, face, translucent-looking wings and luminous eyes.
+    paint(pixels,0,0,24,4,ink); paint(pixels,0,4,24,4,yellow)
+    paint(pixels,24,0,16,8,ink); paint(pixels,28,2,3,3,cyan); paint(pixels,36,2,3,3,cyan)
+    paint(pixels,0,16,32,12,yellow); paint(pixels,0,20,32,3,ink)
+    paint(pixels,8,24,16,3,ink); paint(pixels,14,17,4,10,gold)
+    paint(pixels,32,16,12,8,wing); paint(pixels,46,16,12,8,wing)
+    paint(pixels,0,40,16,8,ink); paint(pixels,4,41,8,5,gold)
+    paint(pixels,20,40,12,5,cyan)
+    write_png(ROOT / "textures/entity/nexora_bee.png", pixels)
+
+
+def make_axolotl_texture():
+    ink=(41,42,83,255); body=(112,105,181,255); light=(176,166,222,255)
+    pink=(246,127,174,255); cyan=(75,230,224,255); gold=(246,197,104,255)
+    pixels=[[body for _ in range(WIDTH)] for _ in range(HEIGHT)]
+    for y in range(HEIGHT):
+        for x in range(WIDTH):
+            if (x*3+y*7)%23<3: pixels[y][x]=light
+    # Broad head, bright gills, iridescent fins and a dorsal stripe.
+    paint(pixels,0,0,28,8,body); paint(pixels,0,0,28,2,ink)
+    paint(pixels,28,0,12,8,cyan); paint(pixels,31,2,6,3,gold)
+    paint(pixels,0,16,32,10,body); paint(pixels,12,17,8,8,cyan)
+    paint(pixels,14,18,4,6,gold); paint(pixels,32,16,12,8,pink)
+    paint(pixels,46,16,12,8,cyan)
+    paint(pixels,0,32,16,8,pink); paint(pixels,16,32,16,8,light)
+    paint(pixels,32,32,16,8,cyan); paint(pixels,48,32,12,8,gold)
+    write_png(ROOT / "textures/entity/nexora_axolotl.png", pixels)
+
+
 def main():
     make_texture()
     make_fox_texture()
     make_cat_texture()
+    make_bee_texture()
+    make_axolotl_texture()
     BUILD.mkdir(parents=True, exist_ok=True)
     output = BUILD / "NEXORA_Beasts_RP.mcpack"
     with zipfile.ZipFile(output, "w", compression=zipfile.ZIP_DEFLATED) as archive:
