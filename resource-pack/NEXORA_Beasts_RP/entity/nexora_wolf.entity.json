@@ -12,6 +12,18 @@
       "geometry": {
         "default": "geometry.nexora_wolf"
       },
+      "animations": {
+        "idle": "animation.nexora_wolf.idle",
+        "walk": "animation.nexora_wolf.walk"
+      },
+      "scripts": {
+        "animate": [
+          "idle",
+          {
+            "walk": "query.modified_move_speed > 0.01"
+          }
+        ]
+      },
       "render_controllers": [
         "controller.render.nexora_wolf"
       ]
