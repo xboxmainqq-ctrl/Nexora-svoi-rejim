@@ -503,7 +503,7 @@ public final class NEXORABeasts extends PluginBase implements Listener {
      * rapid repeated procs while keeping the passive meaningful in longer fights.
      */
     private void triggerSpeciesCombatSkill(Player owner, int slot, EntityLiving pet,
-                                           EntityLiving target, String species, int power, long now) {
+                                           EntityLiving target, String species, double power, long now) {
         String key = owner.getUniqueId() + ":skill:" + slot;
         if (now < companionAttackCooldowns.getOrDefault(key, 0L)
                 || ThreadLocalRandom.current().nextDouble() > 0.22) return;
