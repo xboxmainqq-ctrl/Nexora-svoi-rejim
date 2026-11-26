@@ -836,6 +836,8 @@ public final class NEXORABeasts extends PluginBase implements Listener {
         sender.sendMessage("§e/beasts collection §7— открыть коллекцию");
         sender.sendMessage("§e/beasts team §7— показать активную команду");
         sender.sendMessage("§e/beasts team <1-3> <ID> §7— назначить существо");
+        sender.sendMessage("§e/beasts summon §7— призвать активную команду");
+        sender.sendMessage("§e/beasts recall §7— отозвать питомцев");
         sender.sendMessage("§e/beasts info <ID> §7— информация о существе");
         sender.sendMessage("§e/beasts train <ID> §7— тренировка за 1 пшеницу (+25 опыта)");
         sender.sendMessage("§e/beasts release <ID> §7— отпустить существо");
