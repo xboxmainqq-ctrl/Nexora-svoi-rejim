@@ -9,9 +9,16 @@ commands:
     description: NEXORA creature system
     usage: "/beasts help"
     aliases: ["beast"]
+  aura:
+    description: NEXORA standalone aura menu
+    usage: "/aura"
+    aliases: ["auras"]
 permissions:
   nexora.beasts.use:
     description: Use the NEXORA creature system
+    default: true
+  nexora.beasts.aura:
+    description: Open and manage personal auras
     default: true
   nexora.beasts.admin:
     description: Give NEXORA eggs and capture spheres
