@@ -183,6 +183,7 @@ public final class NEXORABeasts extends PluginBase implements Listener {
             String base = beastPath(owner, beastId);
             double damage = Math.max(1.0, Math.min(30.0, stat(base, "power", 5) * 0.35));
             companionAttackCooldowns.put(cooldownKey, now + 1200L);
+            gainBeastXp(owner, beastId, 6);
 
             target.attack(new EntityDamageByEntityEvent(
                     pet, target, EntityDamageEvent.DamageCause.ENTITY_ATTACK, (float) damage));
@@ -424,6 +425,7 @@ public final class NEXORABeasts extends PluginBase implements Listener {
                 default -> 0.35;
             };
             float damage = (float) Math.max(1.0, Math.min(24.0, power * multiplier));
+            gainBeastXp(owner, beastId, 10);
             target.attack(new EntityDamageByEntityEvent(
                     pet, target, EntityDamageEvent.DamageCause.ENTITY_ATTACK, damage));
             long delay = species.equals("wolf") || species.equals("ocelot") ? 850L : 1150L;
@@ -693,21 +695,23 @@ public final class NEXORABeasts extends PluginBase implements Listener {
         String rarity = data.getString(base + ".rarity", "common");
         int level = data.getInt(base + ".level", 1);
         String details = "§7" + prettySpecies(species) + "  " + rarityColor(rarity) + "◆ " + rarityName(rarity)
-                + "\n\n§fУровень: §a" + level + "\n§fОпыт: §a" + data.getInt(base + ".xp", 0)
+                + "\n\n§fУровень: §a" + level + "\n§fБоевой опыт: §a" + data.getInt(base + ".xp", 0)
                 + "§7 / " + xpToNext(level)
+                + "\n§fОчки развития: §e" + data.getInt(base + ".upgradePoints", 0)
                 + "\n\n§c❤ §fЗдоровье: §c" + stat(base, "vitality", 20)
                 + "\n§6⚔ §fСила: §6" + stat(base, "power", 5)
                 + "\n§b⬟ §fЗащита: §b" + stat(base, "defense", 2)
-                + "\n\n§8ID: " + id;
+                + "\n\n§8Опыт питомец получает, участвуя в боях. Очки уровня трать на характеристики."
+                + "\n§8ID: " + id;
         FormWindowSimple form = new FormWindowSimple("§l§0КАРТОЧКА СУЩЕСТВА", details);
-        form.addButton(iconButton("§l§a⬆ ТРЕНИРОВАТЬ\n§81 пшеница · +25 XP", "textures/ui/training"));
+        form.addButton(iconButton("§l§a✦ РАЗВИТИЕ\n§8Распределить очки характеристик", "textures/ui/training"));
         form.addButton(new ElementButton("§l§6⚔ В КОМАНДУ\n§8Назначить в один из 3 слотов"));
         form.addButton(iconButton("§l§c✕ ОТПУСТИТЬ\n§8Удалить из коллекции", "textures/ui/release"));
         form.addButton(new ElementButton("§7← К КОЛЛЕКЦИИ"));
         form.addHandler(FormResponseHandler.withoutPlayer(ignored -> {
             if (form.wasClosed()) return;
             switch (form.getResponse().getClickedButtonId()) {
-                case 0 -> { trainBeast(player, id); openBeastCard(player, id); }
+                case 0 -> openBeastUpgradeMenu(player, id);
                 case 1 -> openAssignSlotMenu(player, id);
                 case 2 -> confirmRelease(player, id);
                 default -> openCollectionMenu(player);
@@ -1391,11 +1395,80 @@ public final class NEXORABeasts extends PluginBase implements Listener {
         data.set(base + ".rarity", rarity);
         data.set(base + ".level", 1);
         data.set(base + ".xp", 0);
+        data.set(base + ".upgradePoints", 0);
+        data.set(base + ".bonus.vitality", 0);
+        data.set(base + ".bonus.power", 0);
+        data.set(base + ".bonus.defense", 0);
         data.set(base + ".source", source);
         data.set(base + ".potential", ThreadLocalRandom.current().nextInt(0, 6));
         data.set(base + ".created", System.currentTimeMillis());
         data.save();
         return id;
+    }
+
+    private void openBeastUpgradeMenu(Player player, String id) {
+        if (!hasBeast(player, id)) { openCollectionMenu(player); return; }
+        String base = beastPath(player, id);
+        int points = data.getInt(base + ".upgradePoints", 0);
+        FormWindowSimple form = new FormWindowSimple("§l§0РАЗВИТИЕ ПИТОМЦА",
+                "§7Свободные очки: §e" + points
+                + "\n\n§c❤ §fЖивучесть: §c" + stat(base, "vitality", 20)
+                + "\n§6⚔ §fСила: §6" + stat(base, "power", 5)
+                + "\n§b⬟ §fЗащита: §b" + stat(base, "defense", 2)
+                + "\n\n§8Каждое очко навсегда усиливает выбранную характеристику.");
+        form.addButton(new ElementButton("§l§c❤ ЖИВУЧЕСТЬ\n§8+4 к здоровью за очко"));
+        form.addButton(new ElementButton("§l§6⚔ СИЛА\n§8+2 к урону за очко"));
+        form.addButton(new ElementButton("§l§b⬟ ЗАЩИТА\n§8+2 к защите за очко"));
+        form.addButton(new ElementButton("§7← НАЗАД"));
+        form.addHandler(FormResponseHandler.withoutPlayer(ignored -> {
+            if (form.wasClosed()) return;
+            switch (form.getResponse().getClickedButtonId()) {
+                case 0 -> upgradeBeastStat(player, id, "vitality");
+                case 1 -> upgradeBeastStat(player, id, "power");
+                case 2 -> upgradeBeastStat(player, id, "defense");
+                default -> { openBeastCard(player, id); return; }
+            }
+            openBeastUpgradeMenu(player, id);
+        }));
+        player.showFormWindow(form);
+    }
+
+    private void upgradeBeastStat(Player player, String id, String stat) {
+        if (!hasBeast(player, id)) return;
+        String base = beastPath(player, id);
+        int points = data.getInt(base + ".upgradePoints", 0);
+        if (points <= 0) {
+            player.sendMessage("§cНет свободных очков развития. Получай боевой опыт, чтобы повышать уровень.");
+            return;
+        }
+        if (!List.of("vitality", "power", "defense").contains(stat)) return;
+        data.set(base + ".upgradePoints", points - 1);
+        data.set(base + ".bonus." + stat, data.getInt(base + ".bonus." + stat, 0)
+                + (stat.equals("vitality") ? 4 : 2));
+        data.save();
+        player.sendMessage("§aХарактеристика питомца улучшена!");
+    }
+
+    private void gainBeastXp(Player owner, String id, int amount) {
+        if (amount <= 0 || !hasBeast(owner, id)) return;
+        String base = beastPath(owner, id);
+        int level = data.getInt(base + ".level", 1);
+        if (level >= 100) return;
+        int xp = data.getInt(base + ".xp", 0) + amount;
+        int gainedLevels = 0;
+        while (level < 100 && xp >= xpToNext(level)) {
+            xp -= xpToNext(level);
+            level++;
+            gainedLevels++;
+        }
+        data.set(base + ".level", level);
+        data.set(base + ".xp", xp);
+        if (gainedLevels > 0) {
+            data.set(base + ".upgradePoints", data.getInt(base + ".upgradePoints", 0) + gainedLevels);
+            owner.sendMessage("§6§lПИТОМЕЦ СТАЛ СИЛЬНЕЕ! §e" + prettySpecies(data.getString(base + ".species", "unknown"))
+                    + " §7получил уровень " + level + " и §e+" + gainedLevels + " §7очк. развития.");
+        }
+        data.save();
     }
 
     private void trainBeast(Player player, String id) {
@@ -1539,7 +1612,7 @@ public final class NEXORABeasts extends PluginBase implements Listener {
         sender.sendMessage("§e/beasts recall §7— отозвать питомцев");
         sender.sendMessage("§d/beasts ultimate <1-3> §7— ульта призванного питомца (45 сек.)");
         sender.sendMessage("§e/beasts info <ID> §7— информация о существе");
-        sender.sendMessage("§e/beasts train <ID> §7— тренировка за 1 пшеницу (+25 опыта)");
+        sender.sendMessage("§e/beasts upgrade <ID> §7— распределить очки развития питомца");
         sender.sendMessage("§e/beasts release <ID> §7— отпустить существо");
         if (sender.isOp() || sender.hasPermission("nexora.beasts.admin")) {
             sender.sendMessage("§c/beasts giveorb <игрок> [количество] §7— выдать сферы");
