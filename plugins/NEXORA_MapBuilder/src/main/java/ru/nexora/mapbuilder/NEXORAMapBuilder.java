@@ -150,7 +150,7 @@ public final class NEXORAMapBuilder extends PluginBase {
             BlockChange c = queue.poll(); activeLevel.setBlockAt(c.x, c.y, c.z, c.id); placed++;
         }
         if (queue.isEmpty()) {
-            if (buildStage < 7) {
+            if (buildStage < 8) {
                 buildStage++; locations.set(marker + ".stage", buildStage); locations.save();
                 if (activePlayer != null) activePlayer.sendMessage("§6[Арден] Этап " + buildStage + "/8: " + stageName(buildStage));
                 queueArden(marker); return;
@@ -177,6 +177,7 @@ public final class NEXORAMapBuilder extends PluginBase {
             case 5 -> "главные здания столицы";
             case 6 -> "жилые кварталы";
             case 7 -> "сады, фонари и декор";
+            case 8 -> "интерьеры, мостовые, балконы и финальные детали";
             default -> "финальная отделка";
         };
     }
@@ -226,13 +227,28 @@ public final class NEXORAMapBuilder extends PluginBase {
                 int d=x*x+z*z; if(d<43*43||d>116*116||(Math.abs(x)<24&&Math.abs(z)<24)) continue;
                 if((Math.abs(x)<30&&Math.abs(z-82)<28)||(Math.abs(x+94)<18&&Math.abs(z-20)<20)) continue;
                 int sx=9+(n%3)*2,sz=9+((n/3)%3)*2,bx=ox+x-sx/2,bz=oz+z-sz/2;
-                shell(w,bx,oy,bz,sx,sz,n%4==0?STONE_BRICK:BRICK,n%3==0?QUARTZ:WOOL); n++;
+                residentialHouse(w,bx,oy,bz,sx,sz,n); n++;
             }
         } else if(buildStage==7) {
             for(int r=42;r<=108;r+=22) for(int a=0;a<360;a+=12) { double t=Math.toRadians(a); int x=ox+(int)Math.round(Math.cos(t)*r),z=oz+(int)Math.round(Math.sin(t)*r);
                 lamp(w,x,oy,z); if(a%24==0) { fill(w,x-2,oy,z-2,x+2,oy,z+2,GRASS); fill(w,x,oy+1,z,x,oy+4,z,LOG); fill(w,x-2,oy+4,z-2,x+2,oy+6,z+2,LEAVES); }
             }
             avenueTrees(w,ox,oy,oz);
+            for(int a=0;a<4;a++) {
+                double t=Math.toRadians(a*90+45); int gx=ox+(int)Math.round(Math.cos(t)*53),gz=oz+(int)Math.round(Math.sin(t)*53);
+                fill(w,gx-10,oy,gz-10,gx+10,oy,gz+10,GRASS);
+                fill(w,gx-5,oy+1,gz-5,gx+5,oy+1,gz+5,PRISMARINE);
+                fill(w,gx-3,oy+2,gz-3,gx+3,oy+2,gz+3,WATER);
+                for(int k=0;k<4;k++){int tx=gx+(k<2?-7:7),tz=gz+(k%2==0?-7:7); fill(w,tx,oy+1,tz,tx,oy+4,tz,LOG); fill(w,tx-2,oy+4,tz-2,tx+2,oy+6,tz+2,LEAVES);}
+                for(int k=-8;k<=8;k+=4){lamp(w,gx+k,oy,gz-9);lamp(w,gx+k,oy,gz+9);}
+            }
+        } else if(buildStage==8) {
+            for(int x=-30;x<=30;x+=10){bench(w,ox+x,oy,oz-22);bench(w,ox+x,oy,oz+22);}
+            for(int z=-30;z<=30;z+=10){bench(w,ox-22,oy,oz+z);bench(w,ox+22,oy,oz+z);}
+            for(int a=0;a<360;a+=90){
+                double t=Math.toRadians(a); int gx=ox+(int)Math.round(Math.cos(t)*110),gz=oz+(int)Math.round(Math.sin(t)*110);
+                for(int side=-1;side<=1;side+=2){int px=gx+(int)Math.round(-Math.sin(t)*side*4),pz=gz+(int)Math.round(Math.cos(t)*side*4);fill(w,px,oy+1,pz,px,oy+8,pz,QUARTZ);b(w,px,oy+9,pz,GLOWSTONE);}
+            }
         }
         locations.set(marker+".stage",buildStage); locations.set(marker+".queuedBlocks",queue.size()); locations.save();
     }
@@ -295,6 +311,36 @@ public final class NEXORAMapBuilder extends PluginBase {
         fill(w,x+sx/2,y+1,z,x+sx/2,y+2,z,AIR);
         for(int xx=x+2;xx<x+sx-2;xx+=5){lamp(w,xx,y,z-2);}
     }
+    private void residentialHouse(Level w,int x,int y,int z,int sx,int sz,int variant) {
+        int wall=variant%4==0?STONE_BRICK:(variant%4==1?BRICK:(variant%4==2?SANDSTONE:PLANKS));
+        int roof=variant%3==0?QUARTZ:(variant%3==1?WOOL:BRICK);
+        fill(w,x,y,z,x+sx-1,y+6,z+sz-1,wall);
+        fill(w,x+1,y+1,z+1,x+sx-2,y+5,z+sz-2,AIR);
+        fill(w,x+1,y,z+1,x+sx-2,y,z+sz-2,PLANKS);
+        for(int xx=x+1;xx<x+sx-1;xx++){b(w,xx,y+6,z,PLANKS);b(w,xx,y+6,z+sz-1,PLANKS);}
+        for(int zz=z+1;zz<z+sz-1;zz++){b(w,x,y+6,zz,PLANKS);b(w,x+sx-1,y+6,zz,PLANKS);}
+        for(int xx=x+2;xx<x+sx-2;xx+=4){
+            fill(w,xx,y+2,z,xx+1,y+3,z,GLASS);b(w,xx-1,y+2,z,WOOL);b(w,xx+2,y+2,z,WOOL);
+            fill(w,xx,y+8,z,xx+1,y+9,z,GLASS);
+        }
+        int door=x+sx/2;fill(w,door,y+1,z,door,y+3,z,AIR);
+        b(w,door-1,y+1,z,QUARTZ);b(w,door+1,y+1,z,QUARTZ);
+        fill(w,x+sx/2,y+1,z+1,x+sx/2,y+5,z+sz-2,BRICK);
+        fill(w,x+2,y+1,z+2,x+3,y+1,z+3,WOOL);
+        fill(w,x+sx-4,y+1,z+2,x+sx-3,y+1,z+3,BOOKSHELF);
+        fill(w,x+2,y+1,z+sz-4,x+4,y+1,z+sz-3,PLANKS);
+        fill(w,x+sx-4,y+1,z+sz-4,x+sx-3,y+1,z+sz-3,QUARTZ);
+        for(int layer=0;layer<4;layer++)fill(w,x-1+layer,y+7+layer,z-1+layer,x+sx-layer,y+7+layer,z+sz-layer,roof);
+        fill(w,x+sx/2-1,y+11,z+sz/2-1,x+sx/2+1,y+12,z+sz/2+1,wall);
+        fill(w,x+sx-3,y+7,z+2,x+sx-2,y+12,z+3,STONE_BRICK);b(w,x+sx-3,y+13,z+2,GLOWSTONE);
+        fill(w,door-2,y+6,z-2,door+2,y+6,z-1,PLANKS);
+        for(int xx=door-2;xx<=door+2;xx+=2)b(w,xx,y+7,z-1,FENCE);
+        for(int xx=x+2;xx<x+sx-2;xx+=4)lamp(w,xx,y,z-2);
+    }
+    private void bench(Level w,int x,int y,int z) {
+        b(w,x,y+1,z,PLANKS);b(w,x+1,y+1,z,PLANKS);b(w,x,y+2,z-1,FENCE);b(w,x+1,y+2,z-1,FENCE);
+    }
+
     private void castle(Level w,int x,int y,int z){
         // Grand keep: broad two-wing footprint, open central hall and layered roof.
         shell(w,x,y,z,39,33,STONE_BRICK,STONE_BRICK);
