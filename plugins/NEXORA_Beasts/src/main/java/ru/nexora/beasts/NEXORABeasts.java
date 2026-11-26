@@ -223,13 +223,16 @@ public final class NEXORABeasts extends PluginBase implements Listener {
         if (isActiveCompanion(victim) && damager instanceof EntityLiving attacker
                 && attacker != victim && isHostileMob(attacker)) {
             String species = getCompanionSpecies(victim);
-            float damageScale = switch (species) {
-                case "turtle" -> 0.65f;
-                case "polarbear", "polar_bear" -> 0.75f;
-                case "panda" -> 0.85f;
-                default -> 1.0f;
+            int defense = getCompanionStat(victim, "defense", 2);
+            double reduction = Math.min(0.60, Math.max(0, defense) * 0.005);
+            reduction += switch (species) {
+                case "turtle" -> 0.35;
+                case "polarbear", "polar_bear" -> 0.25;
+                case "panda" -> 0.15;
+                default -> 0.0;
             };
-            if (damageScale < 1.0f) event.setDamage(event.getDamage() * damageScale);
+            reduction = Math.min(0.70, reduction);
+            event.setDamage((float) (event.getDamage() * (1.0 - reduction)));
             dodgeCompanion(victim, attacker);
         }
 
@@ -491,18 +494,28 @@ public final class NEXORABeasts extends PluginBase implements Listener {
         }
     }
 
-    private String getCompanionSpecies(Entity companion) {
+    private String getCompanionDataPath(Entity companion) {
         for (Map.Entry<UUID, Map<Integer, Entity>> ownerEntry : activeCompanions.entrySet()) {
             for (Map.Entry<Integer, Entity> petEntry : ownerEntry.getValue().entrySet()) {
                 if (petEntry.getValue() != companion) continue;
                 String ownerPath = "players." + ownerEntry.getKey();
                 String id = data.getString(ownerPath + ".team." + petEntry.getKey(), "");
                 if (id.isEmpty()) return "";
-                return data.getString(ownerPath + ".collection." + id + ".species", "")
-                        .toLowerCase(Locale.ROOT);
+                String base = ownerPath + ".collection." + id;
+                return data.exists(base + ".species") ? base : "";
             }
         }
         return "";
+    }
+
+    private String getCompanionSpecies(Entity companion) {
+        String base = getCompanionDataPath(companion);
+        return base.isEmpty() ? "" : data.getString(base + ".species", "").toLowerCase(Locale.ROOT);
+    }
+
+    private int getCompanionStat(Entity companion, String key, int fallback) {
+        String base = getCompanionDataPath(companion);
+        return base.isEmpty() ? fallback : stat(base, key, fallback);
     }
 
     private String speciesPassiveName(String species) {
@@ -1566,12 +1579,13 @@ public final class NEXORABeasts extends PluginBase implements Listener {
         int level = Math.max(1, data.getInt(base + ".level", 1));
         int tier = rarityIndex(data.getString(base + ".rarity", "common"));
         int potential = data.getInt(base + ".potential", 0);
-        return switch (key) {
+        int baseStat = switch (key) {
             case "vitality" -> 20 + tier * 8 + (level - 1) * 4 + potential * 2;
             case "power" -> 5 + tier * 3 + (level - 1) * 2 + potential;
             case "defense" -> 2 + tier * 2 + (level - 1) + potential / 2;
             default -> fallback;
         };
+        return baseStat + data.getInt(base + ".bonus." + key, 0);
     }
 
     private String stripColors(String value) {
