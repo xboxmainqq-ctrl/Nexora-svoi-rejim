@@ -609,6 +609,26 @@ public final class NEXORABeasts extends PluginBase implements Listener {
             double qy = dz * px - dx * pz;
             double qz = -dy * px;
 
+            // Bright ignition at the muzzle makes the breath read as a deliberate dragon skill.
+            double muzzleX = sx + dx * 0.38;
+            double muzzleY = sy + dy * 0.38;
+            double muzzleZ = sz + dz * 0.38;
+            Vector3 muzzleCore = new Vector3(muzzleX, muzzleY, muzzleZ);
+            pet.getLevel().addParticle(new FlameParticle(muzzleCore));
+            pet.getLevel().addParticle(new DustParticle(muzzleCore, 255, 225, 85));
+            for (int spark = 0; spark < 8; spark++) {
+                double angle = Math.PI * 2.0 * spark / 8.0;
+                double spread = 0.20 + (spark % 2) * 0.08;
+                Vector3 ember = new Vector3(
+                        muzzleX + (px * Math.cos(angle) + qx * Math.sin(angle)) * spread,
+                        muzzleY + (py * Math.cos(angle) + qy * Math.sin(angle)) * spread,
+                        muzzleZ + (pz * Math.cos(angle) + qz * Math.sin(angle)) * spread);
+                pet.getLevel().addParticle(new FlameParticle(ember));
+                if (spark % 2 == 0) {
+                    pet.getLevel().addParticle(new DustParticle(ember, 255, 115, 24));
+                }
+            }
+
             double breathLength = Math.min(8.0, Math.max(4.0, length + 1.5));
             for (int segment = 1; segment <= 9; segment++) {
                 double along = breathLength * segment / 9.0;
