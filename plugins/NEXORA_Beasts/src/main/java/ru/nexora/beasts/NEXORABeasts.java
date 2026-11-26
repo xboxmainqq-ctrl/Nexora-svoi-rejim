@@ -30,6 +30,8 @@ import cn.nukkit.utils.Config;
 import ru.nexora.beasts.entity.NexoraWolfEntity;
 import ru.nexora.beasts.entity.NexoraFoxEntity;
 import ru.nexora.beasts.entity.NexoraCatEntity;
+import ru.nexora.beasts.entity.NexoraBeeEntity;
+import ru.nexora.beasts.entity.NexoraAxolotlEntity;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -84,6 +86,8 @@ public final class NEXORABeasts extends PluginBase implements Listener {
         registerCustomEntity("волк", NexoraWolfEntity.IDENTIFIER, NexoraWolfEntity::register);
         registerCustomEntity("лиса", NexoraFoxEntity.IDENTIFIER, NexoraFoxEntity::register);
         registerCustomEntity("кот", NexoraCatEntity.IDENTIFIER, NexoraCatEntity::register);
+        registerCustomEntity("пчела", NexoraBeeEntity.IDENTIFIER, NexoraBeeEntity::register);
+        registerCustomEntity("аксолотль", NexoraAxolotlEntity.IDENTIFIER, NexoraAxolotlEntity::register);
         getServer().getPluginManager().registerEvents(this, this);
         getServer().getScheduler().scheduleRepeatingTask(this, this::tickCompanions, 5);
         getLogger().info("NEXORA_Beasts включён. Коллекция, GUI и система питомцев готовы.");
@@ -732,6 +736,8 @@ public final class NEXORABeasts extends PluginBase implements Listener {
                     case "wolf" -> NexoraWolfEntity.IDENTIFIER;
                     case "fox" -> NexoraFoxEntity.IDENTIFIER;
                     case "cat" -> NexoraCatEntity.IDENTIFIER;
+                    case "bee" -> NexoraBeeEntity.IDENTIFIER;
+                    case "axolotl" -> NexoraAxolotlEntity.IDENTIFIER;
                     default -> null;
                 };
                 String vanillaId = entityIdentifier(species);
