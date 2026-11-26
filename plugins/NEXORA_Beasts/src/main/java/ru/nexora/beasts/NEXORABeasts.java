@@ -357,6 +357,8 @@ public final class NEXORABeasts extends PluginBase implements Listener {
                     }
                 }
 
+                calmCompanion(pet, player);
+
                 String beastId = data.getString(playerPath(player) + ".team." + entry.getKey(), "");
                 boolean fighting = false;
                 if (!beastId.isEmpty() && hasBeast(player, beastId)
@@ -1476,6 +1478,33 @@ public final class NEXORABeasts extends PluginBase implements Listener {
             player.sendMessage("§eСначала добавь существ в активную команду.");
         } else {
             player.sendMessage("§a✦ Призвано питомцев: §f" + summoned + "§a/3. Они будут следовать за тобой.");
+        }
+    }
+
+    /**
+     * Vanilla mob AI must never turn a companion against its owner. Damage is already
+     * cancelled in {@link #onCompanionProtectionAndDefense}; this also drops the angry
+     * state and any target pointing at the owner so the pet does not growl or chase.
+     * Done through reflection because the exact AI API differs between Nukkit-MOT builds.
+     */
+    private void calmCompanion(Entity pet, Player owner) {
+        if (pet == null || pet.isClosed()) return;
+        try {
+            pet.getClass().getMethod("setAngry", boolean.class).invoke(pet, false);
+        } catch (ReflectiveOperationException | RuntimeException ignored) {
+            // method not present on this entity type
+        }
+        try {
+            Object current = pet.getClass().getMethod("getTarget").invoke(pet);
+            if (current == owner) {
+                try {
+                    pet.getClass().getMethod("setTarget", Entity.class, boolean.class).invoke(pet, null, false);
+                } catch (NoSuchMethodException e) {
+                    pet.getClass().getMethod("setTarget", Entity.class).invoke(pet, (Object) null);
+                }
+            }
+        } catch (ReflectiveOperationException | RuntimeException ignored) {
+            // no target API on this entity type
         }
     }
 

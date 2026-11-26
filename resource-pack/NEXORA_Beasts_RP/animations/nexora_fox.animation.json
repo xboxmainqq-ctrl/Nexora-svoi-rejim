@@ -81,7 +81,7 @@
         "leg0": {
           "rotation": {
             "0.0": [
-              "math.sin(query.anim_time * 12.0) * 32.0",
+              "math.cos(query.modified_distance_moved * 38.17) * math.clamp(query.modified_move_speed * 2.0, 0, 1) * 43.2",
               0,
               0
             ]
@@ -90,7 +90,7 @@
         "leg3": {
           "rotation": {
             "0.0": [
-              "math.sin(query.anim_time * 12.0) * 32.0",
+              "math.cos(query.modified_distance_moved * 38.17) * math.clamp(query.modified_move_speed * 2.0, 0, 1) * 43.2",
               0,
               0
             ]
@@ -99,7 +99,7 @@
         "leg1": {
           "rotation": {
             "0.0": [
-              "math.sin(query.anim_time * 12.0 + 3.14159) * 32.0",
+              "math.cos(query.modified_distance_moved * 38.17 + 3.14159) * math.clamp(query.modified_move_speed * 2.0, 0, 1) * 43.2",
               0,
               0
             ]
@@ -108,7 +108,7 @@
         "leg2": {
           "rotation": {
             "0.0": [
-              "math.sin(query.anim_time * 12.0 + 3.14159) * 32.0",
+              "math.cos(query.modified_distance_moved * 38.17 + 3.14159) * math.clamp(query.modified_move_speed * 2.0, 0, 1) * 43.2",
               0,
               0
             ]

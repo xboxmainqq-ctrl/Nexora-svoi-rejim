@@ -37,6 +37,10 @@ def _mix(a, b, t):
     return tuple(round(a[i] + (b[i] - a[i]) * t) for i in range(3)) + (255,)
 
 
+def _b(bones, name):
+    return next(b for b in bones if b["name"] == name)
+
+
 def cube(origin, size, tag):
     return {"origin": list(origin), "size": list(size), "tag": tag}
 
@@ -73,8 +77,13 @@ def quadruped(body, head, snout, leg_h, leg_w, ear, tail_len, head_dy=0.0,
         cube([-hw / 2, hy, hz], [hw, hh, hd], "head"),
         cube([-sw / 2, hy, hz - sd], [sw, sh, sd], "snout"),
         cube([-1, hy + sh - 1, hz - sd - 1], [2, 1, 1], "nose"),
-        cube([-hw / 2 + 0.5, hy + hh, hz + hd - ed - 1], [ew, eh, ed], ear_tag),
-        cube([hw / 2 - 0.5 - ew, hy + hh, hz + hd - ed - 1], [ew, eh, ed], ear_tag),
+    ]
+    ear_z = hz + hd - ed - 1
+    ears = [
+        bone("ear_l", [hw / 2 - ew / 2, hy + hh, ear_z + ed / 2],
+             [cube([hw / 2 - ew, hy + hh, ear_z], [ew, eh, ed], ear_tag)], parent="head"),
+        bone("ear_r", [-hw / 2 + ew / 2, hy + hh, ear_z + ed / 2],
+             [cube([-hw / 2, hy + hh, ear_z], [ew, eh, ed], ear_tag)], parent="head"),
     ]
     bones.append(bone("head", [0, hy + hh / 2, -bl / 2], head_cubes))
 
@@ -93,7 +102,7 @@ def quadruped(body, head, snout, leg_h, leg_w, ear, tail_len, head_dy=0.0,
     for i, tag in enumerate(tail_tags):
         tc.append(cube([-1, top - 3 + i * 0.0 - i, bl / 2 + i * seg], [2, 2, seg], tag))
     bones.append(bone("tail", [0, top - 2, bl / 2], tc))
-    return bones
+    return bones + ears
 
 
 def feather_wing(side, root, lens, tag="wing", bone_tag="wing_bone", drop=1.0, step=2):
@@ -129,7 +138,7 @@ def dragon_wing(side, root, span, tag="wing", bone_tag="wing_bone"):
 
 def _wolf_base(**kw):
     p = dict(body=(6, 6, 9), head=(6, 6, 5), snout=(3, 3, 3), leg_h=7, leg_w=2,
-             ear=(2, 3, 1), tail_len=7)
+             ear=(2, 2, 1), tail_len=7)
     p.update(kw)
     return quadruped(**p)
 
@@ -172,7 +181,7 @@ def look_epic_tiger():
                       ear=(2, 2, 1), tail_len=11,
                       tail_tags=["tail", "stripe", "tail", "stripe", "tail_tip"][:3])
     # long ringed tail curling up
-    tail = bones[-1]
+    tail = _b(bones, "tail")
     tail["cubes"] = [cube([-1, 9, 5.5 + i * 2], [2, 2, 2], "stripe" if i % 2 else "tail") for i in range(5)]
     tail["cubes"].append(cube([-1, 10, 15.5], [2, 3, 2], "tail_tip"))
     bones[0]["cubes"].append(cube([-2, 11, -4], [4, 1, 7], "stripe"))  # dorsal stripe ridge
@@ -181,7 +190,7 @@ def look_epic_tiger():
 
 def look_legendary_lion():
     bones = quadruped(body=(6, 6, 11), head=(5, 5, 4), snout=(3, 2, 2), leg_h=7, leg_w=3,
-                      ear=(1, 1, 1), tail_len=9, ear_tag="mane")
+                      ear=(2, 2, 1), tail_len=9, ear_tag="ear")
     head = bones[1]
     # big layered mane
     head["cubes"] += [
@@ -191,14 +200,14 @@ def look_legendary_lion():
         cube([5, 9, -4], [1, 6, 3], "mane_dark"),
         cube([-4, 6, -5], [8, 2, 3], "mane_dark"),
     ]
-    tail = bones[-1]
+    tail = _b(bones, "tail")
     tail["cubes"] = [cube([-1, 9, 5.5], [2, 2, 5], "tail"), cube([-1.5, 8, 10.5], [3, 4, 3], "mane")]
     return bones
 
 
 def look_mythic_kitsune():
     bones = quadruped(body=(5, 5, 9), head=(5, 5, 5), snout=(3, 2, 3), leg_h=6, leg_w=2,
-                      ear=(2, 5, 1), tail_len=8, ear_tag="ear",
+                      ear=(2, 3, 1), tail_len=8, ear_tag="ear",
                       tail_tags=["tail", "tail", "tail_tip"])
     # three feathered crystal "wings" per side (nine-tail style) + crystal tails
     for side, name in ((1, "wing_l"), (-1, "wing_r")):
@@ -220,8 +229,6 @@ def look_ancient_stag():
             cube([-2.5, 17, -11], [5, 5, 5], "head"),
             cube([-1.5, 17, -14], [3, 3, 3], "snout"),
             cube([-1, 18, -15], [2, 1, 1], "nose"),
-            cube([-4, 20, -9], [2, 3, 1], "ear"),
-            cube([2, 20, -9], [2, 3, 1], "ear"),
             # antlers: trunks + tines
             cube([-3, 22, -9], [1, 5, 1], "antler"), cube([2, 22, -9], [1, 5, 1], "antler"),
             cube([-5, 25, -9], [2, 1, 1], "antler"), cube([3, 25, -9], [2, 1, 1], "antler"),
@@ -229,6 +236,8 @@ def look_ancient_stag():
             cube([-3, 27, -9], [1, 4, 1], "antler_glow"), cube([2, 27, -9], [1, 4, 1], "antler_glow"),
             cube([-4, 28, -9], [1, 2, 1], "antler_glow"), cube([3, 28, -9], [1, 2, 1], "antler_glow"),
         ]),
+        bone("ear_l", [2, 22, -7], [cube([0.5, 22, -7.5], [2, 3, 1], "ear")], parent="head"),
+        bone("ear_r", [-2, 22, -7], [cube([-2.5, 22, -7.5], [2, 3, 1], "ear")], parent="head"),
         bone("neck", [0, 15, -6], [cube([-1.5, 15, -9], [3, 7, 3], "body")], parent="body"),
     ]
     xs, zf, zb = 2, -4, 4
@@ -253,7 +262,7 @@ def look_divine_angel():
         bones.append(bone(name, [side * 3, 12, -1],
                           feather_wing(side, (side * 3, 11, -1), [10, 9, 8, 6, 4], drop=1.2),
                           parent="body"))
-    for b in bones[2:6]:
+    for b in [x for x in bones if x["name"].startswith("leg")]:
         b["cubes"].append(cube([b["cubes"][0]["origin"][0] - 0.5, 3, b["cubes"][0]["origin"][2] - 0.5],
                                [3, 1, 3], "gold"))
     return bones
@@ -261,7 +270,7 @@ def look_divine_angel():
 
 def look_forbidden_abyss():
     bones = _wolf_base(body=(7, 7, 10), head=(7, 6, 5), snout=(4, 3, 4), leg_h=7, leg_w=3,
-                       ear=(2, 3, 1), tail_len=9, ear_tag="spike",
+                       ear=(2, 3, 1), tail_len=9, ear_tag="ear",
                        tail_tags=["tail", "spike", "spike"])
     body = bones[0]
     for i in range(5):
@@ -491,27 +500,41 @@ def geometry_json(look, bones):
 
 
 def animations_json():
+    sp = "math.clamp(query.modified_move_speed * 2.0, 0, 1)"
     legs = {}
-    for name, ph in (("leg0", 0), ("leg3", 0), ("leg1", math.pi), ("leg2", math.pi)):
-        legs[name] = {"rotation": {"0.0": [f"math.sin(query.anim_time * 360.0 + {round(ph * 57.2958)}) * 32.0", 0, 0]}}
+    # diagonal pairs move together, like vanilla quadrupeds
+    for name, ph in (("leg0", 0), ("leg3", 0), ("leg1", 3.14159), ("leg2", 3.14159)):
+        ang = f"query.modified_distance_moved * 38.17 + {ph}" if ph else "query.modified_distance_moved * 38.17"
+        legs[name] = {"rotation": {"0.0": [f"math.cos({ang}) * {sp} * 50.0", 0, 0]}}
     flippers = {}
-    for name, ph in (("flipper0", 0), ("flipper1", 180), ("flipper2", 180), ("flipper3", 0)):
-        flippers[name] = {"rotation": {"0.0": [0, f"math.sin(query.anim_time * 360.0 + {ph}) * 28.0", 0]}}
+    for name, ph in (("flipper0", 0), ("flipper1", 3.14159), ("flipper2", 3.14159), ("flipper3", 0)):
+        ang = f"query.modified_distance_moved * 38.17 + {ph}" if ph else "query.modified_distance_moved * 38.17"
+        flippers[name] = {"rotation": {"0.0": [0, f"math.cos({ang}) * {sp} * 32.0", 0]}}
     return {
         "format_version": "1.8.0",
         "animations": {
             "animation.nexora_look.idle": {
-                "loop": True, "animation_length": 2.0,
+                "loop": True, "animation_length": 4.0,
                 "bones": {
-                    "head": {"rotation": {"0.0": [0, 0, 0], "1.0": [-3, 0, 0], "2.0": [0, 0, 0]}},
-                    "tail": {"rotation": {"0.0": [0, -10, 0], "1.0": [0, 10, 0], "2.0": [0, -10, 0]}},
-                    "tail2": {"rotation": {"0.0": [0, 14, 0], "1.0": [0, -14, 0], "2.0": [0, 14, 0]}},
+                    "head": {"rotation": {"0.0": [0, 0, 0], "2.0": [-3, 0, 0], "4.0": [0, 0, 0]}},
+                    "tail": {"rotation": {"0.0": [0, -8, 0], "1.0": [0, 8, 0], "2.0": [0, -8, 0],
+                                          "3.0": [0, 8, 0], "4.0": [0, -8, 0]}},
+                    "tail2": {"rotation": {"0.0": [0, 12, 0], "2.0": [0, -12, 0], "4.0": [0, 12, 0]}},
+                    # quick vanilla-style ear flick every few seconds
+                    "ear_l": {"rotation": {"0.0": [0, 0, 0], "2.6": [0, 0, 0], "2.75": [0, 0, 18],
+                                           "2.9": [0, 0, 0], "4.0": [0, 0, 0]}},
+                    "ear_r": {"rotation": {"0.0": [0, 0, 0], "1.2": [0, 0, 0], "1.35": [0, 0, -18],
+                                           "1.5": [0, 0, 0], "4.0": [0, 0, 0]}},
                 },
             },
             "animation.nexora_look.walk": {
                 "loop": True, "animation_length": 1.0,
                 "bones": {**legs, **flippers,
-                          "body": {"position": {"0.0": [0, "math.abs(math.sin(query.anim_time * 360.0)) * 0.35", 0]}}},
+                          "head": {"rotation": {"0.0": [f"math.cos(query.modified_distance_moved * 38.17 * 2.0) * {sp} * 3.0", 0, 0]}},
+                          "tail": {"rotation": {"0.0": [f"{sp} * 12.0", f"math.sin(query.modified_distance_moved * 38.17) * {sp} * 10.0", 0]}},
+                          "ear_l": {"rotation": {"0.0": [f"{sp} * -8.0", 0, f"{sp} * -6.0"]}},
+                          "ear_r": {"rotation": {"0.0": [f"{sp} * -8.0", 0, f"{sp} * 6.0"]}},
+                          "body": {"position": {"0.0": [0, f"math.abs(math.cos(query.modified_distance_moved * 38.17)) * {sp} * 0.35", 0]}}},
             },
             "animation.nexora_look.wings": {
                 "loop": True, "animation_length": 1.2,

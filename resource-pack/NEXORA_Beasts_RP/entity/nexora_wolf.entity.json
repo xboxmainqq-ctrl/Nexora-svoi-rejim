@@ -37,6 +37,8 @@
           },
           "look_wings",
           "look_wings",
+          "look_wings",
+          "look_wings",
           "look_idle",
           {
             "look_walk": "query.modified_move_speed > 0.01"
