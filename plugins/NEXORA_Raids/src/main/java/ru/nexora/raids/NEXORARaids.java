@@ -41,7 +41,8 @@ public final class NEXORARaids extends PluginBase implements Listener {
     private static final class RaidRun {
         final Player player;
         final Difficulty difficulty;
-        final Position center;
+        Position center;
+        long bossId = -1L;
         final Map<Long, Entity> mobs = new HashMap<>();
         final Set<Long> alive = new HashSet<>();
         int stage = 0;
@@ -129,6 +130,30 @@ public final class NEXORARaids extends PluginBase implements Listener {
             put(level,cx+x,cy+3,cz+z,89,0);
             put(level,cx+x,cy+2,cz+z,50,5);
         }
+        // Three chambers connected by narrow gates: entrance, crypt and throne hall.
+        for (int wallZ : new int[]{-5, 5}) {
+            for (int x=-14; x<=14; x++) {
+                if (Math.abs(x)<=2) continue;
+                for (int y=0; y<7; y++) put(level,cx+x,cy+y,cz+wallZ,(y==6?98:4),0);
+                if (x%4==0) put(level,cx+x,cy+7,cz+wallZ,17,0);
+            }
+            for (int x=-2; x<=2; x++) {
+                put(level,cx+x,cy+6,cz+wallZ,98,0);
+                if (Math.abs(x)==2) for (int y=0;y<6;y++) put(level,cx+x,cy+y,cz+wallZ,17,0);
+            }
+        }
+        // Distinct chamber floors and ritual markings.
+        for (int roomZ : new int[]{-10,0,10}) {
+            for (int x=-6;x<=6;x++) for (int z=-4;z<=4;z++) {
+                if (x*x+z*z<=36 && (Math.abs(x)==6 || Math.abs(z)==4))
+                    put(level,cx+x,cy-1,cz+roomZ+z,98,0);
+            }
+            for (int a=0;a<8;a++) {
+                double angle=Math.PI*2*a/8.0;
+                int x=(int)Math.round(Math.cos(angle)*5), z=(int)Math.round(Math.sin(angle)*3);
+                put(level,cx+x,cy,cz+roomZ+z,89,0);
+            }
+        }
         // Entrance gate.
         for(int y=0;y<5;y++) { put(level,cx-3,cy+y,cz-17,17,0); put(level,cx+3,cy+y,cz-17,17,0); }
         for(int x=-3;x<=3;x++) put(level,cx+x,cy+5,cz-17,17,0);
@@ -184,20 +209,48 @@ public final class NEXORARaids extends PluginBase implements Listener {
         run.alive.clear();
         run.player.sendMessage("§8━━━━━━━━━━━━━━━━━━━━");
         if(run.stage==1) {
-            run.player.sendMessage("§b⚔ ЭТАП I — ЗАЧИСТКА §7· Враги приближаются!");
+            run.center = new Position(run.center.x,run.center.y,run.center.z-10,run.center.getLevel());
+            run.player.teleport(run.center);
+            run.player.sendMessage("§b⚔ ЗАЛ I — ЗАРОСШИЙ ВХОД §7· Разорители уже здесь!");
             for(int i=0;i<run.difficulty.adds+2;i++)
-                spawnMob(run,(i%2==0?"Zombie":"Skeleton"),"§cРазоритель зала",0,Math.PI*2*i/(run.difficulty.adds+2),7);
+                spawnMob(run,(i%2==0?"Zombie":"Skeleton"),"§cРазоритель зала",0,Math.PI*2*i/(run.difficulty.adds+2),4.5);
         } else if(run.stage==2) {
-            run.player.sendMessage("§e☠ ЭТАП II — ХРАНИТЕЛЬ РУИН");
+            run.center = new Position(run.center.x,run.center.y,run.center.z+10,run.center.getLevel());
+            run.player.teleport(run.center);
+            run.player.sendMessage("§e☠ ЗАЛ II — ЗАБЫТАЯ КРИПТА");
+            run.player.sendMessage("§7Хранитель призывает пауков из трещин.");
             spawnMob(run,"IronGolem","§e✦ ХРАНИТЕЛЬ РУИН",run.difficulty.hp/2,0,0);
+            run.bossId = run.alive.iterator().next();
             for(int i=0;i<run.difficulty.adds;i++)
-                spawnMob(run,"Spider","§5Паук руин",0,Math.PI*2*i/run.difficulty.adds,9);
+                spawnMob(run,"Spider","§5Паук руин",0,Math.PI*2*i/run.difficulty.adds,5);
+            scheduleBossMechanic(run,2,220);
         } else {
-            run.player.sendMessage("§c☠ ЭТАП III — ДРЕВНИЙ СТРАЖ");
-            run.player.sendMessage("§7Победи босса, чтобы завершить рейд!");
+            run.center = new Position(run.center.x,run.center.y,run.center.z+10,run.center.getLevel());
+            run.player.teleport(run.center);
+            run.player.sendMessage("§c☠ ЗАЛ III — ТРОН ДРЕВНЕГО СТРАЖА");
+            run.player.sendMessage("§7Босс периодически призывает павших воинов.");
             spawnMob(run,"IronGolem","§c☠ ДРЕВНИЙ СТРАЖ",run.difficulty.hp,0,0);
+            run.bossId = run.alive.iterator().next();
+            scheduleBossMechanic(run,3,200);
         }
         if(run.alive.isEmpty()) { run.player.sendMessage("§cНе удалось создать врагов. Рейд остановлен."); finish(run,false); }
+    }
+
+    private void scheduleBossMechanic(RaidRun run, int stage, int delay) {
+        getServer().getScheduler().scheduleDelayedTask(this, () -> {
+            if (runs.get(run.player.getUniqueId()) != run || run.stage != stage
+                    || !run.player.isOnline() || !run.alive.contains(run.bossId)) return;
+            if (stage == 2) {
+                run.player.sendMessage("§5☠ Хранитель раскрывает трещины — из земли лезут пауки!");
+                for (int i=0;i<2;i++) spawnMob(run,"Spider","§5Порождение крипты",0,Math.PI*i,4);
+                scheduleBossMechanic(run,stage,220);
+            } else {
+                run.player.sendMessage("§c☠ Древний страж зовёт павших! Уничтожь прислужников!");
+                for (int i=0;i<run.difficulty.adds;i++)
+                    spawnMob(run,(i%2==0?"Zombie":"Skeleton"),"§cПавший воин",0,Math.PI*2*i/run.difficulty.adds,5);
+                scheduleBossMechanic(run,stage,200);
+            }
+        }, delay);
     }
 
     @EventHandler public void onDeath(EntityDeathEvent event) {
