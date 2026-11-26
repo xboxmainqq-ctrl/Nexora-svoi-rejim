@@ -1,0 +1,17 @@
+name: NEXORA_Raids
+main: ru.nexora.raids.NEXORARaids
+version: "1.0.0"
+api: ["1.0.0"]
+author: NEXORA
+description: Трёхэтапные рейды с боссами и наградами
+commands:
+  raid:
+    description: Меню рейдов NEXORA
+    usage: "/raid"
+    aliases: ["raids", "рейд"]
+    permission: nexora.raids.use
+permissions:
+  nexora.raids.use:
+    default: true
+  nexora.raids.admin:
+    default: op
