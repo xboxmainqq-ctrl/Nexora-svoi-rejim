@@ -223,8 +223,11 @@ public final class NEXORABeasts extends PluginBase implements Listener {
         if (isActiveCompanion(victim) && damager instanceof EntityLiving attacker
                 && attacker != victim && isHostileMob(attacker)) {
             String species = getCompanionSpecies(victim);
+            int vitality = getCompanionStat(victim, "vitality", 20);
             int defense = getCompanionStat(victim, "defense", 2);
-            double reduction = Math.min(0.60, Math.max(0, defense) * 0.005);
+            // Vitality gives broad toughness; defense is the stronger dedicated mitigation stat.
+            double reduction = Math.min(0.25, Math.max(0, vitality) * 0.0025)
+                    + Math.min(0.45, Math.max(0, defense) * 0.004);
             reduction += switch (species) {
                 case "turtle" -> 0.35;
                 case "polarbear", "polar_bear" -> 0.25;
