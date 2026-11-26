@@ -1,6 +1,8 @@
 package ru.nexora.dungeons;
 
 import cn.nukkit.Player;
+import cn.nukkit.block.Block;
+import cn.nukkit.math.Vector3;
 import cn.nukkit.command.Command;
 import cn.nukkit.command.CommandSender;
 import cn.nukkit.entity.Entity;
@@ -80,6 +82,113 @@ public final class NEXORADungeons extends PluginBase implements Listener {
         config.set(key + ".z", p.getZ());
         config.save();
         p.sendMessage("§6✦ NEXORA §8» §aТочка «" + key + "» сохранена.");
+    }
+
+
+    // Builds a large, overgrown abandoned mine around the administrator.
+    private void put(cn.nukkit.level.Level level, int x, int y, int z, int id, int meta) {
+        level.setBlock(new Vector3(x, y, z), Block.get(id, meta), false, false);
+    }
+
+    private void buildMine(Player p) {
+        cn.nukkit.level.Level level = p.getLevel();
+        int cx = p.getFloorX(), cy = p.getFloorY(), cz = p.getFloorZ();
+        Random random = new Random(7319L);
+        p.sendMessage("§6✦ NEXORA §8» §eСтрою заброшенную шахту... Это может занять несколько секунд.");
+        // Hollow cavern, uneven rocky floor, rough perimeter and a broken ceiling.
+        for (int x=-24; x<=24; x++) for (int z=-24; z<=24; z++) {
+            double d = Math.sqrt(x*x + z*z);
+            if (d > 24) continue;
+            int wx=cx+x, wz=cz+z;
+            for (int y=0; y<=9; y++) put(level,wx,cy+y,wz,0,0);
+            int floor = random.nextInt(100)<13 ? 48 : (random.nextInt(100)<10 ? 13 : 4);
+            put(level,wx,cy-1,wz,floor,0);
+            if (d >= 21.5) {
+                int height=7+random.nextInt(3);
+                for (int h=0;h<height;h++) {
+                    int rock=random.nextInt(100)<18?48:(random.nextBoolean()?1:4);
+                    put(level,wx,cy+h,wz,rock,0);
+                }
+                if (random.nextInt(100)<72) put(level,wx,cy+9,wz,random.nextInt(100)<20?48:1,0);
+                if (random.nextInt(100)<12) put(level,wx,cy+8,wz,89,0);
+            } else if (random.nextInt(100)<3) {
+                put(level,wx,cy-1,wz,2,0);
+                put(level,wx,cy,wz,31,1);
+            }
+        }
+        // Support pillars and crossbeams.
+        for (int sx : new int[]{-15,-5,5,15}) for (int sz : new int[]{-15,0,15}) {
+            for(int h=0;h<7;h++) {
+                put(level,cx+sx,cy+h,cz+sz,17,0);
+                put(level,cx+sx+1,cy+h,cz+sz,17,0);
+            }
+            for(int dx=0;dx<3;dx++) put(level,cx+sx+dx,cy+6,cz+sz,17,0);
+            put(level,cx+sx,cy+7,cz+sz,5,0);
+            put(level,cx+sx+1,cy+7,cz+sz,5,0);
+        }
+        // Rusty-looking abandoned rail line with wooden sleepers.
+        for(int x=-17;x<=17;x++) {
+            if (x%3==0) put(level,cx+x,cy-1,cz-8,5,0);
+            put(level,cx+x,cy,cz-8,66,0);
+            if (x%3==0) {
+                put(level,cx+x,cy,cz-7,5,0);
+                put(level,cx+x,cy,cz-9,5,0);
+            }
+        }
+        // Broken mineshaft entrance arch and side tunnel.
+        for(int z=-23;z<=-17;z++) {
+            put(level,cx-4,cy,cz+z,17,0); put(level,cx+4,cy,cz+z,17,0);
+            put(level,cx-4,cy+1,cz+z,17,0); put(level,cx+4,cy+1,cz+z,17,0);
+            if(z%2==0) for(int x=-4;x<=4;x++) put(level,cx+x,cy+3,cz+z,5,0);
+        }
+        // Abandoned miner camp: platform, tent frame, crates and lantern-like glow.
+        for(int x=-13;x<=-7;x++) for(int z=9;z<=15;z++) put(level,cx+x,cy-1,cz+z,5,0);
+        for(int x : new int[]{-13,-7}) for(int z : new int[]{9,15}) {
+            for(int h=0;h<3;h++) put(level,cx+x,cy+h,cz+z,85,0);
+            put(level,cx+x,cy+3,cz+z,89,0);
+        }
+        for(int x=-12;x<=-8;x++) {
+            put(level,cx+x,cy+2,cz+9,35,7);
+            put(level,cx+x,cy+2,cz+15,35,7);
+        }
+        put(level,cx-10,cy,cz+11,54,0); put(level,cx-9,cy,cz+11,54,0);
+        put(level,cx-11,cy+1,cz+12,50,5);
+        // Underground pool and luminous mushroom grove.
+        for(int x=10;x<=16;x++) for(int z=8;z<=14;z++) {
+            if((x-13)*(x-13)+(z-11)*(z-11)<=9) put(level,cx+x,cy-1,cz+z,9,0);
+        }
+        for(int i=0;i<18;i++) {
+            int x=10+random.nextInt(8), z=7+random.nextInt(9);
+            put(level,cx+x,cy,cz+z,random.nextBoolean()?39:40,0);
+            if(random.nextInt(3)==0) put(level,cx+x,cy+1,cz+z,89,0);
+        }
+        // Hanging roots, vines, cobwebs and patches of vegetation.
+        for(int i=0;i<95;i++) {
+            int x=random.nextInt(43)-21, z=random.nextInt(43)-21;
+            if(x*x+z*z>400) continue;
+            int y=random.nextInt(5)+3;
+            if(random.nextBoolean()) put(level,cx+x,cy+y,cz+z,18,random.nextInt(4));
+            else put(level,cx+x,cy+y,cz+z,106,random.nextInt(4));
+        }
+        for(int i=0;i<24;i++) {
+            int x=random.nextInt(39)-19,z=random.nextInt(39)-19;
+            put(level,cx+x,cy+1,cz+z,30,0);
+        }
+        // Ore seams exposed in the cave walls.
+        int[] ores={16,15,14,21,56};
+        for(int i=0;i<42;i++) {
+            double a=random.nextDouble()*Math.PI*2;
+            int x=(int)Math.round(Math.cos(a)*22), z=(int)Math.round(Math.sin(a)*22);
+            put(level,cx+x,cy+1+random.nextInt(4),cz+z,ores[random.nextInt(ores.length)],0);
+        }
+        // Torches along the route.
+        for(int x=-18;x<=18;x+=6) {
+            put(level,cx+x,cy+3,cz-12,50,5);
+            put(level,cx+x,cy+3,cz+12,50,5);
+        }
+        savePosition("spawn", p);
+        p.sendMessage("§aШахта готова! §7Точка входа сохранена здесь.");
+        p.sendMessage("§7Теперь поставь точку выхода и выполни §e/dungeon setexit§7.");
     }
 
     private void openMenu(Player p) {
@@ -219,6 +328,7 @@ public final class NEXORADungeons extends PluginBase implements Listener {
                 p.sendMessage("§cНедостаточно прав."); return true;
             }
             switch (args[0].toLowerCase(Locale.ROOT)) {
+                case "buildmine" -> { buildMine(p); return true; }
                 case "setspawn" -> { savePosition("spawn", p); return true; }
                 case "setexit" -> { savePosition("exit", p); return true; }
                 case "leave" -> {
@@ -230,7 +340,7 @@ public final class NEXORADungeons extends PluginBase implements Listener {
                     p.sendMessage("§eТы покинул подземелье. Награда не выдана.");
                     return true;
                 }
-                default -> { p.sendMessage("§e/dungeon §7| §e/dungeon setspawn §7| §e/dungeon setexit §7| §e/dungeon leave"); return true; }
+                default -> { p.sendMessage("§e/dungeon §7| §e/dungeon buildmine §7| §e/dungeon setspawn §7| §e/dungeon setexit §7| §e/dungeon leave"); return true; }
             }
         }
         if (!p.hasPermission("nexora.dungeons.use")) { p.sendMessage("§cНет прав."); return true; }
