@@ -389,16 +389,24 @@ public final class NEXORABeasts extends PluginBase implements Listener {
                     fighting = runCompanionAI(player, entry.getKey(), livingPet, beastId);
                 }
 
+                String companionSpecies = beastId.isEmpty() || !hasBeast(player, beastId)
+                        ? "wolf"
+                        : data.getString(beastPath(player, beastId) + ".species", "wolf").toLowerCase(Locale.ROOT);
+                boolean dragon = companionSpecies.equals("dragon");
+                double hoverHeight = dragon ? 1.15 : 0.0;
+
                 if (pet.getLevel() != player.getLevel()) {
-                    pet.teleport(player.add(companionOffsetX(entry.getKey()), 0, companionOffsetZ(entry.getKey())));
+                    pet.teleport(player.add(companionOffsetX(entry.getKey()), hoverHeight, companionOffsetZ(entry.getKey())));
                     continue;
                 }
 
                 // Do not pull a pet back into its owner while it is chasing or attacking.
                 if (fighting) continue;
 
+                // Dragons follow in a stable hover lane above the owner's shoulder.
+                // Their entity gravity is disabled, but normal block collision remains enabled.
                 cn.nukkit.math.Vector3 target = player.add(
-                        companionOffsetX(entry.getKey()), 0, companionOffsetZ(entry.getKey()));
+                        companionOffsetX(entry.getKey()), hoverHeight, companionOffsetZ(entry.getKey()));
                 double dx = target.x - pet.x;
                 double dy = target.y - pet.y;
                 double dz = target.z - pet.z;
@@ -410,7 +418,7 @@ public final class NEXORABeasts extends PluginBase implements Listener {
                     pet.teleport(target);
                 } else if (distanceSquared > 4.0) {
                     double distance = Math.sqrt(distanceSquared);
-                    double step = Math.min(0.62, distance - 2.0);
+                    double step = Math.min(dragon ? 0.78 : 0.62, distance - 2.0);
                     pet.move(dx / distance * step, dy / distance * step, dz / distance * step);
                     pet.updateMovement();
                 }
