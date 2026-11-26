@@ -59,6 +59,14 @@ jobs:
                   "models/entity/nexora_cat.geo.json",
                   "animations/nexora_cat.animation.json",
                   "textures/entity/nexora_cat.png",
+                  "entity/nexora_bee.entity.json",
+                  "models/entity/nexora_bee.geo.json",
+                  "animations/nexora_bee.animation.json",
+                  "textures/entity/nexora_bee.png",
+                  "entity/nexora_axolotl.entity.json",
+                  "models/entity/nexora_axolotl.geo.json",
+                  "animations/nexora_axolotl.animation.json",
+                  "textures/entity/nexora_axolotl.png",
               }
               missing = required - names
               if missing:
