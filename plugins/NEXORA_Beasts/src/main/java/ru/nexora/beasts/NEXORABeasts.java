@@ -881,7 +881,12 @@ public final class NEXORABeasts extends PluginBase implements Listener {
         // The final dungeon boss is an Iron Golem, normally neutral in vanilla.
         // Its explicit NEXORA name tag marks it as hostile for companion AI.
         String nameTag = entity.getNameTag();
-        if (nameTag != null) {\n            String cleanName = stripColors(nameTag);\n            if (cleanName.contains("ПОВЕЛИТЕЛЬ ПОДЗЕМЕЛЬЯ")\n                    || cleanName.contains("ДРЕВНИЙ СТРАЖ")\n                    || cleanName.contains("ХРАНИТЕЛЬ РУИН")) return true;\n        }
+        if (nameTag != null) {
+            String cleanName = stripColors(nameTag);
+            if (cleanName.contains("ПОВЕЛИТЕЛЬ ПОДЗЕМЕЛЬЯ")
+                    || cleanName.contains("ДРЕВНИЙ СТРАЖ")
+                    || cleanName.contains("ХРАНИТЕЛЬ РУИН")) return true;
+        }
         String className = entity.getClass().getName().toLowerCase(Locale.ROOT);
         String simpleName = entity.getClass().getSimpleName().toLowerCase(Locale.ROOT);
         // Nukkit-MOT versions place hostile mobs in different packages (often .mob.),
