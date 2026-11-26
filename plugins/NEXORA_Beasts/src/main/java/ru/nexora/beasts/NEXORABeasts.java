@@ -1603,8 +1603,16 @@ public final class NEXORABeasts extends PluginBase implements Listener {
                 player.sendMessage("§cСервер закрыл сущность питомца сразу после создания: " + species);
                 continue;
             }
+            boolean ownerReceivedSpawn = pet.getViewers().containsValue(player);
+            String customDefinition = pet instanceof CustomEntity customPet
+                    ? customPet.getEntityDefinition().getIdentifier() : "vanilla";
             getLogger().info("Питомец создан: " + species + " (" + pet.getClass().getSimpleName()
-                    + "), entityId=" + pet.getId() + ", owner=" + player.getName());
+                    + "), entityId=" + pet.getId()
+                    + ", networkId=" + pet.getNetworkId()
+                    + ", identifier=" + customDefinition
+                    + ", ownerSpawnPacket=" + ownerReceivedSpawn
+                    + ", viewers=" + pet.getViewers().size()
+                    + ", owner=" + player.getName());
             companions.put(slot, pet);
             summoned++;
         }
