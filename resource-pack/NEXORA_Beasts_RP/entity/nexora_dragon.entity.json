@@ -7,34 +7,10 @@
         "default": "entity_alphatest"
       },
       "textures": {
-        "default": "textures/entity/nexora_dragon"
+        "default": "textures/entity/nexora_wolf"
       },
       "geometry": {
-        "default": "geometry.nexora_dragon"
-      },
-      "animations": {
-        "rest": "animation.nexora_dragon.rest",
-        "walk": "animation.nexora_dragon.walk",
-        "flight": "animation.nexora_dragon.flight",
-        "attack": "animation.nexora_dragon.attack",
-        "sleep": "animation.nexora_dragon.sleep"
-      },
-      "scripts": {
-        "animate": [
-          "rest",
-          {
-            "walk": "query.modified_move_speed > 0.01 && query.is_on_ground"
-          },
-          {
-            "flight": "!query.is_on_ground"
-          },
-          {
-            "attack": "query.is_attacking"
-          },
-          {
-            "sleep": "query.is_sleeping"
-          }
-        ]
+        "default": "geometry.nexora_wolf"
       },
       "render_controllers": [
         "controller.render.nexora_dragon"
