@@ -434,7 +434,9 @@ public final class NEXORABeasts extends PluginBase implements Listener {
     }
 
     private String entityIdentifier(String species) {
-        return "minecraft:" + species.toLowerCase(Locale.ROOT);
+        String normalized = species.toLowerCase(Locale.ROOT);
+        if (normalized.equals("polarbear")) normalized = "polar_bear";
+        return "minecraft:" + normalized;
     }
 
     private void summonTeam(Player player) {
@@ -785,6 +787,7 @@ public final class NEXORABeasts extends PluginBase implements Listener {
     }
 
     private String prettySpecies(String species) {
+        if (species.equalsIgnoreCase("polarbear")) return "Polar Bear";
         String value = species.replace('_', ' ');
         if (value.isEmpty()) return "Неизвестное существо";
         return Character.toUpperCase(value.charAt(0)) + value.substring(1);
