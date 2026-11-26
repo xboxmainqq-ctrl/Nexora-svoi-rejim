@@ -3,6 +3,7 @@ on:
   push:
     paths:
       - "plugins/NEXORA_Beasts/**"
+      - "resource-pack/**"
       - ".github/workflows/beasts.yml"
   pull_request:
     paths:
@@ -26,3 +27,9 @@ jobs:
         with:
           name: NEXORA_Beasts
           path: plugins/NEXORA_Beasts/target/*.jar
+      - name: Build NEXORA_Beasts Resource Pack
+        run: python3 resource-pack/build_pack.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: NEXORA_Beasts_RP
+          path: resource-pack/build/NEXORA_Beasts_RP.mcpack
