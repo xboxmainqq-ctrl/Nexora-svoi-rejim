@@ -1,0 +1,17 @@
+{
+  "format_version": 2,
+  "header": {
+    "name": "NEXORA Beasts",
+    "description": "Уникальный внешний вид питомцев NEXORA",
+    "uuid": "7b44ec18-5e86-4a64-92a7-c67b95a6d1f2",
+    "version": [1, 0, 0],
+    "min_engine_version": [1, 21, 0]
+  },
+  "modules": [
+    {
+      "type": "resources",
+      "uuid": "a4df7c2b-31d8-4e75-97a1-f6e9b0c7d8a3",
+      "version": [1, 0, 0]
+    }
+  ]
+}
