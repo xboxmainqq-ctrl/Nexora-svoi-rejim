@@ -1270,7 +1270,7 @@ public final class NEXORABeasts extends PluginBase implements Listener {
 
         Vector3 center = new Vector3(centerX, centerY, centerZ);
         var level = pet.getLevel();
-        level.addSound(center, Sound.BLOCK_BELL_HIT, 1.4f, 0.65f);
+        level.addSound(center, Sound.BLOCK_BELL_HIT, 0.8f, 0.65f);
         level.addParticleEffect(center, ParticleEffect.ENDROD);
         level.addParticleEffect(center, ParticleEffect.HUGE_EXPLOSION_LEVEL);
         spawnUltimateVisual(level, centerX, centerY, centerZ, species);
