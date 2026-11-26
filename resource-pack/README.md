@@ -1,31 +1,31 @@
 # NEXORA BEASTS — Bedrock Resource Pack
 
-The pack currently contains the first isolated custom-entity prototype:
-`nexora:beast_wolf`.
+The pack now contains three isolated custom companion prototypes:
+- `nexora:beast_wolf` — custom model, rune texture, idle and walk animations
+- `nexora:beast_fox` — custom pointed-ear model, bushy tail, orange/cream rune texture and animations
+- `nexora:beast_cat` — custom slim model, upright tail, dark-violet/cyan texture and animations
 
-The wolf companion has its own geometry and generated pixel-art texture, plus
-separate idle and walking animations. The Nukkit-MOT plugin registers the
-matching network identifier and reuses the vanilla wolf server implementation
-for movement and combat. Only NEXORA wolf companions use this identifier;
-ordinary world wolves keep their vanilla appearance.
+The Nukkit-MOT plugin registers matching network identifiers and reuses each
+vanilla server entity implementation for movement and base behavior. Only
+NEXORA companions use these custom identifiers; ordinary wild wolves, foxes
+and cats keep their vanilla appearance.
 
 ## Build
 
 Run `python3 resource-pack/build_pack.py`. It creates
 `resource-pack/build/NEXORA_Beasts_RP.mcpack`.
 
-The GitHub Actions workflow publishes the plugin JAR and resource pack as
-separate artifacts. The resource-pack artifact is a ZIP containing the
-`.mcpack`; extract the ZIP first, then import or install the contained pack.
+GitHub Actions publishes the plugin JAR and resource pack as separate
+artifacts. The resource-pack artifact is a ZIP containing the `.mcpack`;
+extract the ZIP first, then import or install the contained pack.
 
 ## Server installation
 
 The `.mcpack` is a Bedrock resource pack, not a plugin JAR. Install it through
 the Nukkit-MOT resource-pack configuration and require clients to accept the
-server pack. Keep the vanilla fallback until the custom entity has been tested
-on the exact server and client versions.
+server pack. Keep the vanilla fallback until the custom entities have been
+tested on the exact server and client versions.
 
-This is still a first prototype, not the completed set of all 13 species or
-rarity-specific appearances/effects. The wolf's idle and walk animation files
-are included, but their in-game playback and custom entity rendering still
-need a live client test.
+These are still prototypes. The remaining ten species, rarity-specific
+appearances/effects, and live in-game rendering/animation tests are not
+complete yet.
