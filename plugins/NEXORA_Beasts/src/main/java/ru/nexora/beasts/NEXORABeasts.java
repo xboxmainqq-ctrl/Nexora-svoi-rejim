@@ -208,6 +208,9 @@ public final class NEXORABeasts extends PluginBase implements Listener {
             return;
         }
 
+        // Do not retaliate for hits cancelled by another plugin.
+        if (event.isCancelled()) return;
+
         // If someone (mob or player) attacks the owner, the owner's team retaliates.
         if (victim instanceof Player owner && !(damager instanceof EntityLiving living && isActiveCompanion(living))) {
             defendOwner(owner, damager);
@@ -632,6 +635,7 @@ public final class NEXORABeasts extends PluginBase implements Listener {
         }
 
         String base = beastPath(player, id);
+        String species = data.getString(base + ".species", "wolf").toLowerCase(Locale.ROOT);
         int power = stat(base, "power", 5);
         double damage = Math.max(8.0, Math.min(70.0, power * 2.0));
         double centerX = pet.x;
@@ -660,20 +664,7 @@ public final class NEXORABeasts extends PluginBase implements Listener {
         level.addSound(center, Sound.BLOCK_BELL_HIT, 1.4f, 0.65f);
         level.addParticleEffect(center, ParticleEffect.ENDROD);
         level.addParticleEffect(center, ParticleEffect.HUGE_EXPLOSION_LEVEL);
-
-        // Two luminous rings and a rising energy burst.
-        for (int i = 0; i < 32; i++) {
-            double angle = Math.PI * 2.0 * i / 32.0;
-            Vector3 outer = new Vector3(centerX + Math.cos(angle) * 3.2, centerY, centerZ + Math.sin(angle) * 3.2);
-            Vector3 inner = new Vector3(centerX + Math.cos(angle) * 1.7, centerY + 0.65, centerZ + Math.sin(angle) * 1.7);
-            level.addParticle(new FlameParticle(outer));
-            level.addParticleEffect(inner, ParticleEffect.ENDROD);
-        }
-        for (int i = 0; i < 12; i++) {
-            double angle = Math.PI * 2.0 * i / 12.0;
-            Vector3 rising = new Vector3(centerX + Math.cos(angle) * 1.1, centerY + 1.3, centerZ + Math.sin(angle) * 1.1);
-            level.addParticleEffect(rising, ParticleEffect.ENDROD);
-        }
+        spawnUltimateVisual(level, centerX, centerY, centerZ, species);
 
         int hitCount = 0;
         // Search only nearby entities instead of iterating every loaded chunk on the server.
@@ -690,8 +681,160 @@ public final class NEXORABeasts extends PluginBase implements Listener {
         }
 
         ultimateCooldowns.put(cooldownKey, now + ULTIMATE_COOLDOWN_MS);
-        player.sendMessage("§d§l✹ ПРОБУЖДЕНИЕ! §r§f" + prettySpecies(data.getString(base + ".species", "питомец"))
-                + " §dобрушил энергию на область! §7Урон: §c" + (int) damage + " §8· §7Целей: §f" + hitCount);
+        player.sendMessage("§d§l✹ ПРОБУЖДЕНИЕ! §r§f" + prettySpecies(species)
+                + " §dиспользовал «" + ultimateName(species) + "»! §7Урон: §c" + (int) damage
+                + " §8· §7Целей: §f" + hitCount);
+    }
+
+    /**
+     * Species-specific ultimate visuals. Kept cosmetic so every effect remains safe
+     * for the combat rules and does not change damage or targeting.
+     */
+    private void spawnUltimateVisual(cn.nukkit.level.Level level, double x, double y, double z, String species) {
+        int[] rgb = switch (species) {
+            case "wolf" -> new int[]{115, 205, 255};
+            case "fox" -> new int[]{255, 125, 45};
+            case "cat" -> new int[]{205, 145, 255};
+            case "bee" -> new int[]{255, 220, 55};
+            case "axolotl" -> new int[]{95, 225, 205};
+            case "horse" -> new int[]{255, 190, 80};
+            case "panda" -> new int[]{225, 235, 245};
+            case "polarbear", "polar_bear" -> new int[]{175, 225, 255};
+            case "rabbit" -> new int[]{245, 175, 220};
+            case "ocelot" -> new int[]{245, 205, 105};
+            case "turtle" -> new int[]{105, 205, 125};
+            case "dolphin" -> new int[]{80, 180, 255};
+            case "parrot" -> new int[]{235, 95, 155};
+            default -> new int[]{190, 150, 255};
+        };
+        List<Vector3> points = new ArrayList<>();
+        switch (species) {
+            case "wolf" -> { // three claw-shaped arcs
+                for (int claw = -1; claw <= 1; claw++) for (int i = 0; i < 10; i++) {
+                    double a = -0.52 + i * 0.105;
+                    double r = 1.0 + i * 0.16;
+                    points.add(new Vector3(x + Math.sin(a) * r + claw * 0.58, y + 0.12, z + Math.cos(a) * r));
+                }
+            }
+            case "fox" -> { // rising flame spiral
+                for (int i = 0; i < 42; i++) {
+                    double a = i * 0.31;
+                    double r = 0.35 + i * 0.055;
+                    points.add(new Vector3(x + Math.cos(a) * r, y + 0.08 + i * 0.055, z + Math.sin(a) * r));
+                }
+            }
+            case "cat" -> { // five-point star
+                for (int arm = 0; arm < 5; arm++) for (int i = 0; i < 6; i++) {
+                    double a = Math.PI * 2 * arm / 5.0;
+                    double r = (i % 2 == 0 ? 2.9 : 1.35) * (i / 5.0 + 0.55);
+                    points.add(new Vector3(x + Math.cos(a) * r, y + 0.25 + (i % 2) * 0.25, z + Math.sin(a) * r));
+                }
+            }
+            case "bee" -> { // two hovering rings
+                for (int ring = 0; ring < 2; ring++) for (int i = 0; i < 20; i++) {
+                    double a = Math.PI * 2 * i / 20.0;
+                    double r = ring == 0 ? 1.65 : 2.65;
+                    points.add(new Vector3(x + Math.cos(a) * r, y + 0.25 + ring * 0.8, z + Math.sin(a) * r));
+                }
+            }
+            case "axolotl" -> { // bubbles rising around the center
+                for (int column = 0; column < 8; column++) for (int i = 0; i < 4; i++) {
+                    double a = Math.PI * 2 * column / 8.0;
+                    double r = 1.5 + (i % 2) * 0.35;
+                    points.add(new Vector3(x + Math.cos(a) * r, y + i * 0.55, z + Math.sin(a) * r));
+                }
+            }
+            case "horse" -> { // expanding shockwave rings
+                for (int ring = 0; ring < 3; ring++) for (int i = 0; i < 18; i++) {
+                    double a = Math.PI * 2 * i / 18.0;
+                    double r = 1.0 + ring * 0.95;
+                    points.add(new Vector3(x + Math.cos(a) * r, y + 0.08 + ring * 0.16, z + Math.sin(a) * r));
+                }
+            }
+            case "panda" -> { // twin balanced spirals
+                for (int side = 0; side < 2; side++) for (int i = 0; i < 18; i++) {
+                    double a = i * 0.38 + side * Math.PI;
+                    double r = 0.35 + i * 0.105;
+                    points.add(new Vector3(x + Math.cos(a) * r, y + 0.2 + side * 0.35, z + Math.sin(a) * r));
+                }
+            }
+            case "polarbear", "polar_bear" -> { // six-armed snowflake
+                for (int arm = 0; arm < 6; arm++) for (int i = 1; i <= 5; i++) {
+                    double a = Math.PI * 2 * arm / 6.0;
+                    double r = i * 0.52;
+                    points.add(new Vector3(x + Math.cos(a) * r, y + 0.15, z + Math.sin(a) * r));
+                    if (i >= 3) {
+                        double branch = r - 0.65;
+                        points.add(new Vector3(x + Math.cos(a + 0.42) * branch, y + 0.15, z + Math.sin(a + 0.42) * branch));
+                        points.add(new Vector3(x + Math.cos(a - 0.42) * branch, y + 0.15, z + Math.sin(a - 0.42) * branch));
+                    }
+                }
+            }
+            case "rabbit" -> { // quick ascending moon spiral
+                for (int i = 0; i < 36; i++) {
+                    double a = i * 0.48;
+                    double r = 0.55 + (i % 9) * 0.19;
+                    points.add(new Vector3(x + Math.cos(a) * r, y + i * 0.065, z + Math.sin(a) * r));
+                }
+            }
+            case "ocelot" -> { // sweeping crescent
+                for (int i = 0; i <= 28; i++) {
+                    double a = -Math.PI * 0.72 + i * (Math.PI * 1.44 / 28.0);
+                    points.add(new Vector3(x + Math.cos(a) * 2.8, y + 0.15 + Math.sin(a) * 0.45, z + Math.sin(a) * 2.8));
+                }
+            }
+            case "turtle" -> { // hexagonal shell outline
+                for (int edge = 0; edge < 6; edge++) {
+                    double a1 = Math.PI * 2 * edge / 6.0;
+                    double a2 = Math.PI * 2 * (edge + 1) / 6.0;
+                    for (int i = 0; i <= 5; i++) {
+                        double t = i / 5.0;
+                        points.add(new Vector3(x + (Math.cos(a1) * (1 - t) + Math.cos(a2) * t) * 2.4,
+                                y + 0.18, z + (Math.sin(a1) * (1 - t) + Math.sin(a2) * t) * 2.4));
+                    }
+                }
+            }
+            case "dolphin" -> { // two flowing wave lines
+                for (int wave = 0; wave < 2; wave++) for (int i = 0; i < 24; i++) {
+                    double t = i / 23.0;
+                    points.add(new Vector3(x - 2.8 + t * 5.6, y + 0.25 + Math.sin(t * Math.PI * 3 + wave * Math.PI) * 0.48,
+                            z + (wave == 0 ? -0.65 : 0.65)));
+                }
+            }
+            case "parrot" -> { // colorful feather fan
+                for (int feather = 0; feather < 9; feather++) for (int i = 1; i <= 5; i++) {
+                    double a = -Math.PI * 0.85 + feather * (Math.PI * 1.7 / 8.0);
+                    double r = i * 0.52;
+                    points.add(new Vector3(x + Math.cos(a) * r, y + 0.12 + i * 0.12, z + Math.sin(a) * r));
+                }
+            }
+            default -> {
+                for (int i = 0; i < 32; i++) {
+                    double a = Math.PI * 2 * i / 32.0;
+                    points.add(new Vector3(x + Math.cos(a) * 2.5, y + 0.2, z + Math.sin(a) * 2.5));
+                }
+            }
+        }
+        for (Vector3 point : points) level.addParticle(new DustParticle(point, rgb[0], rgb[1], rgb[2]));
+    }
+
+    private String ultimateName(String species) {
+        return switch (species) {
+            case "wolf" -> "Клык бури";
+            case "fox" -> "Лисье пламя";
+            case "cat" -> "Звёздный прыжок";
+            case "bee" -> "Рой света";
+            case "axolotl" -> "Прилив жизни";
+            case "horse" -> "Громовой галоп";
+            case "panda" -> "Нефритовый удар";
+            case "polarbear", "polar_bear" -> "Ледяной шторм";
+            case "rabbit" -> "Лунный скачок";
+            case "ocelot" -> "Теневой рывок";
+            case "turtle" -> "Панцирный импульс";
+            case "dolphin" -> "Волна глубин";
+            case "parrot" -> "Пернатый шквал";
+            default -> "Пробуждение";
+        };
     }
 
     private boolean isActiveCompanion(Entity entity) {
