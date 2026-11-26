@@ -145,6 +145,71 @@ public final class NEXORABeasts extends PluginBase implements Listener {
         }
     }
 
+    /**
+     * Protect every summoned companion from player damage and make the team defend its owner.
+     */
+    @EventHandler
+    public void onCompanionProtectionAndDefense(EntityDamageByEntityEvent event) {
+        Entity victim = event.getEntity();
+        Entity damager = event.getDamager();
+
+        // No player can directly damage a summoned NEXORA companion.
+        if (isActiveCompanion(victim) && damager instanceof Player) {
+            event.setCancelled();
+            return;
+        }
+
+        // A companion must never attack its owner or another active companion.
+        if (isActiveCompanion(damager) && (victim instanceof Player || isActiveCompanion(victim))) {
+            UUID ownerId = getCompanionOwnerId(damager);
+            if (ownerId != null && victim instanceof Player player
+                    && ownerId.equals(player.getUniqueId())) {
+                event.setCancelled();
+            } else if (isActiveCompanion(victim)) {
+                event.setCancelled();
+            }
+            return;
+        }
+
+        // If someone (mob or player) attacks the owner, the owner's team retaliates.
+        if (victim instanceof Player owner && !(damager instanceof EntityLiving living && isActiveCompanion(living))) {
+            defendOwner(owner, damager);
+        }
+    }
+
+    private UUID getCompanionOwnerId(Entity companion) {
+        for (Map.Entry<UUID, Map<Integer, Entity>> entry : activeCompanions.entrySet()) {
+            if (entry.getValue().containsValue(companion)) return entry.getKey();
+        }
+        return null;
+    }
+
+    private void defendOwner(Player owner, Entity attacker) {
+        if (!(attacker instanceof EntityLiving target) || target.isClosed()) return;
+        Map<Integer, Entity> companions = activeCompanions.get(owner.getUniqueId());
+        if (companions == null || companions.isEmpty()) return;
+
+        long now = System.currentTimeMillis();
+        for (Map.Entry<Integer, Entity> entry : companions.entrySet()) {
+            int slot = entry.getKey();
+            Entity pet = entry.getValue();
+            if (!(pet instanceof EntityLiving) || pet.isClosed() || pet == target
+                    || pet.getLevel() != target.getLevel() || isActiveCompanion(target)) continue;
+            if (pet.distanceSquared(target) > 144) continue;
+
+            String cooldownKey = owner.getUniqueId() + ":defend:" + slot;
+            if (now < companionAttackCooldowns.getOrDefault(cooldownKey, 0L)) continue;
+            String beastId = data.getString(playerPath(owner) + ".team." + slot, "");
+            if (beastId.isEmpty() || !hasBeast(owner, beastId)) continue;
+
+            String base = beastPath(owner, beastId);
+            double damage = Math.max(1.0, Math.min(30.0, stat(base, "power", 5) * 0.35));
+            companionAttackCooldowns.put(cooldownKey, now + 1200L);
+            target.attack(new EntityDamageByEntityEvent(
+                    pet, target, EntityDamageEvent.DamageCause.ENTITY_ATTACK, (float) damage));
+        }
+    }
+
     private void tickCompanions() {
         for (Player player : getServer().getOnlinePlayers().values()) {
             Map<Integer, Entity> companions = activeCompanions.get(player.getUniqueId());
@@ -292,7 +357,7 @@ public final class NEXORABeasts extends PluginBase implements Listener {
         }
         if (!isRarity(rarity)) rarity = "common";
         if (species.equalsIgnoreCase("random")) {
-            species = RANDOM_SPECIES[ThreadLocalRandom.current().nextInt(RANDOM_SPECIES.length)];
+            species = rollEggSpecies(rarity, player);
         }
 
         event.setCancelled();
@@ -873,6 +938,32 @@ public final class NEXORABeasts extends PluginBase implements Listener {
             sender.sendMessage("§8• " + RARITY_COLORS[i] + RARITY_NAMES[i] + " §7(" + RARITIES[i] + ")");
         }
         sender.sendMessage("§7Администратор может выдать набор: §f/beasts giveeggs <игрок>");
+    }
+
+    private String rollEggSpecies(String rarity, Player player) {
+        String[] pool = switch (rarity) {
+            case "common" -> new String[]{"Wolf", "Rabbit", "Cat"};
+            case "uncommon" -> new String[]{"Fox", "Parrot", "Ocelot"};
+            case "rare" -> new String[]{"Bee", "Turtle", "Dolphin"};
+            case "epic" -> new String[]{"Axolotl", "Panda", "Horse"};
+            case "legendary" -> new String[]{"Wolf", "Fox", "Axolotl", "Panda"};
+            case "mythic" -> new String[]{"Bee", "Dolphin", "Horse", "PolarBear"};
+            case "ancient" -> new String[]{"PolarBear", "Panda", "Axolotl", "Turtle"};
+            case "divine" -> new String[]{"Horse", "Dolphin", "Parrot", "PolarBear"};
+            case "forbidden" -> new String[]{"Fox", "Bee", "Ocelot", "PolarBear"};
+            case "absolute" -> new String[]{"Wolf", "Axolotl", "Panda", "PolarBear"};
+            default -> RANDOM_SPECIES;
+        };
+        String previous = data.getString(playerPath(player) + ".lastEggSpecies", "");
+        List<String> choices = new ArrayList<>();
+        for (String candidate : pool) {
+            if (!candidate.equalsIgnoreCase(previous)) choices.add(candidate);
+        }
+        if (choices.isEmpty()) choices.addAll(List.of(pool));
+        String chosen = choices.get(ThreadLocalRandom.current().nextInt(choices.size()));
+        data.set(playerPath(player) + ".lastEggSpecies", chosen);
+        data.save();
+        return chosen;
     }
 
     private String addBeast(Player player, String species, String rarity, String source) {
