@@ -117,7 +117,7 @@ public final class NEXORABeasts extends PluginBase implements Listener {
     @EventHandler
     public void onOwnerAttack(EntityDamageByEntityEvent event) {
         if (!(event.getDamager() instanceof Player owner)) return;
-        if (!(event.getEntity() instanceof EntityLiving target) || target instanceof Player) return;
+        if (!(event.getEntity() instanceof EntityLiving target) || isActiveCompanion(target)) return;
         if (event.isCancelled()) return;
 
         Map<Integer, Entity> companions = activeCompanions.get(owner.getUniqueId());
