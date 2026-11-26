@@ -1,0 +1,101 @@
+{
+  "format_version": "1.8.0",
+  "animations": {
+    "animation.nexora_dragon.idle": {
+      "loop": true,
+      "bones": {
+        "body": {
+          "rotation": [
+            "0.0",
+            "0.0",
+            "math.sin(query.life_time * 2.0) * 1.5"
+          ],
+          "position": [
+            "0.0",
+            "math.sin(query.life_time * 2.0) * 0.2",
+            "0.0"
+          ]
+        },
+        "head": {
+          "rotation": [
+            "math.sin(query.life_time * 1.4) * 2.0",
+            "0.0",
+            "0.0"
+          ],
+          "position": [
+            "0.0",
+            "0.0",
+            "0.0"
+          ]
+        },
+        "tail_1": {
+          "rotation": [
+            "0.0",
+            "math.sin(query.life_time * 1.8) * 5.0",
+            "0.0"
+          ]
+        },
+        "tail_2": {
+          "rotation": [
+            "0.0",
+            "math.sin(query.life_time * 2.0) * 7.0",
+            "0.0"
+          ]
+        }
+      }
+    },
+    "animation.nexora_dragon.walk": {
+      "loop": true,
+      "bones": {
+        "leg_front_left": {
+          "rotation": [
+            "math.cos(query.modified_distance_moved * 0.9) * 30.0",
+            "0.0",
+            "0.0"
+          ]
+        },
+        "leg_front_right": {
+          "rotation": [
+            "math.cos(query.modified_distance_moved * 0.9 + 180.0) * 30.0",
+            "0.0",
+            "0.0"
+          ]
+        },
+        "leg_back_left": {
+          "rotation": [
+            "math.cos(query.modified_distance_moved * 0.9 + 180.0) * 30.0",
+            "0.0",
+            "0.0"
+          ]
+        },
+        "leg_back_right": {
+          "rotation": [
+            "math.cos(query.modified_distance_moved * 0.9) * 30.0",
+            "0.0",
+            "0.0"
+          ]
+        }
+      }
+    },
+    "animation.nexora_dragon.wings": {
+      "loop": true,
+      "animation_length": 1,
+      "bones": {
+        "wing_left": {
+          "rotation": [
+            "0.0",
+            "0.0",
+            "math.sin(query.life_time * 6.283) * 28.0"
+          ]
+        },
+        "wing_right": {
+          "rotation": [
+            "0.0",
+            "0.0",
+            "math.sin(query.life_time * 6.283) * -28.0"
+          ]
+        }
+      }
+    }
+  }
+}

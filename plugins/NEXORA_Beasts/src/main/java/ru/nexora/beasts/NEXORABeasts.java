@@ -32,6 +32,7 @@ import cn.nukkit.plugin.PluginBase;
 import cn.nukkit.utils.Config;
 import ru.nexora.beasts.aura.RarityAuras;
 import ru.nexora.beasts.entity.NexoraWolfEntity;
+import ru.nexora.beasts.entity.NexoraDragonEntity;
 import ru.nexora.beasts.entity.NexoraFoxEntity;
 import ru.nexora.beasts.entity.NexoraCatEntity;
 import ru.nexora.beasts.entity.NexoraBeeEntity;
@@ -76,7 +77,7 @@ public final class NEXORABeasts extends PluginBase implements Listener {
     private static final int[] WILD_RARITY_WEIGHTS = {500, 220, 130, 70, 35, 20, 12, 7, 4, 2};
     private static final String[] RANDOM_SPECIES = {
             "Wolf", "Fox", "Rabbit", "Cat", "Bee", "Axolotl", "Horse",
-            "Panda", "PolarBear", "Ocelot", "Turtle", "Dolphin", "Parrot"
+            "Panda", "PolarBear", "Ocelot", "Turtle", "Dolphin", "Parrot", "Dragon"
     };
 
     // Rarity looks (see resource-pack/rarity_looks.py): client entity + variant per rarity.
@@ -112,6 +113,7 @@ public final class NEXORABeasts extends PluginBase implements Listener {
         saveDefaultConfig();
         data = new Config(new File(getDataFolder(), "players.yml"), Config.YAML);
         registerCustomEntity("волк", NexoraWolfEntity.IDENTIFIER, NexoraWolfEntity::register);
+        registerCustomEntity("дракон", NexoraDragonEntity.IDENTIFIER, NexoraDragonEntity::register);
         registerCustomEntity("лиса", NexoraFoxEntity.IDENTIFIER, NexoraFoxEntity::register);
         registerCustomEntity("кот", NexoraCatEntity.IDENTIFIER, NexoraCatEntity::register);
         registerCustomEntity("пчела", NexoraBeeEntity.IDENTIFIER, NexoraBeeEntity::register);
@@ -1429,11 +1431,13 @@ public final class NEXORABeasts extends PluginBase implements Listener {
             String species = data.getString(base + ".species", "wolf").toLowerCase(Locale.ROOT);
             int lookIdx = getConfig().getBoolean("rarity-looks", true)
                     ? rarityIndex(data.getString(base + ".rarity", "common").toLowerCase(Locale.ROOT)) : -1;
+            if (species.equals("dragon")) lookIdx = -1; // Keep the dedicated dragon model for every rarity.
             String modelSpecies = lookIdx >= 0 ? LOOK_ENTITY[lookIdx] : species;
             Entity pet;
             try {
                 String customId = switch (modelSpecies) {
                     case "wolf" -> NexoraWolfEntity.IDENTIFIER;
+                    case "dragon" -> NexoraDragonEntity.IDENTIFIER;
                     case "fox" -> NexoraFoxEntity.IDENTIFIER;
                     case "cat" -> NexoraCatEntity.IDENTIFIER;
                     case "bee" -> NexoraBeeEntity.IDENTIFIER;
@@ -2032,6 +2036,7 @@ public final class NEXORABeasts extends PluginBase implements Listener {
 
     private String prettySpecies(String species) {
         if (species.equalsIgnoreCase("polarbear")) return "Polar Bear";
+        if (species.equalsIgnoreCase("dragon")) return "Дракон";
         String value = species.replace('_', ' ');
         if (value.isEmpty()) return "Неизвестное существо";
         return Character.toUpperCase(value.charAt(0)) + value.substring(1);
