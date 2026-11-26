@@ -419,8 +419,14 @@ def make_entity_texture(species):
                     color = _shade((116, 174, 119, 255) if face == "top" else base, factor)
                 if "mane" in bone_name or "leg" in bone_name and species == "horse":
                     color = _shade(dark, 1.08 if face == "top" else 0.9)
-                if "wing" in bone_name or "fin" in bone_name or "gill" in bone_name:
+                if "wing" in bone_name or "fin" in bone_name or "gill" in bone_name or "feather" in bone_name:
                     color = _shade(accent if "gill" in bone_name else light, factor)
+                if "horn" in bone_name or "spine" in bone_name or "tuft" in bone_name or "antenna" in bone_name:
+                    color = _shade(accent if "horn" in bone_name or "antenna" in bone_name else cream, factor)
+                if "armor" in bone_name or "collar" in bone_name or "charm" in bone_name or "ridge" in bone_name:
+                    color = _shade(accent if "charm" in bone_name else dark, factor)
+                if "whisker" in bone_name or "spot" in bone_name:
+                    color = _shade(cream if "whisker" in bone_name else dark, factor)
                 if "scarf" in bone_name:
                     color = _shade(accent, factor)
                 if "ear" in bone_name:
@@ -578,7 +584,91 @@ def make_rarity_font():
     print(f"Created {path} with {glyph_index}/{total} static gradient glyphs")
 
 
+
+
+# Fantasy silhouette pass: add recognizable NEXORA details to the base animals.
+# These are real Bedrock geometry cubes attached to animated species bones,
+# not painted decals, so horns, fins, wings and armor have visible volume.
+FANTASY_PARTS = {
+    "wolf": [
+        ("crystal_collar", [0, 10, -4], [{"origin": [-3.5, 10, -4.5], "size": [7, 2, 2], "uv": [0, 48]}]),
+        ("crystal_spines", [0, 13, 1], [{"origin": [-1, 12, -1], "size": [2, 3, 2], "uv": [16, 48]}, {"origin": [-1, 12, 3], "size": [2, 3, 2], "uv": [16, 48]}]),
+        ("crystal_tail", [0, 9, 10], [{"origin": [-1, 8, 10], "size": [2, 2, 2], "uv": [48, 48]}]),
+    ],
+    "fox": [
+        ("ear_tufts", [0, 14, -8], [{"origin": [-2, 16, -8], "size": [1, 2, 1], "uv": [16, 48]}, {"origin": [1, 16, -8], "size": [1, 2, 1], "uv": [16, 48]}]),
+        ("tail_left", [-2, 8, 5], [{"origin": [-4, 7, 5], "size": [2, 2, 5], "uv": [48, 48]}]),
+        ("tail_right", [2, 8, 5], [{"origin": [2, 7, 5], "size": [2, 2, 5], "uv": [48, 48]}]),
+    ],
+    "cat": [
+        ("ear_tufts", [0, 15, -5], [{"origin": [-2, 16, -5], "size": [1, 2, 1], "uv": [16, 48]}, {"origin": [1, 16, -5], "size": [1, 2, 1], "uv": [16, 48]}]),
+        ("whiskers", [0, 10, -10], [{"origin": [-4, 10, -10], "size": [2, 1, 1], "uv": [48, 48]}, {"origin": [2, 10, -10], "size": [2, 1, 1], "uv": [48, 48]}]),
+        ("gem_collar", [0, 8, -1], [{"origin": [-1, 7, -2], "size": [2, 2, 1], "uv": [0, 48]}]),
+    ],
+    "bee": [
+        ("wing_left", [3, 11, 0], [{"origin": [3, 11, -2], "size": [4, 1, 4], "uv": [32, 48]}]),
+        ("wing_right", [-3, 11, 0], [{"origin": [-7, 11, -2], "size": [4, 1, 4], "uv": [32, 48]}]),
+        ("antennae", [0, 14, -2], [{"origin": [-2, 15, -3], "size": [1, 2, 1], "uv": [16, 48]}, {"origin": [1, 15, -3], "size": [1, 2, 1], "uv": [16, 48]}]),
+    ],
+    "axolotl": [
+        ("gill_left", [3, 7, -3], [{"origin": [3, 6, -4], "size": [1, 3, 1], "uv": [32, 48]}, {"origin": [4, 7, -4], "size": [1, 2, 1], "uv": [32, 48]}]),
+        ("gill_right", [-3, 7, -3], [{"origin": [-4, 6, -4], "size": [1, 3, 1], "uv": [32, 48]}, {"origin": [-5, 7, -4], "size": [1, 2, 1], "uv": [32, 48]}]),
+        ("dorsal_fin", [0, 10, 1], [{"origin": [-1, 10, -1], "size": [2, 3, 4], "uv": [32, 48]}]),
+    ],
+    "horse": [
+        ("unicorn_horn", [0, 23, -15], [{"origin": [-1, 23, -17], "size": [2, 4, 2], "uv": [16, 48]}]),
+        ("wing_left", [4, 15, 0], [{"origin": [4, 13, -1], "size": [4, 1, 6], "uv": [32, 48]}]),
+        ("wing_right", [-4, 15, 0], [{"origin": [-8, 13, -1], "size": [4, 1, 6], "uv": [32, 48]}]),
+    ],
+    "panda": [
+        ("shoulder_armor", [0, 10, 0], [{"origin": [-4, 10, -2], "size": [8, 2, 4], "uv": [0, 48]}]),
+        ("bamboo_charm", [0, 8, -5], [{"origin": [-1, 7, -6], "size": [2, 3, 1], "uv": [48, 48]}]),
+    ],
+    "polar_bear": [
+        ("ice_mane", [0, 12, -3], [{"origin": [-4, 11, -4], "size": [8, 3, 2], "uv": [0, 48]}]),
+        ("ice_spines", [0, 14, 1], [{"origin": [-1, 13, -1], "size": [2, 3, 2], "uv": [16, 48]}, {"origin": [-1, 13, 3], "size": [2, 3, 2], "uv": [16, 48]}]),
+    ],
+    "rabbit": [
+        ("long_ear_left", [-1, 13, -3], [{"origin": [-2, 14, -4], "size": [1, 5, 1], "uv": [16, 48]}]),
+        ("long_ear_right", [1, 13, -3], [{"origin": [1, 14, -4], "size": [1, 5, 1], "uv": [16, 48]}]),
+        ("star_tail", [0, 6, 4], [{"origin": [-1, 5, 4], "size": [2, 2, 2], "uv": [48, 48]}]),
+    ],
+    "ocelot": [
+        ("ear_tufts", [0, 14, -7], [{"origin": [-2, 15, -7], "size": [1, 2, 1], "uv": [16, 48]}, {"origin": [1, 15, -7], "size": [1, 2, 1], "uv": [16, 48]}]),
+        ("shoulder_spots", [0, 8, 0], [{"origin": [-3, 9, -1], "size": [1, 1, 2], "uv": [48, 48]}, {"origin": [2, 9, -1], "size": [1, 1, 2], "uv": [48, 48]}]),
+    ],
+    "turtle": [
+        ("shell_ridge", [0, 9, 0], [{"origin": [-3, 9, -3], "size": [6, 2, 6], "uv": [0, 48]}]),
+        ("shell_spikes", [0, 8, 0], [{"origin": [-1, 9, -5], "size": [2, 2, 2], "uv": [16, 48]}, {"origin": [-1, 9, 3], "size": [2, 2, 2], "uv": [16, 48]}]),
+    ],
+    "dolphin": [
+        ("dorsal_fin", [0, 10, 0], [{"origin": [-1, 10, -1], "size": [2, 4, 3], "uv": [32, 48]}]),
+        ("tail_flukes", [0, 5, 8], [{"origin": [-3, 4, 8], "size": [3, 1, 3], "uv": [32, 48]}, {"origin": [0, 4, 8], "size": [3, 1, 3], "uv": [32, 48]}]),
+    ],
+    "parrot": [
+        ("crown_feathers", [0, 17, -2], [{"origin": [-2, 18, -2], "size": [1, 3, 1], "uv": [16, 48]}, {"origin": [0, 19, -2], "size": [1, 3, 1], "uv": [16, 48]}, {"origin": [2, 18, -2], "size": [1, 3, 1], "uv": [16, 48]}]),
+        ("wing_feathers_left", [3, 10, 0], [{"origin": [4, 8, -1], "size": [2, 4, 4], "uv": [32, 48]}]),
+        ("wing_feathers_right", [-3, 10, 0], [{"origin": [-6, 8, -1], "size": [2, 4, 4], "uv": [32, 48]}]),
+    ],
+}
+
+
+def make_fantasy_models():
+    """Add species-specific 3D silhouette details while preserving animated base bones."""
+    for species, parts in FANTASY_PARTS.items():
+        path = ROOT / "models/entity" / f"nexora_{species}.geo.json"
+        model = json.loads(path.read_text(encoding="utf-8"))
+        geometry = model["minecraft:geometry"][0]
+        bones = geometry["bones"]
+        existing = {bone["name"] for bone in bones}
+        for name, pivot, cubes in parts:
+            if name not in existing:
+                bones.append({"name": name, "pivot": pivot, "cubes": cubes})
+        path.write_text(json.dumps(model, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+
+
 def main():
+    make_fantasy_models()
     for species in (
         "wolf", "fox", "cat", "bee", "axolotl", "horse", "panda",
         "polar_bear", "rabbit", "ocelot", "turtle", "dolphin", "parrot",
