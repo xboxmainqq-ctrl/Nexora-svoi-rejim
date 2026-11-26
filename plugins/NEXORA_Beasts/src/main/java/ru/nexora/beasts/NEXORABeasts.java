@@ -466,6 +466,7 @@ public final class NEXORABeasts extends PluginBase implements Listener {
         // Fast species reposition more aggressively; heavy species hold a little closer.
         double attackRange = switch (species) {
             case "bee", "dolphin", "parrot" -> 3.2;
+            case "dragon" -> 4.8;
             case "turtle", "panda", "polarbear", "polar_bear", "horse" -> 2.6;
             default -> 2.2;
         };
@@ -475,6 +476,7 @@ public final class NEXORABeasts extends PluginBase implements Listener {
                 case "fox", "rabbit", "dolphin" -> 1.35;
                 case "horse" -> 1.45;
                 case "parrot" -> 1.20;
+                case "dragon" -> 1.12;
                 case "turtle", "panda", "polarbear", "polar_bear" -> 0.78;
                 default -> 1.0;
             };
@@ -496,6 +498,7 @@ public final class NEXORABeasts extends PluginBase implements Listener {
                 case "fox" -> 0.40;
                 case "rabbit" -> 0.30;
                 case "parrot" -> 0.36;
+                case "dragon" -> 0.82;
                 case "dolphin" -> 0.40;
                 case "axolotl" -> 0.42;
                 case "turtle" -> 0.40;
@@ -571,6 +574,35 @@ public final class NEXORABeasts extends PluginBase implements Listener {
         float bonusDamage = (float) Math.max(2.0, Math.min(32.0, power * bonusMultiplier));
         target.attack(new EntityDamageByEntityEvent(
                 pet, target, EntityDamageEvent.DamageCause.MAGIC, bonusDamage));
+
+        if (species.equals("dragon")) {
+            // Ember breath: five short particle segments plus bounded splash damage.
+            double dx = target.x - pet.x;
+            double dy = (target.y + 0.8) - (pet.y + pet.getHeight() * 0.55);
+            double dz = target.z - pet.z;
+            for (int step = 1; step <= 5; step++) {
+                double progress = step / 5.0;
+                double cx = pet.x + dx * progress;
+                double cy = pet.y + pet.getHeight() * 0.55 + dy * progress;
+                double cz = pet.z + dz * progress;
+                double spread = 0.18 + progress * 0.42;
+                for (int mote = 0; mote < 3; mote++) {
+                    double angle = Math.PI * 2.0 * mote / 3.0 + progress;
+                    Vector3 point = new Vector3(cx + Math.cos(angle) * spread,
+                            cy + Math.sin(angle) * spread, cz);
+                    pet.getLevel().addParticle(new DustParticle(point, 255, 105 + step * 12, 28));
+                }
+            }
+            for (Entity entity : target.getLevel().getNearbyEntities(
+                    target.getBoundingBox().grow(2.6, 1.8, 2.6), target)) {
+                if (!(entity instanceof EntityLiving splash) || splash == pet || splash.isClosed()
+                        || splash instanceof Player || isActiveCompanion(splash)
+                        || !isHostileMob(splash) || splash.distanceSquared(target) > 7.0) continue;
+                splash.attack(new EntityDamageByEntityEvent(
+                        pet, splash, EntityDamageEvent.DamageCause.MAGIC,
+                        Math.max(1.0f, bonusDamage * 0.55f)));
+            }
+        }
         applySpeciesSkillMotion(pet, target, species);
 
         int[] rgb = switch (species) {
@@ -585,6 +617,7 @@ public final class NEXORABeasts extends PluginBase implements Listener {
             case "polarbear", "polar_bear" -> new int[]{175, 225, 255};
             case "turtle" -> new int[]{105, 205, 125};
             case "parrot" -> new int[]{235, 95, 155};
+            case "dragon" -> new int[]{255, 105, 35};
             default -> new int[]{190, 150, 255};
         };
         Vector3 effectPoint = new Vector3(target.x, target.y + 1.0, target.z);
@@ -594,7 +627,7 @@ public final class NEXORABeasts extends PluginBase implements Listener {
                     effectPoint.y + (i % 2) * 0.18, effectPoint.z + Math.sin(angle) * 0.45);
             target.getLevel().addParticle(new DustParticle(point, rgb[0], rgb[1], rgb[2]));
         }
-        companionAttackCooldowns.put(key, now + 7000L);
+        companionAttackCooldowns.put(key, now + (species.equals("dragon") ? 9000L : 7000L));
     }
 
     /**
@@ -650,6 +683,9 @@ public final class NEXORABeasts extends PluginBase implements Listener {
             case "dolphin" -> { // fast water-like dash
                 vx = nx * 0.58; vz = nz * 0.58; vy = 0.18;
             }
+            case "dragon" -> { // short ember-breath impact
+                vx = nx * 0.26; vz = nz * 0.26; vy = 0.18;
+            }
             case "parrot" -> { // feather gust
                 vx = nx * 0.18; vz = nz * 0.18; vy = 0.26;
             }
@@ -696,6 +732,7 @@ public final class NEXORABeasts extends PluginBase implements Listener {
             case "turtle" -> "Взрыв панциря";
             case "dolphin" -> "Морской рывок";
             case "parrot" -> "Шквал перьев";
+            case "dragon" -> "Пламенное дыхание";
             default -> "Особый удар";
         };
     }
@@ -714,6 +751,7 @@ public final class NEXORABeasts extends PluginBase implements Listener {
             case "turtle" -> "§7Взрыв панциря подбрасывает и отталкивает врага. Шанс 22%, перезарядка 7 сек.";
             case "dolphin" -> "§7Морской рывок резко отталкивает цель. Шанс 22%, перезарядка 7 сек.";
             case "parrot" -> "§7Шквал перьев приподнимает противника. Шанс 22%, перезарядка 7 сек.";
+            case "dragon" -> "§7Выдыхает огненный поток по цели и врагам рядом. Шанс 22%, перезарядка 9 сек.";
             default -> "§7Особый удар отталкивает цель. Шанс 22%, перезарядка 7 сек.";
         };
     }
@@ -732,6 +770,7 @@ public final class NEXORABeasts extends PluginBase implements Listener {
             case "turtle" -> "§2Крепкий панцирь";
             case "dolphin" -> "§bМорской рывок";
             case "parrot" -> "§dДозор";
+            case "dragon" -> "§6Сердце пламени";
             default -> "§7Инстинкт зверя";
         };
     }
@@ -750,6 +789,7 @@ public final class NEXORABeasts extends PluginBase implements Listener {
             case "turtle" -> "§7Панцирь снижает входящий урон на 35%.";
             case "dolphin" -> "§7Быстро перемещается к противнику.";
             case "parrot" -> "§7Замечает врагов на большем расстоянии.";
+            case "dragon" -> "§7Усиленное дыхание и повышенная дальность атаки.";
             default -> "§7Особый природный инстинкт.";
         };
     }
