@@ -10,6 +10,12 @@ import cn.nukkit.event.Listener;
 import cn.nukkit.event.player.PlayerInteractEntityEvent;
 import cn.nukkit.event.player.PlayerInteractEvent;
 import cn.nukkit.item.Item;
+import cn.nukkit.form.element.ElementButton;
+import cn.nukkit.form.element.ElementDropdown;
+import cn.nukkit.form.handler.FormResponseHandler;
+import cn.nukkit.form.window.FormWindowCustom;
+import cn.nukkit.form.window.FormWindowModal;
+import cn.nukkit.form.window.FormWindowSimple;
 import cn.nukkit.plugin.PluginBase;
 import cn.nukkit.utils.Config;
 
@@ -65,18 +71,22 @@ public final class NEXORABeasts extends PluginBase implements Listener {
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (args.length == 0 || args[0].equalsIgnoreCase("help")) {
-            sendHelp(sender);
+            if (sender instanceof Player player) openMainMenu(player);
+            else sendHelp(sender);
             return true;
         }
 
         String sub = args[0].toLowerCase(Locale.ROOT);
         switch (sub) {
+            case "menu", "gui" -> {
+                if (requirePlayer(sender)) openMainMenu((Player) sender);
+            }
             case "collection", "list" -> {
-                if (requirePlayer(sender)) showCollection((Player) sender);
+                if (requirePlayer(sender)) openCollectionMenu((Player) sender);
             }
             case "team" -> {
                 if (requirePlayer(sender)) {
-                    if (args.length == 1) showTeam((Player) sender);
+                    if (args.length == 1) openTeamMenu((Player) sender);
                     else if (args.length == 3) setTeamSlot((Player) sender, args[1], args[2]);
                     else sender.sendMessage("§cИспользование: /beasts team <слот 1-3> <ID существа>");
                 }
@@ -187,6 +197,174 @@ public final class NEXORABeasts extends PluginBase implements Listener {
             }
         }, HATCH_DELAY_TICKS);
     }
+
+    // -------------------- NEXORA touch-friendly GUI --------------------
+
+    private void openMainMenu(Player player) {
+        FormWindowSimple form = new FormWindowSimple("§l§0NEXORA: BEASTS", 
+                "§7Твоя связь с дикими существами.\n\n"
+                + "§fКоллекция: §b" + collectionSize(player) + " §8| §fКоманда: §b" + teamCount(player) + "/3\n"
+                + "§7Выбери раздел ниже.");
+        form.addButton(new ElementButton("§l§b✦  МОЯ КОЛЛЕКЦИЯ\n§8Все пойманные существа"));
+        form.addButton(new ElementButton("§l§6⚔  МОЯ КОМАНДА\n§8Три активных существа"));
+        form.addButton(new ElementButton("§l§d✧  КАТАЛОГ ЯИЦ\n§8Десять уровней редкости"));
+        form.addButton(new ElementButton("§l§7✕  ЗАКРЫТЬ"));
+        form.addHandler(FormResponseHandler.withoutPlayer(ignored -> {
+            if (form.wasClosed()) return;
+            switch (form.getResponse().getClickedButtonId()) {
+                case 0 -> openCollectionMenu(player);
+                case 1 -> openTeamMenu(player);
+                case 2 -> openEggCatalogMenu(player);
+                default -> { }
+            }
+        }));
+        player.showFormWindow(form);
+    }
+
+    private void openCollectionMenu(Player player) {
+        Map<String, Object> entries = collection(player);
+        FormWindowSimple form = new FormWindowSimple("§l§0МОЯ КОЛЛЕКЦИЯ",
+                "§7Собрано существ: §b" + entries.size() + "\n§8Нажми на существо, чтобы открыть его карточку.");
+        List<String> ids = new ArrayList<>(entries.keySet());
+        for (String id : ids) {
+            String base = beastPath(player, id);
+            String species = data.getString(base + ".species", "unknown");
+            String rarity = data.getString(base + ".rarity", "common");
+            int level = data.getInt(base + ".level", 1);
+            form.addButton(new ElementButton(rarityColor(rarity) + "✦ " + prettySpecies(species)
+                    + "\n§8" + rarityName(rarity) + " · Ур. " + level + " · " + id));
+        }
+        form.addButton(new ElementButton("§7← НАЗАД"));
+        form.addHandler(FormResponseHandler.withoutPlayer(ignored -> {
+            if (form.wasClosed()) return;
+            int selected = form.getResponse().getClickedButtonId();
+            if (selected < ids.size()) openBeastCard(player, ids.get(selected));
+            else openMainMenu(player);
+        }));
+        player.showFormWindow(form);
+    }
+
+    private void openBeastCard(Player player, String id) {
+        if (!hasBeast(player, id)) { openCollectionMenu(player); return; }
+        String base = beastPath(player, id);
+        String species = data.getString(base + ".species", "unknown");
+        String rarity = data.getString(base + ".rarity", "common");
+        int level = data.getInt(base + ".level", 1);
+        String details = "§7" + prettySpecies(species) + "  " + rarityColor(rarity) + "◆ " + rarityName(rarity)
+                + "\n\n§fУровень: §a" + level + "\n§fОпыт: §a" + data.getInt(base + ".xp", 0)
+                + "§7 / " + xpToNext(level)
+                + "\n\n§c❤ §fЗдоровье: §c" + stat(base, "vitality", 20)
+                + "\n§6⚔ §fСила: §6" + stat(base, "power", 5)
+                + "\n§b⬟ §fЗащита: §b" + stat(base, "defense", 2)
+                + "\n\n§8ID: " + id;
+        FormWindowSimple form = new FormWindowSimple("§l§0КАРТОЧКА СУЩЕСТВА", details);
+        form.addButton(new ElementButton("§l§a⬆ ТРЕНИРОВАТЬ\n§81 пшеница · +25 XP"));
+        form.addButton(new ElementButton("§l§6⚔ В КОМАНДУ\n§8Назначить в один из 3 слотов"));
+        form.addButton(new ElementButton("§l§c✕ ОТПУСТИТЬ\n§8Удалить из коллекции"));
+        form.addButton(new ElementButton("§7← К КОЛЛЕКЦИИ"));
+        form.addHandler(FormResponseHandler.withoutPlayer(ignored -> {
+            if (form.wasClosed()) return;
+            switch (form.getResponse().getClickedButtonId()) {
+                case 0 -> { trainBeast(player, id); openBeastCard(player, id); }
+                case 1 -> openAssignSlotMenu(player, id);
+                case 2 -> confirmRelease(player, id);
+                default -> openCollectionMenu(player);
+            }
+        }));
+        player.showFormWindow(form);
+    }
+
+    private void openAssignSlotMenu(Player player, String id) {
+        FormWindowCustom form = new FormWindowCustom("§l§0НАЗНАЧИТЬ В КОМАНДУ");
+        form.addElement(new ElementDropdown("Выбери слот активной команды", List.of("Слот 1", "Слот 2", "Слот 3")));
+        form.addHandler(FormResponseHandler.withoutPlayer(ignored -> {
+            if (form.wasClosed()) return;
+            int slot = form.getResponse().getDropdownResponse(0).getElementID() + 1;
+            setTeamSlot(player, String.valueOf(slot), id);
+            openTeamMenu(player);
+        }));
+        player.showFormWindow(form);
+    }
+
+    private void openTeamMenu(Player player) {
+        FormWindowSimple form = new FormWindowSimple("§l§0АКТИВНАЯ КОМАНДА",
+                "§7Выбери слот, чтобы назначить в него существо из коллекции.\n§8Максимум три существа.");
+        for (int slot = 1; slot <= 3; slot++) {
+            String id = data.getString(playerPath(player) + ".team." + slot, "");
+            if (id.isEmpty() || !hasBeast(player, id)) {
+                form.addButton(new ElementButton("§e＋ СЛОТ " + slot + " · ПУСТО\n§8Нажми, чтобы выбрать существо"));
+            } else {
+                String base = beastPath(player, id);
+                String species = data.getString(base + ".species", "unknown");
+                String rarity = data.getString(base + ".rarity", "common");
+                form.addButton(new ElementButton(rarityColor(rarity) + "✦ СЛОТ " + slot + " · " + prettySpecies(species)
+                        + "\n§8" + rarityName(rarity) + " · Ур. " + data.getInt(base + ".level", 1)));
+            }
+        }
+        form.addButton(new ElementButton("§7← ГЛАВНОЕ МЕНЮ"));
+        form.addHandler(FormResponseHandler.withoutPlayer(ignored -> {
+            if (form.wasClosed()) return;
+            int selected = form.getResponse().getClickedButtonId();
+            if (selected < 3) openSelectBeastForSlot(player, selected + 1);
+            else openMainMenu(player);
+        }));
+        player.showFormWindow(form);
+    }
+
+    private void openSelectBeastForSlot(Player player, int slot) {
+        Map<String, Object> entries = collection(player);
+        FormWindowSimple form = new FormWindowSimple("§l§0ВЫБОР СУЩЕСТВА",
+                "§7Назначение в слот " + slot + ".\n§8Выбери существо из своей коллекции.");
+        List<String> ids = new ArrayList<>(entries.keySet());
+        for (String id : ids) {
+            String base = beastPath(player, id);
+            String rarity = data.getString(base + ".rarity", "common");
+            form.addButton(new ElementButton(rarityColor(rarity) + prettySpecies(data.getString(base + ".species", "unknown"))
+                    + "\n§8" + rarityName(rarity) + " · " + id));
+        }
+        form.addButton(new ElementButton("§7← НАЗАД"));
+        form.addHandler(FormResponseHandler.withoutPlayer(ignored -> {
+            if (form.wasClosed()) return;
+            int selected = form.getResponse().getClickedButtonId();
+            if (selected < ids.size()) setTeamSlot(player, String.valueOf(slot), ids.get(selected));
+            openTeamMenu(player);
+        }));
+        player.showFormWindow(form);
+    }
+
+    private void confirmRelease(Player player, String id) {
+        FormWindowModal form = new FormWindowModal("§l§0ОТПУСТИТЬ СУЩЕСТВО",
+                "§cТы уверен, что хочешь навсегда удалить это существо из коллекции?\n§8Это действие нельзя отменить.",
+                "§cОТПУСТИТЬ", "§7ОТМЕНА");
+        form.addHandler(FormResponseHandler.withoutPlayer(ignored -> {
+            if (form.wasClosed()) return;
+            if (form.getResponse().getClickedButtonId() == 0) releaseBeast(player, id);
+            openCollectionMenu(player);
+        }));
+        player.showFormWindow(form);
+    }
+
+    private void openEggCatalogMenu(Player player) {
+        FormWindowSimple form = new FormWindowSimple("§l§0АРХИВ ЯИЦ NEXORA",
+                "§7Десять ступеней редкости. Цвет яйца и существа зависит от его ранга.\n§8Яйца можно получить у администрации или найти в игровых событиях.");
+        for (int i = 0; i < RARITIES.length; i++) {
+            form.addButton(new ElementButton(RARITY_COLORS[i] + "◆ " + RARITY_NAMES[i]
+                    + "\n§8" + RARITIES[i].toUpperCase(Locale.ROOT)));
+        }
+        form.addButton(new ElementButton("§7← ГЛАВНОЕ МЕНЮ"));
+        form.addHandler(FormResponseHandler.withoutPlayer(ignored -> {
+            if (form.wasClosed()) return;
+            int selected = form.getResponse().getClickedButtonId();
+            if (selected < RARITIES.length) {
+                player.sendMessage(RARITY_COLORS[selected] + "◆ " + RARITY_NAMES[selected]
+                        + " §8— §7редкость яйца NEXORA.");
+                openEggCatalogMenu(player);
+            } else openMainMenu(player);
+        }));
+        player.showFormWindow(form);
+    }
+
+    // -------------------- Existing text fallbacks --------------------
 
     private void showCollection(Player player) {
         Map<String, Object> entries = collection(player);
