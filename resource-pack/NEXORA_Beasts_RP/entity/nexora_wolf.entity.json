@@ -1,0 +1,20 @@
+{
+  "format_version": "1.10.0",
+  "minecraft:client_entity": {
+    "description": {
+      "identifier": "nexora:beast_wolf",
+      "materials": {
+        "default": "entity_alphatest"
+      },
+      "textures": {
+        "default": "textures/entity/nexora_wolf"
+      },
+      "geometry": {
+        "default": "geometry.nexora_wolf"
+      },
+      "render_controllers": [
+        "controller.render.nexora_wolf"
+      ]
+    }
+  }
+}
