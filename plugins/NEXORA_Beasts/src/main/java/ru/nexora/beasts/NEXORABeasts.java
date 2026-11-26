@@ -663,8 +663,22 @@ public final class NEXORABeasts extends PluginBase implements Listener {
                     + prettySpecies(species) + " §8[§f" + data.getInt(base + ".level", 1) + "§8]");
             pet.setNameTagVisible(true);
             pet.setNameTagAlwaysVisible(true);
-            pet.teleport(player.add(companionOffsetX(slot), 0, companionOffsetZ(slot)));
+            boolean positioned = pet.teleport(player.add(companionOffsetX(slot), 0, companionOffsetZ(slot)));
+            if (!positioned) {
+                pet.close();
+                player.sendMessage("§cНе удалось разместить питомца рядом с тобой: " + species);
+                continue;
+            }
+            // Send the spawn packet explicitly to the owner as well as nearby players.
+            // This avoids relying only on the chunk-player broadcast during the summon tick.
             pet.spawnToAll();
+            if (player.isOnline()) pet.spawnTo(player);
+            if (pet.isClosed()) {
+                player.sendMessage("§cСервер закрыл сущность питомца сразу после создания: " + species);
+                continue;
+            }
+            getLogger().info("Питомец создан: " + species + " (" + pet.getClass().getSimpleName()
+                    + "), entityId=" + pet.getId() + ", owner=" + player.getName());
             companions.put(slot, pet);
             summoned++;
         }
