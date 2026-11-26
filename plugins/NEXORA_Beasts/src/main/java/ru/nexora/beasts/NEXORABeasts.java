@@ -201,14 +201,14 @@ public final class NEXORABeasts extends PluginBase implements Listener {
 
     // -------------------- NEXORA touch-friendly GUI --------------------
 
-    private void openMainMenu(Player player) {
+    private ElementButton iconButton(String text, String texturePath) {\n        return new ElementButton(text, new ElementButtonImageData(\n                ElementButtonImageData.IMAGE_DATA_TYPE_PATH, texturePath));\n    }\n\n    private void openMainMenu(Player player) {
         FormWindowSimple form = new FormWindowSimple("§l§0NEXORA: BEASTS", 
                 "§7Твоя связь с дикими существами.\n\n"
                 + "§fКоллекция: §b" + collectionSize(player) + " §8| §fКоманда: §b" + teamCount(player) + "/3\n"
                 + "§7Выбери раздел ниже.");
-        form.addButton(new ElementButton("§l§b✦  МОЯ КОЛЛЕКЦИЯ\n§8Все пойманные существа"));
-        form.addButton(new ElementButton("§l§6⚔  МОЯ КОМАНДА\n§8Три активных существа"));
-        form.addButton(new ElementButton("§l§d✧  КАТАЛОГ ЯИЦ\n§8Десять уровней редкости"));
+        form.addButton(iconButton("§l§b✦  МОЯ КОЛЛЕКЦИЯ\n§8Все пойманные существа", "textures/ui/collection"));
+        form.addButton(iconButton("§l§6⚔  МОЯ КОМАНДА\n§8Три активных существа", "textures/ui/team"));
+        form.addButton(iconButton("§l§d✧  КАТАЛОГ ЯИЦ\n§8Десять уровней редкости", "textures/ui/eggs"));
         form.addButton(new ElementButton("§l§7✕  ЗАКРЫТЬ"));
         form.addHandler(FormResponseHandler.withoutPlayer(ignored -> {
             if (form.wasClosed()) return;
@@ -259,9 +259,9 @@ public final class NEXORABeasts extends PluginBase implements Listener {
                 + "\n§b⬟ §fЗащита: §b" + stat(base, "defense", 2)
                 + "\n\n§8ID: " + id;
         FormWindowSimple form = new FormWindowSimple("§l§0КАРТОЧКА СУЩЕСТВА", details);
-        form.addButton(new ElementButton("§l§a⬆ ТРЕНИРОВАТЬ\n§81 пшеница · +25 XP"));
+        form.addButton(iconButton("§l§a⬆ ТРЕНИРОВАТЬ\n§81 пшеница · +25 XP", "textures/ui/training"));
         form.addButton(new ElementButton("§l§6⚔ В КОМАНДУ\n§8Назначить в один из 3 слотов"));
-        form.addButton(new ElementButton("§l§c✕ ОТПУСТИТЬ\n§8Удалить из коллекции"));
+        form.addButton(iconButton("§l§c✕ ОТПУСТИТЬ\n§8Удалить из коллекции", "textures/ui/release"));
         form.addButton(new ElementButton("§7← К КОЛЛЕКЦИИ"));
         form.addHandler(FormResponseHandler.withoutPlayer(ignored -> {
             if (form.wasClosed()) return;
