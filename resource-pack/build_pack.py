@@ -663,7 +663,13 @@ def make_fantasy_models():
         existing = {bone["name"] for bone in bones}
         for name, pivot, cubes in parts:
             if name not in existing:
-                bones.append({"name": name, "pivot": pivot, "cubes": cubes})
+                if any(token in name for token in ("tail", "flukes")):
+                    parent = "tail" if "tail" in existing else "body"
+                elif any(token in name for token in ("ear", "horn", "antenna", "whisker", "crest", "crown")):
+                    parent = "head" if "head" in existing else "body"
+                else:
+                    parent = "body" if "body" in existing else bones[0]["name"]
+                bones.append({"name": name, "parent": parent, "pivot": pivot, "cubes": cubes})
         path.write_text(json.dumps(model, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 
 
