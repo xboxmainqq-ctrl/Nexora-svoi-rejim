@@ -30,6 +30,36 @@ jobs:
           path: plugins/NEXORA_Beasts/target/*.jar
       - name: Build NEXORA_Beasts Resource Pack
         run: python3 resource-pack/build_pack.py
+      - name: Validate Bedrock resource pack
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          from zipfile import ZipFile
+
+          root = Path("resource-pack/NEXORA_Beasts_RP")
+          for path in sorted(root.rglob("*.json")):
+              json.loads(path.read_text(encoding="utf-8"))
+              print(f"Valid JSON: {path}")
+
+          pack = Path("resource-pack/build/NEXORA_Beasts_RP.mcpack")
+          with ZipFile(pack) as archive:
+              names = set(archive.namelist())
+              required = {
+                  "manifest.json",
+                  "entity/nexora_wolf.entity.json",
+                  "models/entity/nexora_wolf.geo.json",
+                  "animations/nexora_wolf.animation.json",
+                  "textures/entity/nexora_wolf.png",
+              }
+              missing = required - names
+              if missing:
+                  raise SystemExit(f"Missing pack files: {sorted(missing)}")
+              bad = archive.testzip()
+              if bad:
+                  raise SystemExit(f"Corrupt archive member: {bad}")
+          print(f"Resource pack OK: {pack.stat().st_size} bytes")
+          PY
       - uses: actions/upload-artifact@v4
         with:
           name: NEXORA_Beasts_RP
