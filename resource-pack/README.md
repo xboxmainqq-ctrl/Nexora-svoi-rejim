@@ -1,9 +1,11 @@
 # NEXORA BEASTS — Bedrock Resource Pack
 
-The pack now contains three isolated custom companion prototypes:
+The pack now contains five isolated custom companion prototypes:
 - `nexora:beast_wolf` — custom model, rune texture, idle and walk animations
 - `nexora:beast_fox` — custom pointed-ear model, bushy tail, orange/cream rune texture and animations
 - `nexora:beast_cat` — custom slim model, upright tail, dark-violet/cyan texture and animations
+- `nexora:beast_bee` — custom striped body, wings, stinger, golden texture and flight animation
+- `nexora:beast_axolotl` — custom aquatic body, gills, fins, iridescent texture and swim animation
 
 The Nukkit-MOT plugin registers matching network identifiers and reuses each
 vanilla server entity implementation for movement and base behavior. Only
@@ -26,6 +28,6 @@ the Nukkit-MOT resource-pack configuration and require clients to accept the
 server pack. Keep the vanilla fallback until the custom entities have been
 tested on the exact server and client versions.
 
-These are still prototypes. The remaining ten species, rarity-specific
+These are still prototypes. The remaining eight species, rarity-specific
 appearances/effects, and live in-game rendering/animation tests are not
 complete yet.
