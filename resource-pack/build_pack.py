@@ -8,7 +8,7 @@ import zipfile
 
 ROOT = Path(__file__).resolve().parent / "NEXORA_Beasts_RP"
 BUILD = Path(__file__).resolve().parent / "build"
-WIDTH = HEIGHT = 64
+WIDTH = HEIGHT = 128
 
 # A small hand-authored pixel-art palette for the first NEXORA wolf prototype.
 INK = (24, 35, 52, 255)
@@ -424,7 +424,7 @@ def make_entity_texture(species):
                 if "horn" in bone_name or "spine" in bone_name or "tuft" in bone_name or "antenna" in bone_name:
                     color = _shade(accent if "horn" in bone_name or "antenna" in bone_name else cream, factor)
                 if "armor" in bone_name or "collar" in bone_name or "charm" in bone_name or "ridge" in bone_name:
-                    color = _shade(accent if "charm" in bone_name else dark, factor)
+                    color = _shade(accent if "charm" in bone_name or "collar" in bone_name else dark, factor)
                 if "whisker" in bone_name or "spot" in bone_name:
                     color = _shade(cream if "whisker" in bone_name else dark, factor)
                 if "scarf" in bone_name:
@@ -659,8 +659,11 @@ def make_fantasy_models():
         path = ROOT / "models/entity" / f"nexora_{species}.geo.json"
         model = json.loads(path.read_text(encoding="utf-8"))
         geometry = model["minecraft:geometry"][0]
+        geometry["description"]["texture_width"] = WIDTH
+        geometry["description"]["texture_height"] = HEIGHT
         bones = geometry["bones"]
         existing = {bone["name"] for bone in bones}
+        uv_slot = 0
         for name, pivot, cubes in parts:
             if name not in existing:
                 if any(token in name for token in ("tail", "flukes")):
@@ -669,6 +672,11 @@ def make_fantasy_models():
                     parent = "head" if "head" in existing else "body"
                 else:
                     parent = "body" if "body" in existing else bones[0]["name"]
+                # Give every added cube its own UV tile. This prevents a horn,
+                # wing and armor plate from overwriting one another's colors.
+                for cube in cubes:
+                    cube["uv"] = [64 + (uv_slot % 2) * 32, (uv_slot // 2) * 16]
+                    uv_slot += 1
                 bones.append({"name": name, "parent": parent, "pivot": pivot, "cubes": cubes})
         path.write_text(json.dumps(model, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 
