@@ -584,28 +584,69 @@ public final class NEXORABeasts extends PluginBase implements Listener {
                 pet, target, EntityDamageEvent.DamageCause.MAGIC, bonusDamage));
 
         if (species.equals("dragon")) {
-            // Ember breath: five short particle segments plus bounded splash damage.
-            double dx = target.x - pet.x;
-            double dy = (target.y + 0.8) - (pet.y + pet.getHeight() * 0.55);
-            double dz = target.z - pet.z;
-            for (int step = 1; step <= 5; step++) {
-                double progress = step / 5.0;
-                double cx = pet.x + dx * progress;
-                double cy = pet.y + pet.getHeight() * 0.55 + dy * progress;
-                double cz = pet.z + dz * progress;
-                double spread = 0.18 + progress * 0.42;
-                for (int mote = 0; mote < 3; mote++) {
-                    double angle = Math.PI * 2.0 * mote / 3.0 + progress;
-                    Vector3 point = new Vector3(cx + Math.cos(angle) * spread,
-                            cy + Math.sin(angle) * spread, cz);
-                    pet.getLevel().addParticle(new DustParticle(point, 255, 105 + step * 12, 28));
+            // Expanding forward cone: warm core, bright flame motes and a little smoke.
+            double sx = pet.x;
+            double sy = pet.y + pet.getHeight() * 0.58;
+            double sz = pet.z;
+            double dx = target.x - sx;
+            double dy = (target.y + target.getHeight() * 0.55) - sy;
+            double dz = target.z - sz;
+            double length = Math.sqrt(dx * dx + dy * dy + dz * dz);
+            if (length < 0.001) length = 0.001;
+            dx /= length;
+            dy /= length;
+            dz /= length;
+
+            // Build two perpendicular axes around the breath direction.
+            double px = -dz;
+            double py = 0.0;
+            double pz = dx;
+            double plen = Math.sqrt(px * px + pz * pz);
+            if (plen < 0.001) { px = 1.0; pz = 0.0; plen = 1.0; }
+            px /= plen;
+            pz /= plen;
+            double qx = dy * pz;
+            double qy = dz * px - dx * pz;
+            double qz = -dy * px;
+
+            double breathLength = Math.min(8.0, Math.max(4.0, length + 1.5));
+            for (int segment = 1; segment <= 9; segment++) {
+                double along = breathLength * segment / 9.0;
+                double radius = 0.22 + along * 0.13;
+                double cx = sx + dx * along;
+                double cy = sy + dy * along;
+                double cz = sz + dz * along;
+                int motes = 4 + segment / 2;
+                for (int mote = 0; mote < motes; mote++) {
+                    double angle = Math.PI * 2.0 * mote / motes + segment * 0.31;
+                    double spread = radius * (0.35 + ((mote % 3) * 0.22));
+                    Vector3 point = new Vector3(
+                            cx + (px * Math.cos(angle) + qx * Math.sin(angle)) * spread,
+                            cy + (py * Math.cos(angle) + qy * Math.sin(angle)) * spread,
+                            cz + (pz * Math.cos(angle) + qz * Math.sin(angle)) * spread);
+                    pet.getLevel().addParticle(new FlameParticle(point));
+                    if (mote % 2 == 0) {
+                        pet.getLevel().addParticle(new DustParticle(point, 255, 95 + segment * 15, 18));
+                    }
                 }
             }
-            for (Entity entity : target.getLevel().getNearbyEntities(
-                    target.getBoundingBox().grow(2.6, 1.8, 2.6), target)) {
-                if (!(entity instanceof EntityLiving splash) || splash == pet || splash.isClosed()
-                        || splash instanceof Player || isActiveCompanion(splash)
-                        || !isHostileMob(splash) || splash.distanceSquared(target) > 7.0) continue;
+
+            // Damage only hostile mobs inside the forward cone; never hit players or pets.
+            for (Entity entity : pet.getLevel().getNearbyEntities(
+                    pet.getBoundingBox().grow(breathLength, 5.0, breathLength), pet)) {
+                if (!(entity instanceof EntityLiving splash) || splash == pet || splash == target
+                        || splash.isClosed() || splash instanceof Player || isActiveCompanion(splash)
+                        || !isHostileMob(splash)) continue;
+                double rx = (splash.x + splash.getWidth() * 0.5) - sx;
+                double ry = (splash.y + splash.getHeight() * 0.5) - sy;
+                double rz = (splash.z + splash.getWidth() * 0.5) - sz;
+                double along = rx * dx + ry * dy + rz * dz;
+                if (along < 0.8 || along > breathLength) continue;
+                double sideX = rx - dx * along;
+                double sideY = ry - dy * along;
+                double sideZ = rz - dz * along;
+                double coneRadius = 0.45 + along * 0.17;
+                if (sideX * sideX + sideY * sideY + sideZ * sideZ > coneRadius * coneRadius) continue;
                 splash.attack(new EntityDamageByEntityEvent(
                         pet, splash, EntityDamageEvent.DamageCause.MAGIC,
                         Math.max(1.0f, bonusDamage * 0.55f)));
