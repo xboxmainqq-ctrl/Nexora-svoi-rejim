@@ -435,6 +435,48 @@ def make_entity_texture(species):
                     color = _shade(light if face == "top" else base, factor)
                 _rect(pixels, fx, fy, fw, fh, color)
 
+                # Hand-painted species markings on the actual UV faces. These
+                # patterns are deliberately bold enough to read on a phone.
+                if face in ("front", "back", "left", "right") and fw >= 4 and fh >= 4:
+                    ix, iy = int(round(fx)), int(round(fy))
+                    iw, ih = max(1, int(round(fw))), max(1, int(round(fh)))
+                    if species == "wolf" and "body" in bone_name:
+                        for stripe in range(1, max(2, iw - 1), 4):
+                            _rect(pixels, ix + stripe, iy + 1, 1, max(1, ih - 2), dark)
+                    elif species == "fox" and "body" in bone_name and face == "front":
+                        _rect(pixels, ix + iw // 3, iy + 1, max(1, iw // 3), max(1, ih - 2), cream)
+                    elif species == "cat" and "body" in bone_name:
+                        for stripe in (1, max(2, iw // 2), max(3, iw - 2)):
+                            _rect(pixels, ix + stripe, iy + 1, 1, max(1, ih - 2), dark)
+                    elif species == "bee" and "body" in bone_name:
+                        for band in range(2, ih, 4):
+                            _rect(pixels, ix + 1, iy + band, max(1, iw - 2), 2, dark)
+                    elif species == "axolotl" and ("body" in bone_name or "head" in bone_name):
+                        for dot in range(3):
+                            px = ix + 1 + (dot * 5 + cube_index * 3) % max(1, iw - 2)
+                            py = iy + 1 + (dot * 3 + cube_index) % max(1, ih - 2)
+                            _rect(pixels, px, py, 2, 2, accent)
+                    elif species == "horse" and ("head" in bone_name or "body" in bone_name):
+                        _rect(pixels, ix + iw // 2, iy + 1, max(1, iw // 4), max(1, ih - 2), dark)
+                    elif species == "panda" and ("head" in bone_name or "body" in bone_name):
+                        _rect(pixels, ix + 1, iy + 1, max(1, iw // 4), max(1, ih // 3), dark)
+                        _rect(pixels, ix + max(1, iw - iw // 4 - 1), iy + 1, max(1, iw // 4), max(1, ih // 3), dark)
+                    elif species == "polar_bear" and "body" in bone_name:
+                        _rect(pixels, ix + 1, iy + ih // 2, max(1, iw - 2), 1, accent)
+                    elif species == "rabbit" and "head" in bone_name:
+                        _rect(pixels, ix + iw // 3, iy + 1, max(1, iw // 3), max(1, ih - 2), accent)
+                    elif species == "ocelot" and ("body" in bone_name or "head" in bone_name):
+                        for sx, sy in ((1, 1), (max(1, iw - 3), 2), (max(1, iw // 2), max(1, ih - 3))):
+                            _rect(pixels, ix + sx, iy + sy, 2, 2, dark)
+                    elif species == "turtle" and "shell" in bone_name:
+                        _rect(pixels, ix + 1, iy + 1, max(1, iw - 2), 1, cream)
+                        _rect(pixels, ix + 1, iy + max(1, ih - 2), max(1, iw - 2), 1, dark)
+                    elif species == "dolphin" and face in ("front", "bottom"):
+                        _rect(pixels, ix + 1, iy + max(1, ih // 2), max(1, iw - 2), max(1, ih // 3), cream)
+                    elif species == "parrot" and ("wing" in bone_name or "feather" in bone_name):
+                        for band, shade in enumerate((accent, cream, dark)):
+                            _rect(pixels, ix + 1, iy + 1 + band * 2, max(1, iw - 2), 1, shade)
+
                 # Fur grain and species markings are painted only inside mapped faces.
                 x0, y0 = int(round(fx)), int(round(fy))
                 x1, y1 = int(round(fx + fw)), int(round(fy + fh))
