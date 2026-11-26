@@ -567,15 +567,13 @@ public final class NEXORABeasts extends PluginBase implements Listener {
         EntityLiving nearest = null;
         double nearestDistance = 12.0 * 12.0;
 
-        for (var chunk : pet.getLevel().getChunks().values()) {
-            for (Entity entity : chunk.getEntities().values()) {
-                if (!(entity instanceof EntityLiving living) || entity instanceof Player || entity == pet || entity.isClosed()) continue;
-                if (isActiveCompanion(entity)) continue;
-                double distance = pet.distanceSquared(entity);
-                if (distance < nearestDistance) {
-                    nearestDistance = distance;
-                    nearest = living;
-                }
+        for (Entity entity : pet.getLevel().getNearbyEntities(pet.getBoundingBox().grow(12, 12, 12), pet)) {
+            if (!(entity instanceof EntityLiving living) || entity instanceof Player || entity == pet || entity.isClosed()) continue;
+            if (isActiveCompanion(entity)) continue;
+            double distance = pet.distanceSquared(entity);
+            if (distance < nearestDistance) {
+                nearestDistance = distance;
+                nearest = living;
             }
         }
         if (nearest != null) {
@@ -605,15 +603,15 @@ public final class NEXORABeasts extends PluginBase implements Listener {
         }
 
         int hitCount = 0;
-        for (var chunk : level.getChunks().values()) {
-            for (Entity entity : chunk.getEntities().values()) {
-                if (!(entity instanceof EntityLiving target) || entity instanceof Player || entity == pet || entity.isClosed()) continue;
-                if (isActiveCompanion(entity)) continue;
-                double dx = entity.x - centerX;
-                double dy = entity.y - centerY;
-                double dz = entity.z - centerZ;
-                if (dx * dx + dy * dy + dz * dz > 25.0) continue;
-                target.attack(new EntityDamageByEntityEvent(pet, target, EntityDamageEvent.DamageCause.MAGIC, (float) damage));
+        // Search only nearby entities instead of iterating every loaded chunk on the server.
+        for (Entity entity : level.getNearbyEntities(pet.getBoundingBox().grow(17, 17, 17), pet)) {
+            if (!(entity instanceof EntityLiving target) || entity instanceof Player || entity == pet || entity.isClosed()) continue;
+            if (isActiveCompanion(entity)) continue;
+            double dx = entity.x - centerX;
+            double dy = entity.y - centerY;
+            double dz = entity.z - centerZ;
+            if (dx * dx + dy * dy + dz * dz > 25.0) continue;
+            if (target.attack(new EntityDamageByEntityEvent(pet, target, EntityDamageEvent.DamageCause.MAGIC, (float) damage))) {
                 hitCount++;
             }
         }
