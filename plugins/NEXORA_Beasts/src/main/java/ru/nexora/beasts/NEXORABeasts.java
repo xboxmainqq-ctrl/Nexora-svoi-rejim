@@ -27,6 +27,7 @@ import cn.nukkit.form.window.FormWindowModal;
 import cn.nukkit.form.window.FormWindowSimple;
 import cn.nukkit.plugin.PluginBase;
 import cn.nukkit.utils.Config;
+import ru.nexora.beasts.entity.NexoraWolfEntity;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -78,6 +79,12 @@ public final class NEXORABeasts extends PluginBase implements Listener {
             return;
         }
         data = new Config(new File(getDataFolder(), "players.yml"), Config.YAML);
+        try {
+            NexoraWolfEntity.register();
+            getLogger().info("Зарегистрирована кастомная сущность " + NexoraWolfEntity.IDENTIFIER);
+        } catch (RuntimeException ex) {
+            getLogger().warning("Не удалось зарегистрировать кастомного волка NEXORA; будет использован ванильный вид: " + ex.getMessage());
+        }
         getServer().getPluginManager().registerEvents(this, this);
         getServer().getScheduler().scheduleRepeatingTask(this, this::tickCompanions, 5);
         getLogger().info("NEXORA_Beasts включён. Коллекция, GUI и система питомцев готовы.");
@@ -713,7 +720,17 @@ public final class NEXORABeasts extends PluginBase implements Listener {
             String species = data.getString(base + ".species", "wolf").toLowerCase(Locale.ROOT);
             Entity pet;
             try {
-                pet = Entity.createEntity(entityIdentifier(species), player);
+                if (species.equalsIgnoreCase("wolf")) {
+                    try {
+                        pet = Entity.createEntity(NexoraWolfEntity.IDENTIFIER, player);
+                    } catch (RuntimeException customEx) {
+                        getLogger().warning("Кастомный волк недоступен, включён ванильный fallback: " + customEx.getMessage());
+                        pet = Entity.createEntity("minecraft:wolf", player);
+                    }
+                    if (pet == null) pet = Entity.createEntity("minecraft:wolf", player);
+                } else {
+                    pet = Entity.createEntity(entityIdentifier(species), player);
+                }
             } catch (RuntimeException ex) {
                 getLogger().warning("Не удалось создать питомца " + species + ": " + ex.getMessage());
                 pet = null;
