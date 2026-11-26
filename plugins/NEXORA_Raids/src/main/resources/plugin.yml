@@ -1,9 +1,9 @@
 name: NEXORA_Raids
 main: ru.nexora.raids.NEXORARaids
-version: "1.0.0"
+version: "1.1.0"
 api: ["1.0.0"]
 author: NEXORA
-description: Трёхэтапные рейды с боссами и наградами
+description: Трёхзальный рейд с механиками боссов и наградами
 commands:
   raid:
     description: Меню рейдов NEXORA
