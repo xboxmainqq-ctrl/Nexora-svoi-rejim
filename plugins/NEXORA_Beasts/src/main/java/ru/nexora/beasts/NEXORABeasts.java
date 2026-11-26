@@ -798,7 +798,7 @@ public final class NEXORABeasts extends PluginBase implements Listener {
                 + "\n\n§fУровень: §a" + level + "\n§fБоевой опыт: §a" + data.getInt(base + ".xp", 0)
                 + "§7 / " + xpToNext(level)
                 + "\n§fОчки развития: §e" + data.getInt(base + ".upgradePoints", 0)
-                + "\n\n§c❤ §fЗдоровье: §c" + stat(base, "vitality", 20)
+                + "\n\n§c❤ §fЖивучесть: §c" + stat(base, "vitality", 20)
                 + "\n§6⚔ §fСила: §6" + stat(base, "power", 5)
                 + "\n§b⬟ §fЗащита: §b" + stat(base, "defense", 2)
                 + "\n\n§8Опыт питомец получает, участвуя в боях. Очки уровня трать на характеристики."
@@ -1515,8 +1515,8 @@ public final class NEXORABeasts extends PluginBase implements Listener {
                 + "\n\n§c❤ §fЖивучесть: §c" + stat(base, "vitality", 20)
                 + "\n§6⚔ §fСила: §6" + stat(base, "power", 5)
                 + "\n§b⬟ §fЗащита: §b" + stat(base, "defense", 2)
-                + "\n\n§8Каждое очко навсегда усиливает выбранную характеристику.");
-        form.addButton(new ElementButton("§l§c❤ ЖИВУЧЕСТЬ\n§8+4 к здоровью за очко"));
+                + "\n\n§8Живучесть и защита уменьшают входящий урон. Сила повышает урон питомца.");
+        form.addButton(new ElementButton("§l§c❤ ЖИВУЧЕСТЬ\n§8+4 к живучести за очко"));
         form.addButton(new ElementButton("§l§6⚔ СИЛА\n§8+2 к урону за очко"));
         form.addButton(new ElementButton("§l§b⬟ ЗАЩИТА\n§8+2 к защите за очко"));
         form.addButton(new ElementButton("§7← НАЗАД"));
