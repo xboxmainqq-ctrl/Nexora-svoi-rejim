@@ -4,6 +4,10 @@ on:
     paths:
       - "plugins/NEXORA_Beasts/**"
       - ".github/workflows/beasts.yml"
+  pull_request:
+    paths:
+      - "plugins/NEXORA_Beasts/**"
+      - ".github/workflows/beasts.yml"
   workflow_dispatch:
 jobs:
   build:
