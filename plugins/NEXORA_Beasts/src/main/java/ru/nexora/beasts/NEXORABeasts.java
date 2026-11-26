@@ -596,9 +596,10 @@ public final class NEXORABeasts extends PluginBase implements Listener {
             Entity pet = active == null ? null : active.get(slot);
             if (!id.isEmpty() && hasBeast(player, id) && pet != null && !pet.isClosed()) {
                 String base = beastPath(player, id);
-                form.addButton(new ElementButton("§d✹ СЛОТ " + slot + " · " +
-                        prettySpecies(data.getString(base + ".species", "unknown")) +
-                        "\n§8Сила ульты: " + Math.min(70, stat(base, "power", 5) * 2)));
+                String species = data.getString(base + ".species", "unknown").toLowerCase(Locale.ROOT);
+                form.addButton(new ElementButton("§d✹ СЛОТ " + slot + " · " + prettySpecies(species) +
+                        "\n§8«" + ultimateName(species) + "» · Сила: " +
+                        Math.min(70, stat(base, "power", 5) * 2)));
                 slots.add(slot);
             }
         }
