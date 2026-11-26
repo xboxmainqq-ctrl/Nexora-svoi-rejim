@@ -9,6 +9,9 @@ import cn.nukkit.event.EventHandler;
 import cn.nukkit.event.Listener;
 import cn.nukkit.event.player.PlayerInteractEntityEvent;
 import cn.nukkit.event.player.PlayerInteractEvent;
+import cn.nukkit.event.player.PlayerJoinEvent;
+import cn.nukkit.event.player.PlayerMoveEvent;
+import cn.nukkit.event.player.PlayerQuitEvent;
 import cn.nukkit.item.Item;
 import cn.nukkit.form.element.ElementButton;
 import cn.nukkit.form.element.ElementButtonImageData;
@@ -22,6 +25,7 @@ import cn.nukkit.utils.Config;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -55,6 +59,7 @@ public final class NEXORABeasts extends PluginBase implements Listener {
 
     private Config data;
     private final Set<UUID> pendingHatches = new HashSet<>();
+    private final Map<UUID, Map<Integer, Entity>> activeCompanions = new HashMap<>();
     private static final int HATCH_DELAY_TICKS = 100; // 5 seconds
 
     @Override
@@ -66,7 +71,43 @@ public final class NEXORABeasts extends PluginBase implements Listener {
         }
         data = new Config(new File(getDataFolder(), "players.yml"), Config.YAML);
         getServer().getPluginManager().registerEvents(this, this);
-        getLogger().info("NEXORA_Beasts включён. Коллекция, вылупление, характеристики и тренировки готовы.");
+        getLogger().info("NEXORA_Beasts включён. Коллекция, GUI и система питомцев готовы.");
+    }
+
+    @Override
+    public void onDisable() {
+        for (Map<Integer, Entity> companions : activeCompanions.values()) {
+            for (Entity entity : companions.values()) {
+                if (entity != null && !entity.isClosed()) entity.close();
+            }
+        }
+        activeCompanions.clear();
+        if (data != null) data.save();
+    }
+
+    @EventHandler
+    public void onPlayerJoin(PlayerJoinEvent event) {
+        Player player = event.getPlayer();
+        getServer().getScheduler().scheduleDelayedTask(this, () -> summonTeam(player), 20);
+    }
+
+    @EventHandler
+    public void onPlayerQuit(PlayerQuitEvent event) {
+        recallTeam(event.getPlayer(), false);
+    }
+
+    @EventHandler
+    public void onPlayerMove(PlayerMoveEvent event) {
+        Player player = event.getPlayer();
+        Map<Integer, Entity> companions = activeCompanions.get(player.getUniqueId());
+        if (companions == null || companions.isEmpty()) return;
+        for (Map.Entry<Integer, Entity> entry : companions.entrySet()) {
+            Entity pet = entry.getValue();
+            if (pet == null || pet.isClosed()) continue;
+            if (pet.getLevel() != player.getLevel() || pet.distanceSquared(player) > 25) {
+                pet.teleport(player.add(companionOffsetX(entry.getKey()), 0, companionOffsetZ(entry.getKey())));
+            }
+        }
     }
 
     @Override
@@ -84,6 +125,12 @@ public final class NEXORABeasts extends PluginBase implements Listener {
             }
             case "collection", "list" -> {
                 if (requirePlayer(sender)) openCollectionMenu((Player) sender);
+            }
+            case "summon", "call" -> {
+                if (requirePlayer(sender)) summonTeam((Player) sender);
+            }
+            case "recall", "hide" -> {
+                if (requirePlayer(sender)) recallTeam((Player) sender, true);
             }
             case "team" -> {
                 if (requirePlayer(sender)) {
@@ -307,11 +354,15 @@ public final class NEXORABeasts extends PluginBase implements Listener {
                         + "\n§8" + rarityName(rarity) + " · Ур. " + data.getInt(base + ".level", 1)));
             }
         }
+        form.addButton(new ElementButton("§a✦ ПРИЗВАТЬ КОМАНДУ"));
+        form.addButton(new ElementButton("§c✕ ОТОЗВАТЬ ПИТОМЦЕВ"));
         form.addButton(new ElementButton("§7← ГЛАВНОЕ МЕНЮ"));
         form.addHandler(FormResponseHandler.withoutPlayer(ignored -> {
             if (form.wasClosed()) return;
             int selected = form.getResponse().getClickedButtonId();
             if (selected < 3) openSelectBeastForSlot(player, selected + 1);
+            else if (selected == 3) summonTeam(player);
+            else if (selected == 4) { recallTeam(player, true); openTeamMenu(player); }
             else openMainMenu(player);
         }));
         player.showFormWindow(form);
@@ -368,6 +419,75 @@ public final class NEXORABeasts extends PluginBase implements Listener {
             } else openMainMenu(player);
         }));
         player.showFormWindow(form);
+    }
+
+    // -------------------- Summoned companions --------------------
+
+    private double companionOffsetX(int slot) {
+        return slot == 1 ? 1.6 : slot == 2 ? -1.6 : 0.0;
+    }
+
+    private double companionOffsetZ(int slot) {
+        return slot == 3 ? 1.8 : 0.0;
+    }
+
+    private String entityIdentifier(String species) {
+        return "minecraft:" + species.toLowerCase(Locale.ROOT);
+    }
+
+    private void summonTeam(Player player) {
+        int summoned = 0;
+        Map<Integer, Entity> companions = activeCompanions.computeIfAbsent(
+                player.getUniqueId(), ignored -> new HashMap<>());
+        for (int slot = 1; slot <= 3; slot++) {
+            String id = data.getString(playerPath(player) + ".team." + slot, "");
+            if (id.isEmpty() || !hasBeast(player, id)) continue;
+            Entity existing = companions.get(slot);
+            if (existing != null && !existing.isClosed()) {
+                summoned++;
+                continue;
+            }
+            String base = beastPath(player, id);
+            String species = data.getString(base + ".species", "wolf").toLowerCase(Locale.ROOT);
+            Entity pet;
+            try {
+                pet = Entity.createEntity(entityIdentifier(species), player);
+            } catch (RuntimeException ex) {
+                getLogger().warning("Не удалось создать питомца " + species + ": " + ex.getMessage());
+                pet = null;
+            }
+            if (pet == null) {
+                player.sendMessage("§cНе удалось призвать вид: " + species + ". Он пока не поддерживается сервером.");
+                continue;
+            }
+            pet.setNameTag(rarityColor(data.getString(base + ".rarity", "common"))
+                    + prettySpecies(species) + " §8[§f" + data.getInt(base + ".level", 1) + "§8]");
+            pet.setNameTagVisible(true);
+            pet.setNameTagAlwaysVisible(true);
+            pet.teleport(player.add(companionOffsetX(slot), 0, companionOffsetZ(slot)));
+            pet.spawnToAll();
+            companions.put(slot, pet);
+            summoned++;
+        }
+        if (summoned == 0) {
+            player.sendMessage("§eСначала добавь существ в активную команду.");
+        } else {
+            player.sendMessage("§a✦ Призвано питомцев: §f" + summoned + "§a/3. Они будут следовать за тобой.");
+        }
+    }
+
+    private void recallTeam(Player player, boolean notify) {
+        Map<Integer, Entity> companions = activeCompanions.remove(player.getUniqueId());
+        int removed = 0;
+        if (companions != null) {
+            for (Entity pet : companions.values()) {
+                if (pet != null && !pet.isClosed()) {
+                    pet.close();
+                    removed++;
+                }
+            }
+        }
+        if (notify) player.sendMessage("§eПитомцы отозваны в коллекцию. §7(" + removed + ")");
     }
 
     // -------------------- Existing text fallbacks --------------------
