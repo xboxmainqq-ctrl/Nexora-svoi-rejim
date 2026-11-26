@@ -267,6 +267,94 @@ def make_polar_bear_texture():
     write_png(ROOT / "textures/entity/nexora_polar_bear.png", pixels)
 
 
+
+def make_rabbit_texture():
+    ink=(48,38,63,255); fur=(177,157,197,255); light=(230,215,235,255)
+    pink=(245,142,183,255); cyan=(62,224,222,255); gold=(238,190,98,255)
+    pixels=[[fur for _ in range(WIDTH)] for _ in range(HEIGHT)]
+    for y in range(HEIGHT):
+        for x in range(WIDTH):
+            if (x*5+y*7)%23<3: pixels[y][x]=light
+    paint(pixels,0,0,24,4,ink); paint(pixels,0,4,24,4,light)
+    paint(pixels,24,0,16,8,fur); paint(pixels,28,2,3,3,cyan)
+    paint(pixels,36,2,3,3,gold); paint(pixels,0,16,32,12,fur)
+    paint(pixels,6,16,5,12,pink); paint(pixels,21,16,5,12,pink)
+    paint(pixels,14,18,4,8,cyan); paint(pixels,32,16,24,12,fur)
+    for x in (32,40,48,56): paint(pixels,x,24,8,4,ink)
+    paint(pixels,0,40,16,8,light); paint(pixels,4,41,8,5,pink)
+    paint(pixels,20,40,12,5,gold)
+    write_png(ROOT / "textures/entity/nexora_rabbit.png", pixels)
+
+
+def make_ocelot_texture():
+    ink=(42,35,48,255); coat=(218,164,91,255); cream=(247,220,168,255)
+    spots=(91,58,49,255); cyan=(60,222,222,255); gold=(239,185,83,255)
+    pixels=[[coat for _ in range(WIDTH)] for _ in range(HEIGHT)]
+    for y in range(HEIGHT):
+        for x in range(WIDTH):
+            if (x*7+y*13)%17<2: pixels[y][x]=spots
+    paint(pixels,0,0,24,3,ink); paint(pixels,0,3,24,5,cream)
+    paint(pixels,24,0,16,8,coat); paint(pixels,28,2,3,3,cyan)
+    paint(pixels,36,2,3,3,gold); paint(pixels,0,16,32,12,coat)
+    for x,y in [(3,18),(10,22),(21,18),(26,24),(14,25)]: paint(pixels,x,y,3,3,spots)
+    paint(pixels,14,18,4,8,cyan); paint(pixels,32,16,24,12,coat)
+    for x in (32,40,48,56): paint(pixels,x+2,19,3,3,spots)
+    paint(pixels,0,40,16,8,ink); paint(pixels,4,41,8,4,gold)
+    write_png(ROOT / "textures/entity/nexora_ocelot.png", pixels)
+
+
+def make_turtle_texture():
+    ink=(34,66,69,255); shell=(65,132,105,255); shell_light=(122,188,137,255)
+    skin=(111,191,166,255); cyan=(58,224,220,255); gold=(237,194,101,255)
+    pixels=[[skin for _ in range(WIDTH)] for _ in range(HEIGHT)]
+    for y in range(HEIGHT):
+        for x in range(WIDTH):
+            if (x*3+y*5)%19<3: pixels[y][x]=shell_light
+    paint(pixels,0,0,24,4,ink); paint(pixels,0,4,24,4,skin)
+    paint(pixels,24,0,16,8,skin); paint(pixels,28,2,3,3,cyan)
+    paint(pixels,36,2,3,3,gold); paint(pixels,0,16,32,12,shell)
+    paint(pixels,4,17,24,2,shell_light); paint(pixels,14,19,4,8,cyan)
+    paint(pixels,32,16,24,12,skin)
+    for x in (32,40,48,56): paint(pixels,x,18,8,8,shell)
+    paint(pixels,0,40,16,8,shell); paint(pixels,4,41,8,5,gold)
+    write_png(ROOT / "textures/entity/nexora_turtle.png", pixels)
+
+
+def make_dolphin_texture():
+    ink=(25,55,83,255); blue=(68,139,177,255); light=(155,215,225,255)
+    cyan=(53,230,225,255); gold=(240,192,93,255); white=(225,247,245,255)
+    pixels=[[blue for _ in range(WIDTH)] for _ in range(HEIGHT)]
+    for y in range(HEIGHT):
+        for x in range(WIDTH):
+            if (x*7+y*3)%21<3: pixels[y][x]=light
+    paint(pixels,0,0,24,4,ink); paint(pixels,0,4,24,4,light)
+    paint(pixels,24,0,16,8,blue); paint(pixels,28,2,3,3,cyan)
+    paint(pixels,36,2,3,3,gold); paint(pixels,0,16,32,12,blue)
+    paint(pixels,4,18,24,2,light); paint(pixels,14,19,4,8,cyan)
+    paint(pixels,32,16,24,12,blue); paint(pixels,36,18,12,5,white)
+    paint(pixels,0,40,16,8,ink); paint(pixels,4,41,8,5,cyan)
+    paint(pixels,20,40,12,5,gold)
+    write_png(ROOT / "textures/entity/nexora_dolphin.png", pixels)
+
+
+def make_parrot_texture():
+    ink=(38,35,73,255); violet=(130,86,184,255); blue=(55,174,218,255)
+    cyan=(59,230,218,255); gold=(248,194,83,255); red=(230,94,107,255)
+    pixels=[[violet for _ in range(WIDTH)] for _ in range(HEIGHT)]
+    for y in range(HEIGHT):
+        for x in range(WIDTH):
+            if (x*5+y*11)%19<3: pixels[y][x]=blue
+    paint(pixels,0,0,24,8,ink); paint(pixels,4,2,16,4,cyan)
+    paint(pixels,24,0,16,8,gold); paint(pixels,28,2,4,3,red)
+    paint(pixels,0,16,32,12,violet); paint(pixels,4,17,6,10,red)
+    paint(pixels,22,17,6,10,cyan); paint(pixels,14,18,4,8,gold)
+    paint(pixels,32,16,24,12,blue)
+    paint(pixels,34,18,8,8,red); paint(pixels,46,18,8,8,cyan)
+    paint(pixels,0,40,16,8,ink); paint(pixels,4,41,8,5,gold)
+    paint(pixels,20,40,12,5,cyan)
+    write_png(ROOT / "textures/entity/nexora_parrot.png", pixels)
+
+
 def main():
     make_texture()
     make_fox_texture()
@@ -276,6 +364,11 @@ def main():
     make_horse_texture()
     make_panda_texture()
     make_polar_bear_texture()
+    make_rabbit_texture()
+    make_ocelot_texture()
+    make_turtle_texture()
+    make_dolphin_texture()
+    make_parrot_texture()
     BUILD.mkdir(parents=True, exist_ok=True)
     output = BUILD / "NEXORA_Beasts_RP.mcpack"
     with zipfile.ZipFile(output, "w", compression=zipfile.ZIP_DEFLATED) as archive:
