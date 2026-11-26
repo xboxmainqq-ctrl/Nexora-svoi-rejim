@@ -15,3 +15,9 @@ gradient-glyphs: false
 # true  - a particle aura around the owner, shape/colour by the highest rarity
 #         among summoned pets (hidden while sneaking).
 player-aura: true
+
+# true  - the aura uses the custom particles of the NEXORA resource pack (magic
+#         circles with runes, sparkles, petals, feathers, halo...). Needs the pack.
+# false - simple dust-particle aura that works without the pack.
+# If the server cannot send custom particles it falls back to the dust aura itself.
+custom-particles: true

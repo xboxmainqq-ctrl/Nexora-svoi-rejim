@@ -1,10 +1,16 @@
 package ru.nexora.beasts.aura;
 
+import cn.nukkit.Player;
 import cn.nukkit.level.Level;
 import cn.nukkit.level.ParticleEffect;
 import cn.nukkit.level.particle.DustParticle;
 import cn.nukkit.level.particle.FlameParticle;
 import cn.nukkit.math.Vector3;
+import cn.nukkit.network.protocol.DataPacket;
+
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
+import java.util.Optional;
 
 /**
  * Per-rarity particle auras drawn around a player.
@@ -29,7 +35,91 @@ public final class RarityAuras {
             {200, 185, 255},   // absolute   astral
     };
 
+    private static final String[] IDS = {"common", "uncommon", "rare", "epic", "legendary",
+            "mythic", "ancient", "divine", "forbidden", "absolute"};
+    /** Layers per rarity: resource-pack/rarity_particles.py LAYERS_PER_RARITY. */
+    private static final int LAYERS = 4;
+    private static final double VIEW_DISTANCE_SQ = 48.0 * 48.0;
+
+    private static volatile boolean customBroken;
+    private static Class<?> packetClass;
+    private static Field fIdentifier;
+    private static Field fPosition;
+    private static Field fDimension;
+    private static Field fMolang;
+    private static Constructor<?> vecCtor;
+    private static boolean vecFloat;
+
     private RarityAuras() {
+    }
+
+    /** True while resource-pack particles can be sent (false once the packet API turned out incompatible). */
+    public static boolean customAvailable() {
+        return !customBroken;
+    }
+
+    /**
+     * Spawn the four resource-pack particle layers of a rarity at a position for nearby players.
+     * Done through reflection because the packet fields differ slightly between Nukkit-MOT builds.
+     *
+     * @return false if the custom particles cannot be sent (caller falls back to {@link #render})
+     */
+    public static boolean sendCustom(Level level, double x, double y, double z, int tier) {
+        if (customBroken || level == null) return false;
+        tier = Math.max(0, Math.min(9, tier));
+        try {
+            init();
+            Object position = vecFloat
+                    ? vecCtor.newInstance((float) x, (float) y, (float) z)
+                    : vecCtor.newInstance(x, y, z);
+            int dimension = dimensionOf(level);
+            for (int layer = 1; layer <= LAYERS; layer++) {
+                Object pk = packetClass.getDeclaredConstructor().newInstance();
+                fIdentifier.set(pk, "nexora:aura_" + IDS[tier] + "_" + layer);
+                fPosition.set(pk, position);
+                if (fDimension != null) fDimension.setInt(pk, dimension);
+                if (fMolang != null && fMolang.get(pk) == null) fMolang.set(pk, Optional.empty());
+                for (Player viewer : level.getPlayers().values()) {
+                    double dx = viewer.x - x, dz = viewer.z - z;
+                    if (dx * dx + dz * dz <= VIEW_DISTANCE_SQ) viewer.dataPacket((DataPacket) pk);
+                }
+            }
+            return true;
+        } catch (ReflectiveOperationException | RuntimeException | LinkageError e) {
+            customBroken = true;
+            return false;
+        }
+    }
+
+    private static synchronized void init() throws ReflectiveOperationException {
+        if (packetClass != null) return;
+        Class<?> cls = Class.forName("cn.nukkit.network.protocol.SpawnParticleEffectPacket");
+        Field id = cls.getField("identifier");
+        Field pos = cls.getField("position");
+        Constructor<?> ctor;
+        boolean isFloat;
+        try {
+            ctor = pos.getType().getConstructor(float.class, float.class, float.class);
+            isFloat = true;
+        } catch (NoSuchMethodException e) {
+            ctor = pos.getType().getConstructor(double.class, double.class, double.class);
+            isFloat = false;
+        }
+        fIdentifier = id;
+        fPosition = pos;
+        vecCtor = ctor;
+        vecFloat = isFloat;
+        try { fDimension = cls.getField("dimensionId"); } catch (NoSuchFieldException e) { fDimension = null; }
+        try { fMolang = cls.getField("molangVariablesJson"); } catch (NoSuchFieldException e) { fMolang = null; }
+        packetClass = cls;
+    }
+
+    private static int dimensionOf(Level level) {
+        try {
+            return (Integer) level.getClass().getMethod("getDimension").invoke(level);
+        } catch (ReflectiveOperationException | RuntimeException e) {
+            return 0;
+        }
     }
 
     /** @param tier rarity index 0..9 (common..absolute) */

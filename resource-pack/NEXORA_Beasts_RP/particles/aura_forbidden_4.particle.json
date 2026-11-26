@@ -1,0 +1,79 @@
+{
+  "format_version": "1.10.0",
+  "particle_effect": {
+    "description": {
+      "identifier": "nexora:aura_forbidden_4",
+      "basic_render_parameters": {
+        "material": "particles_alpha",
+        "texture": "textures/particle/nexora_smoke"
+      }
+    },
+    "components": {
+      "minecraft:emitter_local_space": {
+        "position": true,
+        "rotation": false
+      },
+      "minecraft:emitter_lifetime_once": {
+        "active_time": 0.5
+      },
+      "minecraft:emitter_shape_point": {
+        "offset": [
+          0,
+          0,
+          0
+        ],
+        "direction": [
+          0,
+          0,
+          0
+        ]
+      },
+      "minecraft:particle_lifetime_expression": {
+        "max_lifetime": 1.6
+      },
+      "minecraft:particle_initial_speed": 0,
+      "minecraft:particle_motion_parametric": {
+        "relative_position": [
+          "math.cos(variable.particle_random_1 * 360 + variable.particle_age * 30) * (variable.particle_random_2 * 0.8)",
+          "0.05 + variable.particle_age * 0.9",
+          "math.sin(variable.particle_random_1 * 360 + variable.particle_age * 30) * (variable.particle_random_2 * 0.8)"
+        ]
+      },
+      "minecraft:particle_appearance_billboard": {
+        "size": [
+          "(0.3 + variable.particle_random_3 * 0.1) * math.sin((variable.particle_age / variable.particle_lifetime) * 180) ",
+          "(0.3 + variable.particle_random_3 * 0.1) * math.sin((variable.particle_age / variable.particle_lifetime) * 180) "
+        ],
+        "facing_camera_mode": "lookat_xyz",
+        "uv": {
+          "texture_width": 64,
+          "texture_height": 64,
+          "uv": [
+            0,
+            0
+          ],
+          "uv_size": [
+            64,
+            64
+          ]
+        }
+      },
+      "minecraft:particle_appearance_tinting": {
+        "color": {
+          "interpolant": "variable.particle_age / variable.particle_lifetime",
+          "gradient": {
+            "0.0": "#00FF9884",
+            "0.15": "#73FF9884",
+            "0.5": "#73EC343E",
+            "0.78": "#62840C2A",
+            "1.0": "#00840C2A"
+          }
+        }
+      },
+      "minecraft:emitter_rate_steady": {
+        "spawn_rate": 6,
+        "max_particles": 40
+      }
+    }
+  }
+}

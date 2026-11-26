@@ -636,6 +636,8 @@ def main():
     # Rarity-specific creatures (models, textures, variant wiring).
     import rarity_looks
     rarity_looks.build_all(ROOT, chunk, zlib, struct)
+    import rarity_particles
+    rarity_particles.build_all(ROOT, chunk, zlib, struct)
     # font/glyph_E2.png (gradient rarity lettering) is committed; regenerate it
     # with tools/make_gradient_font.py when the labels or colours change.
     BUILD.mkdir(parents=True, exist_ok=True)

@@ -559,7 +559,8 @@ def patch_entity(root, entity, names):
                                "look_walk": "animation.nexora_look.walk",
                                "look_wings": "animation.nexora_look.wings"})
     animate = [a for a in desc["scripts"]["animate"]
-               if not (a == "look_idle" or (isinstance(a, dict) and ("look_walk" in a or "look_wings" in a)))]
+               if not (a in ("look_idle", "look_wings")
+                       or (isinstance(a, dict) and ("look_walk" in a or "look_wings" in a)))]
     animate += ["look_idle", {"look_walk": "query.modified_move_speed > 0.01"}, "look_wings"]
     desc["scripts"]["animate"] = animate
     epath.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")

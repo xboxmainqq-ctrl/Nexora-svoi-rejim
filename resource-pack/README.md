@@ -41,6 +41,18 @@ three-stop gradient. Characters are `U+E200 + N`, counting letters over the ten
 words in rarity order. Regenerate with `python3 resource-pack/tools/make_gradient_font.py`
 (needs Pillow). The plugin uses them when `gradient-glyphs: true`.
 
+## Custom aura particles
+
+`rarity_particles.py` draws 14 particle textures (magic circles with rune bands:
+triangle, inverted triangle, hexagram, pentagram, octagram, sun, flower of life;
+plus halo, sparkle, ember, petal, feather, glow, smoke) and writes 40 Bedrock
+particle effects: `nexora:aura_<rarity>_<1..4>`. Each rarity has a ground circle,
+its own motion (orbits, double helix, falling petals/feathers, rising embers,
+vortex) and its own colour gradient. The plugin (`RarityAuras.sendCustom`) spawns
+the four layers of the strongest summoned pet's rarity around the owner.
+`custom-particles: false` in `config.yml` switches to the plain dust aura, which also
+works without the pack.
+
 ## Build
 
 Run `python3 resource-pack/build_pack.py`. It creates
