@@ -354,7 +354,7 @@ public final class NEXORABeasts extends PluginBase implements Listener {
         if (!getConfig().getBoolean("player-aura", true)
                 || !data.getBoolean(auraPath + ".enabled", true) || player.isSneaking()) return;
         int tier = data.getInt(auraPath + ".tier", -1);
-        // -1 keeps the original automatic behaviour: use the rarest summoned companion.
+        // -1 keeps automatic mode: use the rarest summoned companion.
         if (tier < 0) for (Map.Entry<Integer, Entity> entry : companions.entrySet()) {
             Entity pet = entry.getValue();
             if (pet == null || pet.isClosed()) continue;
@@ -364,9 +364,11 @@ public final class NEXORABeasts extends PluginBase implements Listener {
             tier = Math.max(tier, rarityIndex(rarity));
         }
         if (tier < 0) return;
-        // Use native Bedrock particles: the optional resource-pack aura identifiers
-        // are not guaranteed to exist on the client, even when the packet API accepts them.
-        // Keep the existing ten aura designs, but always render them with visible native particles.
+        // The sigil collection uses the four original Bedrock resource-pack layers
+        // (ground magic circle + matching floating effects). Classic keeps native particles.
+        String style = data.getString(auraPath + ".style", "classic");
+        if ("sigils".equalsIgnoreCase(style)
+                && RarityAuras.sendCustom(player.getLevel(), player.x, player.y, player.z, tier)) return;
         RarityAuras.render(player.getLevel(), player.x, player.y, player.z, tier, companionAuraTicks * 0.35);
     }
 
@@ -1091,22 +1093,20 @@ public final class NEXORABeasts extends PluginBase implements Listener {
         String path = playerPath(player) + ".aura";
         boolean enabled = data.getBoolean(path + ".enabled", true);
         int selectedTier = data.getInt(path + ".tier", -1);
+        String style = data.getString(path + ".style", "classic");
         String selectedName = selectedTier < 0 ? "Авто · по редкости питомца"
                 : RARITY_NAMES[Math.max(0, Math.min(9, selectedTier))];
+        String styleName = "sigils".equalsIgnoreCase(style) ? "§dМагические круги" : "§bКлассические";
         FormWindowSimple form = new FormWindowSimple("§l§0✧ АУРЫ NEXORA",
-                "§7Персональная магическая аура вокруг персонажа.\n"
-                + "§8Эффекты и частицы из оригинальной системы сохранены.\n\n"
+                "§7Выбери коллекцию аур для своего персонажа.\n\n"
                 + "§fСтатус: " + (enabled ? "§aВКЛЮЧЕНА" : "§cВЫКЛЮЧЕНА")
-                + "\n§fВыбор: §d" + selectedName
-                + "\n\n§7Выбери режим или одну из десяти редкостей.");
+                + "\n§fКоллекция: " + styleName
+                + "\n§fЭффект: §d" + selectedName
+                + "\n\n§8Выбор сохраняется после выхода с сервера.");
         form.addButton(new ElementButton((enabled ? "§c✕ ВЫКЛЮЧИТЬ АУРУ" : "§a✦ ВКЛЮЧИТЬ АУРУ")
                 + "\n§8Переключить отображение"));
-        form.addButton(new ElementButton("§b✧ АВТОМАТИЧЕСКАЯ АУРА\n§8Самая редкая из активных питомцев"));
-        for (int i = 0; i < RARITIES.length; i++) {
-            String active = selectedTier == i ? " §a✓ ВЫБРАНА" : "";
-            form.addButton(new ElementButton(RARITY_COLORS[i] + "✦ " + RARITY_NAMES[i] + active
-                    + "\n§8" + RARITIES[i].toUpperCase(Locale.ROOT) + " · " + (i + 1) + "/10"));
-        }
+        form.addButton(new ElementButton("§l§d✧ МАГИЧЕСКИЕ КРУГИ\n§8Рунические круги и сияющие частицы · 10 видов"));
+        form.addButton(new ElementButton("§l§b✦ КЛАССИЧЕСКИЕ АУРЫ\n§8Существующие эффекты редкостей · 10 видов"));
         form.addButton(new ElementButton("§7← ЗАКРЫТЬ"));
         form.addHandler(FormResponseHandler.withoutPlayer(ignored -> {
             if (form.wasClosed()) return;
@@ -1116,17 +1116,55 @@ public final class NEXORABeasts extends PluginBase implements Listener {
                 data.save();
                 openAuraMenu(player);
             } else if (choice == 1) {
+                openAuraChoices(player, true);
+            } else if (choice == 2) {
+                openAuraChoices(player, false);
+            }
+        }));
+        player.showFormWindow(form);
+    }
+
+    private void openAuraChoices(Player player, boolean sigils) {
+        String path = playerPath(player) + ".aura";
+        int selectedTier = data.getInt(path + ".tier", -1);
+        String style = sigils ? "sigils" : "classic";
+        FormWindowSimple form = new FormWindowSimple(
+                sigils ? "§l§d✧ МАГИЧЕСКИЕ КРУГИ" : "§l§b✦ КЛАССИЧЕСКИЕ АУРЫ",
+                sigils
+                        ? "§7Выбери рунический круг.\n§8Под ногами появится магическая печать, над ней — частицы."
+                        : "§7Выбери классический эффект редкости.\n§8Это прежние ауры NEXORA без замены дизайна.");
+        if (!sigils) form.addButton(new ElementButton("§b✧ АВТОМАТИЧЕСКАЯ АУРА\n§8Самая редкая из активных питомцев"));
+        for (int i = 0; i < RARITIES.length; i++) {
+            String active = selectedTier == i && style.equalsIgnoreCase(data.getString(path + ".style", "classic"))
+                    ? " §a✓ ВЫБРАНА" : "";
+            form.addButton(new ElementButton(RARITY_COLORS[i] + "✦ " + RARITY_NAMES[i] + active
+                    + "\n§8" + RARITIES[i].toUpperCase(Locale.ROOT) + " · " + (i + 1) + "/10"));
+        }
+        form.addButton(new ElementButton("§7← НАЗАД"));
+        form.addHandler(FormResponseHandler.withoutPlayer(ignored -> {
+            if (form.wasClosed()) return;
+            int choice = form.getResponse().getClickedButtonId();
+            int autoIndex = sigils ? -1 : 0;
+            if (!sigils && choice == autoIndex) {
+                data.set(path + ".style", "classic");
                 data.set(path + ".tier", -1);
                 data.set(path + ".enabled", true);
                 data.save();
-                player.sendMessage("§b✧ Автоматическая аура включена.");
+                player.sendMessage("§b✧ Автоматическая классическая аура включена.");
                 openAuraMenu(player);
-            } else if (choice >= 2 && choice < 12) {
-                int tier = choice - 2;
+                return;
+            }
+            int tier = choice - (sigils ? 0 : 1);
+            if (tier >= 0 && tier < RARITIES.length) {
+                data.set(path + ".style", style);
                 data.set(path + ".tier", tier);
                 data.set(path + ".enabled", true);
                 data.save();
-                player.sendMessage(RARITY_COLORS[tier] + "✦ Аура «" + RARITY_NAMES[tier] + "» активирована!");
+                player.sendMessage(RARITY_COLORS[tier] + "✦ "
+                        + (sigils ? "Магический круг «" : "Классическая аура «")
+                        + RARITY_NAMES[tier] + "» активирован!");
+                openAuraMenu(player);
+            } else {
                 openAuraMenu(player);
             }
         }));
