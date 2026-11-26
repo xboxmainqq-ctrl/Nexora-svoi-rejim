@@ -530,10 +530,10 @@ public final class NEXORABeasts extends PluginBase implements Listener {
                     else sender.sendMessage("§cИспользование: /beasts team <слот 1-3> <ID существа>");
                 }
             }
-            case "train" -> {
+            case "train", "upgrade", "develop" -> {
                 if (!requirePlayer(sender)) return true;
-                if (args.length < 2) sender.sendMessage("§cИспользование: /beasts train <ID>");
-                else trainBeast((Player) sender, args[1]);
+                if (args.length < 2) sender.sendMessage("§cИспользование: /beasts upgrade <ID>");
+                else openBeastUpgradeMenu((Player) sender, args[1]);
             }
             case "info" -> {
                 if (!requirePlayer(sender)) return true;
@@ -1469,34 +1469,6 @@ public final class NEXORABeasts extends PluginBase implements Listener {
                     + " §7получил уровень " + level + " и §e+" + gainedLevels + " §7очк. развития.");
         }
         data.save();
-    }
-
-    private void trainBeast(Player player, String id) {
-        if (!hasBeast(player, id)) {
-            player.sendMessage("§cСущество не найдено в твоей коллекции.");
-            return;
-        }
-        Item food = Item.get(296, 0, 1); // Wheat
-        if (!player.getInventory().contains(food)) {
-            player.sendMessage("§cДля тренировки нужна 1 пшеница.");
-            return;
-        }
-        player.getInventory().removeItem(food);
-        String base = beastPath(player, id);
-        int level = data.getInt(base + ".level", 1);
-        int xp = data.getInt(base + ".xp", 0) + 25;
-        boolean leveled = false;
-        while (level < 100 && xp >= xpToNext(level)) {
-            xp -= xpToNext(level);
-            level++;
-            leveled = true;
-        }
-        data.set(base + ".level", level);
-        data.set(base + ".xp", xp);
-        data.save();
-        player.sendMessage("§aТренировка завершена! §f" + prettySpecies(data.getString(base + ".species", "unknown")) + " §aполучил 25 опыта.");
-        if (leveled) player.sendMessage("§6§lУРОВЕНЬ ПОВЫШЕН! §eТеперь уровень " + level + ".");
-        player.sendMessage("§7Опыт: §a" + xp + "§7 / " + xpToNext(level) + " §8| §7Нужно ещё тренировок: §f" + (int) Math.ceil((xpToNext(level) - xp) / 25.0));
     }
 
     private int xpToNext(int level) { return 50 + (Math.max(1, level) * 50); }
