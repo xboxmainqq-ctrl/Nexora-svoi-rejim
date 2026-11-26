@@ -5,6 +5,8 @@ This document describes the current playable foundation of the creature system.
 ## Included
 
 - Persistent player collection stored by UUID in `players.yml`.
+- Touch-friendly Nukkit-MOT form menus: main screen, collection, creature cards, team slots, egg archive, training and release confirmation.
+- `/beasts` opens the graphical menu for players; text commands remain available for administration and compatibility.
 - Ten rarity tiers: common, uncommon, rare, epic, legendary, mythic, ancient, divine, forbidden, absolute.
 - Two acquisition paths:
   - Use a NEXORA egg (right-click air or a block). Hatching takes five seconds; each player can hatch one egg at a time.
@@ -14,7 +16,7 @@ This document describes the current playable foundation of the creature system.
 - Individual vitality, power and defense values derived from rarity, level and saved potential.
 - Training: spend one wheat for 25 XP; each level-up improves stats. Maximum level is 100.
 - Admin test commands for eggs and capture spheres.
-- Rarity-colored egg names and lore; unique egg textures are not included and require a Bedrock resource pack.
+- Rarity-colored egg names and lore; the first GUI pass uses native Bedrock form windows and does not depend on client-side resource-pack assets yet.
 
 ## Commands
 
@@ -40,5 +42,6 @@ Rarity identifiers: `common uncommon rare epic legendary mythic ancient divine f
 - Captured creatures are collection records, not summoned companion entities.
 - The active three-slot team is saved but is not connected to battles.
 - No battle system, abilities, evolution, custom models, or region-specific spawn rules yet.
+- The dedicated NEXORA visual resource pack (custom egg/orb textures and menu artwork) is a separate deliverable and is not yet bundled in this build.
 - Egg rarity is defined by the egg's lore metadata; wild capture uses weighted rarity probabilities.
 - In-game compatibility must still be verified on the exact server build after installing the generated JAR.
