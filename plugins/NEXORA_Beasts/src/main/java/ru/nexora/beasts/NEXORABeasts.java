@@ -461,6 +461,7 @@ public final class NEXORABeasts extends PluginBase implements Listener {
             gainBeastXp(owner, beastId, 10);
             target.attack(new EntityDamageByEntityEvent(
                     pet, target, EntityDamageEvent.DamageCause.ENTITY_ATTACK, damage));
+            triggerSpeciesCombatSkill(owner, slot, pet, target, species, power, now);
             long delay = switch (species) {
                 case "cat", "ocelot", "fox", "rabbit" -> 820L;
                 case "bee" -> 900L;
@@ -495,6 +496,59 @@ public final class NEXORABeasts extends PluginBase implements Listener {
             teamUltimateDecisionCooldowns.put(owner.getUniqueId(), now + 5000L);
             useUltimate(owner, slot);
         }
+    }
+
+    /**
+     * Each species has a signature combat proc. The shared cooldown prevents
+     * rapid repeated procs while keeping the passive meaningful in longer fights.
+     */
+    private void triggerSpeciesCombatSkill(Player owner, int slot, EntityLiving pet,
+                                           EntityLiving target, String species, int power, long now) {
+        String key = owner.getUniqueId() + ":skill:" + slot;
+        if (now < companionAttackCooldowns.getOrDefault(key, 0L)
+                || ThreadLocalRandom.current().nextDouble() > 0.22) return;
+
+        double bonusMultiplier = switch (species) {
+            case "wolf" -> 0.85;                 // Pack Rend
+            case "fox" -> 0.70;                  // Ember Feint
+            case "rabbit" -> 0.55;               // Moonstrike
+            case "cat", "ocelot" -> 0.75;        // Shadow Claw
+            case "bee" -> 0.80;                  // Piercing Sting
+            case "axolotl" -> 0.72;              // Tidal Pulse
+            case "horse" -> 1.00;                // Thunder Charge
+            case "panda" -> 0.95;                // Jade Fist
+            case "polarbear", "polar_bear" -> 1.05; // Frost Maul
+            case "turtle" -> 0.65;               // Shell Burst
+            case "dolphin" -> 0.70;              // Tidal Dash
+            case "parrot" -> 0.62;               // Feather Volley
+            default -> 0.60;
+        };
+        float bonusDamage = (float) Math.max(2.0, Math.min(32.0, power * bonusMultiplier));
+        target.attack(new EntityDamageByEntityEvent(
+                pet, target, EntityDamageEvent.DamageCause.MAGIC, bonusDamage));
+
+        int[] rgb = switch (species) {
+            case "wolf" -> new int[]{115, 205, 255};
+            case "fox" -> new int[]{255, 125, 45};
+            case "rabbit" -> new int[]{245, 175, 220};
+            case "cat", "ocelot" -> new int[]{205, 145, 255};
+            case "bee" -> new int[]{255, 220, 55};
+            case "axolotl", "dolphin" -> new int[]{80, 200, 220};
+            case "horse" -> new int[]{255, 190, 80};
+            case "panda" -> new int[]{225, 235, 245};
+            case "polarbear", "polar_bear" -> new int[]{175, 225, 255};
+            case "turtle" -> new int[]{105, 205, 125};
+            case "parrot" -> new int[]{235, 95, 155};
+            default -> new int[]{190, 150, 255};
+        };
+        Vector3 effectPoint = new Vector3(target.x, target.y + 1.0, target.z);
+        for (int i = 0; i < 6; i++) {
+            double angle = Math.PI * 2.0 * i / 6.0;
+            Vector3 point = new Vector3(effectPoint.x + Math.cos(angle) * 0.45,
+                    effectPoint.y + (i % 2) * 0.18, effectPoint.z + Math.sin(angle) * 0.45);
+            target.getLevel().addParticle(new DustParticle(point, rgb[0], rgb[1], rgb[2]));
+        }
+        companionAttackCooldowns.put(key, now + 7000L);
     }
 
     private String getCompanionDataPath(Entity companion) {
@@ -798,6 +852,7 @@ public final class NEXORABeasts extends PluginBase implements Listener {
                 + "\n\n§fУровень: §a" + level + "\n§fБоевой опыт: §a" + data.getInt(base + ".xp", 0)
                 + "§7 / " + xpToNext(level)
                 + "\n§fОчки развития: §e" + data.getInt(base + ".upgradePoints", 0)
+                + "\n§dУровень ульты: §f" + data.getInt(base + ".ultimateLevel", 0) + "/5"
                 + "\n\n§c❤ §fЖивучесть: §c" + stat(base, "vitality", 20)
                 + "\n§6⚔ §fСила: §6" + stat(base, "power", 5)
                 + "\n§b⬟ §fЗащита: §b" + stat(base, "defense", 2)
@@ -805,6 +860,7 @@ public final class NEXORABeasts extends PluginBase implements Listener {
                 + "\n§8ID: " + id;
         FormWindowSimple form = new FormWindowSimple("§l§0КАРТОЧКА СУЩЕСТВА", details);
         form.addButton(iconButton("§l§a✦ РАЗВИТИЕ\n§8Распределить очки характеристик", "textures/ui/training"));
+        form.addButton(new ElementButton("§l§d✹ УЛУЧШИТЬ УЛЬТУ\n§8Повысить силу Пробуждения"));
         form.addButton(new ElementButton("§l§6⚔ В КОМАНДУ\n§8Назначить в один из 3 слотов"));
         form.addButton(iconButton("§l§c✕ ОТПУСТИТЬ\n§8Удалить из коллекции", "textures/ui/release"));
         form.addButton(new ElementButton("§7← К КОЛЛЕКЦИИ"));
@@ -812,8 +868,9 @@ public final class NEXORABeasts extends PluginBase implements Listener {
             if (form.wasClosed()) return;
             switch (form.getResponse().getClickedButtonId()) {
                 case 0 -> openBeastUpgradeMenu(player, id);
-                case 1 -> openAssignSlotMenu(player, id);
-                case 2 -> confirmRelease(player, id);
+                case 1 -> openUltimateUpgradeMenu(player, id);
+                case 2 -> openAssignSlotMenu(player, id);
+                case 3 -> confirmRelease(player, id);
                 default -> openCollectionMenu(player);
             }
         }));
@@ -916,7 +973,10 @@ public final class NEXORABeasts extends PluginBase implements Listener {
         String base = beastPath(player, id);
         String species = data.getString(base + ".species", "wolf").toLowerCase(Locale.ROOT);
         int power = stat(base, "power", 5);
-        double damage = Math.max(8.0, Math.min(70.0, power * 2.0));
+        int ultimateLevel = Math.max(0, Math.min(5, data.getInt(base + ".ultimateLevel", 0)));
+        double damage = Math.max(8.0, Math.min(100.0, power * 2.0))
+                * (1.0 + ultimateLevel * 0.15);
+        double ultimateRadius = 5.0 + ultimateLevel * 0.5;
         double centerX = pet.x;
         double centerY = pet.y + 1.0;
         double centerZ = pet.z;
@@ -953,15 +1013,17 @@ public final class NEXORABeasts extends PluginBase implements Listener {
             double dx = entity.x - centerX;
             double dy = entity.y - centerY;
             double dz = entity.z - centerZ;
-            if (dx * dx + dy * dy + dz * dz > 25.0) continue;
+            if (dx * dx + dy * dy + dz * dz > ultimateRadius * ultimateRadius) continue;
             if (target.attack(new EntityDamageByEntityEvent(pet, target, EntityDamageEvent.DamageCause.MAGIC, (float) damage))) {
                 hitCount++;
             }
         }
 
-        ultimateCooldowns.put(cooldownKey, now + ULTIMATE_COOLDOWN_MS);
+        long cooldown = Math.max(35_000L, ULTIMATE_COOLDOWN_MS - ultimateLevel * 2_000L);
+        ultimateCooldowns.put(cooldownKey, now + cooldown);
         player.sendMessage("§d§l✹ ПРОБУЖДЕНИЕ! §r§f" + prettySpecies(species)
-                + " §dиспользовал «" + ultimateName(species) + "»! §7Урон: §c" + (int) damage
+                + " §dиспользовал «" + ultimateName(species) + "»! §7Ур. " + ultimateLevel
+                + " §8· §7Урон: §c" + (int) damage + " §8· §7Радиус: §f" + String.format(Locale.US, "%.1f", ultimateRadius)
                 + " §8· §7Целей: §f" + hitCount);
     }
 
@@ -1529,6 +1591,41 @@ public final class NEXORABeasts extends PluginBase implements Listener {
                 default -> { openBeastCard(player, id); return; }
             }
             openBeastUpgradeMenu(player, id);
+        }));
+        player.showFormWindow(form);
+    }
+
+    private void openUltimateUpgradeMenu(Player player, String id) {
+        if (!hasBeast(player, id)) { openCollectionMenu(player); return; }
+        String base = beastPath(player, id);
+        int level = Math.max(0, Math.min(5, data.getInt(base + ".ultimateLevel", 0)));
+        int points = data.getInt(base + ".upgradePoints", 0);
+        String species = data.getString(base + ".species", "wolf").toLowerCase(Locale.ROOT);
+        FormWindowSimple form = new FormWindowSimple("§l§5УЛУЧШЕНИЕ ПРОБУЖДЕНИЯ",
+                "§7Ульта: §d" + ultimateName(species)
+                + "\n§7Текущий уровень: §f" + level + "/5"
+                + "\n§7Очки развития: §e" + points
+                + "\n\n§aКаждый уровень: +15% урона, +0.5 блока радиуса и -2 сек. перезарядки."
+                + "\n§8Стоимость следующего уровня: 2 очка развития."
+                + (level >= 5 ? "\n\n§6Максимальный уровень достигнут." : ""));
+        if (level < 5) form.addButton(new ElementButton("§d✹ УЛУЧШИТЬ ДО УР. " + (level + 1) + "\n§8Потратить 2 очка"));
+        form.addButton(new ElementButton("§7← НАЗАД"));
+        form.addHandler(FormResponseHandler.withoutPlayer(ignored -> {
+            if (form.wasClosed()) return;
+            int selected = form.getResponse().getClickedButtonId();
+            if (selected == 0 && level < 5) {
+                int currentPoints = data.getInt(base + ".upgradePoints", 0);
+                int currentLevel = data.getInt(base + ".ultimateLevel", 0);
+                if (currentPoints >= 2 && currentLevel < 5) {
+                    data.set(base + ".upgradePoints", currentPoints - 2);
+                    data.set(base + ".ultimateLevel", currentLevel + 1);
+                    data.save();
+                    player.sendMessage("§d✹ Пробуждение усилено до уровня " + (currentLevel + 1) + "!");
+                } else {
+                    player.sendMessage("§cНужно 2 очка развития.");
+                }
+                openUltimateUpgradeMenu(player, id);
+            } else openBeastCard(player, id);
         }));
         player.showFormWindow(form);
     }
