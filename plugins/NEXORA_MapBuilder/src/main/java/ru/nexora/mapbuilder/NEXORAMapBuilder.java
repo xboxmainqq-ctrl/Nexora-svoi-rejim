@@ -63,7 +63,8 @@ public final class NEXORAMapBuilder extends PluginBase {
                 if (!(sender instanceof Player p)) { sender.sendMessage("§cСтроительство запускается из игры."); break; }
                 String district = args.length > 1 ? args[1].toLowerCase(Locale.ROOT) : "arden";
                 if (!district.equals("arden")) { sender.sendMessage("§cДоступно: /nexora build arden"); break; }
-                buildArden(p);
+                boolean confirmed = args.length > 2 && args[2].equalsIgnoreCase("confirm");
+                buildArden(p, confirmed);
             }
             default -> help(sender);
         }
@@ -101,21 +102,30 @@ public final class NEXORAMapBuilder extends PluginBase {
         p.teleport(dest); sender.sendMessage("§aТелепортация к §f"+name+"§a.");
     }
 
-    private void buildArden(Player p) {
+    private void buildArden(Player p, boolean confirmed) {
+        if (!confirmed) {
+            p.sendMessage("§6[Арден] §eПеред запуском выбери пустую ровную площадку.");
+            p.sendMessage("§cГенератор больше не очищает весь круг, но здания и основание займут место и заменят блоки в своих точках.");
+            p.sendMessage("§eДля запуска ещё раз введи: §f/nexora build arden confirm");
+            return;
+        }
         if (taskId != -1) { p.sendMessage("§cГенератор уже работает."); return; }
         activeLevel = p.getLevel(); activePlayer = p;
         ox = p.getFloorX(); oy = 64; oz = p.getFloorZ();
         String marker = "builds.arden." + activeLevel.getFolderName();
         if (locations.getBoolean(marker + ".complete", false)) {
-            p.sendMessage("§eАрден уже отмечен как построенный. Повторный запуск отключён, чтобы не затереть город.");
+            p.sendMessage("§eАрден уже отмечен как построенный. Повторный запуск отключён.");
             activeLevel = null; activePlayer = null; return;
         }
-        queue.clear(); placed = 0; removed = 0; clearing = true; buildStage = 1;
-        cx = -CLEAR_RADIUS; cz = -CLEAR_RADIUS; cy = oy;
+        queue.clear(); placed = 0; removed = 0;
+        // Never mass-delete terrain or player builds. Start directly with the foundation stage.
+        clearing = false; buildStage = 2;
         locations.set(marker + ".active", true); locations.set(marker + ".originX", ox);
-        locations.set(marker + ".originY", oy); locations.set(marker + ".originZ", oz); locations.save();
-        p.sendMessage("§6[Арден] §eЭтап 1/8: очищаю круглую территорию диаметром 256 блоков.");
-        p.sendMessage("§cВНИМАНИЕ: будут удалены блоки внутри круга радиусом 128 блоков от Y=64 до Y=255, включая постройки!");
+        locations.set(marker + ".originY", oy); locations.set(marker + ".originZ", oz);
+        locations.set(marker + ".stage", buildStage); locations.save();
+        p.sendMessage("§6[Арден] §eСтроительство запущено без массовой очистки.");
+        p.sendMessage("§cВнимание: основание и здания заменят блоки непосредственно в зоне своих построек.");
+        queueArden(marker);
         taskId = getServer().getScheduler().scheduleRepeatingTask(this, () -> generationTick(marker), 1).getTaskId();
     }
 
@@ -513,6 +523,6 @@ public final class NEXORAMapBuilder extends PluginBase {
         s.sendMessage("§e/nexora setloc <имя> §7— сохранить точку");
         s.sendMessage("§e/nexora locations §7— список точек");
         s.sendMessage("§e/nexora tp <имя> §7— телепорт");
-        s.sendMessage("§e/nexora build arden §7— круглая столица Арден, 8 этапов");
+        s.sendMessage("§e/nexora build arden confirm §7— запуск Ардена (без массовой очистки)");
     }
 }
