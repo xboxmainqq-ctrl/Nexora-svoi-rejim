@@ -15,7 +15,9 @@ import cn.nukkit.utils.Config;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
@@ -45,6 +47,8 @@ public final class NEXORABeasts extends PluginBase implements Listener {
     };
 
     private Config data;
+    private final Set<UUID> pendingHatches = new HashSet<>();
+    private static final int HATCH_DELAY_TICKS = 100; // 5 seconds
 
     @Override
     public void onEnable() {
@@ -55,7 +59,7 @@ public final class NEXORABeasts extends PluginBase implements Listener {
         }
         data = new Config(new File(getDataFolder(), "players.yml"), Config.YAML);
         getServer().getPluginManager().registerEvents(this, this);
-        getLogger().info("NEXORA_Beasts включён. Система коллекции, яиц и приручения готова.");
+        getLogger().info("NEXORA_Beasts включён. Коллекция, вылупление, характеристики и тренировки готовы.");
     }
 
     @Override
@@ -160,11 +164,26 @@ public final class NEXORABeasts extends PluginBase implements Listener {
         }
 
         event.setCancelled();
-        String id = addBeast(player, normalizeSpecies(species), rarity, "egg");
+        UUID playerId = player.getUniqueId();
+        if (pendingHatches.contains(playerId)) {
+            player.sendMessage("§eУ тебя уже вылупляется яйцо. Подожди немного.");
+            return;
+        }
+
+        pendingHatches.add(playerId);
         consumeOne(player, hand);
-        player.sendMessage("§6Яйцо вылупилось!");
-        player.sendMessage("§f" + prettySpecies(species) + " §7[" + rarityColor(rarity) + rarityName(rarity) + "§7]");
-        player.sendMessage("§7Новое существо добавлено в коллекцию. ID: §f" + id);
+        player.sendMessage("§6§lВылупление началось!");
+        player.sendMessage("§7Яйцо заряжается магией... §eПодожди 5 секунд.");
+        getServer().getScheduler().scheduleDelayedTask(this, () -> {
+            pendingHatches.remove(playerId);
+            String id = addBeast(player, normalizeSpecies(species), rarity, "egg");
+            if (player.isOnline()) {
+                player.sendMessage("§a§lЯЙЦО ВЫЛУПИЛОСЬ!");
+                player.sendMessage("§f" + prettySpecies(species) + " §7[" + rarityColor(rarity) + rarityName(rarity) + "§7]");
+                player.sendMessage("§7Новое существо добавлено в коллекцию. ID: §f" + id);
+                player.sendMessage("§7Характеристики можно посмотреть: §f/beasts info " + id);
+            }
+        }, HATCH_DELAY_TICKS);
     }
 
     private void showCollection(Player player) {
