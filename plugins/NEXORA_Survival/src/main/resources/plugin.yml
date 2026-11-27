@@ -15,16 +15,6 @@ commands:
   baltop:
     description: Richest players
     usage: "/baltop"
-  sell:
-    description: Open the category seller or sell resources
-    usage: "/sell [hand|all]"
-  seller:
-    description: Open the NEXORA category seller
-    usage: "/seller"
-    aliases: ["sellmenu"]
-  prices:
-    description: Sell price list
-    usage: "/prices"
   eco:
     description: Manage balances (admin)
     usage: "/eco <give|take|set> <player> <amount>"
