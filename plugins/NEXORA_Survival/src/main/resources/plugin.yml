@@ -1,6 +1,6 @@
 name: NEXORA_Survival
 main: ru.nexora.survival.NEXORASurvival
-version: "1.0.5"
+version: "1.0.6"
 api: ["1.0.0"]
 author: NEXORA
 description: "Survival: claims, economy, teleport, clans, reports, ranks, chat and kits"
