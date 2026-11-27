@@ -12,7 +12,10 @@ import cn.nukkit.potion.Effect;
 import com.nukkitx.fakeinventories.inventory.ChestFakeInventory;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 import static ru.nexora.survival.NEXORASurvival.PREFIX;
 
@@ -131,6 +134,7 @@ final class GearModule implements Listener {
     );
 
     private final NEXORASurvival plugin;
+    private final Map<UUID, ChestFakeInventory> openMenus = new HashMap<>();
 
     GearModule(NEXORASurvival plugin) {
         this.plugin = plugin;
@@ -192,6 +196,47 @@ final class GearModule implements Listener {
 
     private void openChestLater(Player player, Runnable action) {
         plugin.getServer().getScheduler().scheduleDelayedTask(plugin, action, 10);
+    }
+
+    /**
+     * Replaces any previously tracked shop window before opening the next one.
+     * FakeInventories rejects opening the same inventory twice.
+     */
+    private void showMenu(Player player, ChestFakeInventory menu) {
+        UUID playerId = player.getUniqueId();
+        ChestFakeInventory previous = openMenus.get(playerId);
+        if (previous == menu) return;
+
+        if (previous != null) {
+            try {
+                player.removeWindow(previous);
+            } catch (IllegalStateException ignored) {
+                // The previous window may already have been closed by the client.
+            }
+        }
+
+        openMenus.put(playerId, menu);
+        openChestLater(player, () -> {
+            if (!player.isOnline() || openMenus.get(playerId) != menu) return;
+            try {
+                player.addWindow(menu);
+            } catch (IllegalStateException exception) {
+                openMenus.remove(playerId, menu);
+                player.sendMessage(PREFIX + "§cНе удалось открыть магазин. Закрой другое меню и попробуй снова.");
+                plugin.getLogger().warning("Could not open NEXORA shop for " + player.getName()
+                        + ": " + exception.getMessage());
+            }
+        });
+    }
+
+    private void closeMenu(Player player, ChestFakeInventory menu) {
+        UUID playerId = player.getUniqueId();
+        if (openMenus.get(playerId) == menu) openMenus.remove(playerId);
+        try {
+            player.removeWindow(menu);
+        } catch (IllegalStateException ignored) {
+            // It may already have been closed by the client.
+        }
     }
 
     private void openRoot(Player player) {
