@@ -55,9 +55,6 @@ commands:
   tpdeny:
     description: Deny a teleport request
     usage: "/tpdeny"
-  rg:
-    description: Region protection commands
-    usage: "/rg help"
   rank:
     description: Ranks
     usage: "/rank [list|info|set]"
