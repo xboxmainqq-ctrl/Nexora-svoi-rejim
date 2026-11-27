@@ -3,6 +3,7 @@ package ru.nexora.adminranks;
 import cn.nukkit.Player;
 import cn.nukkit.command.Command;
 import cn.nukkit.command.CommandSender;
+import cn.nukkit.plugin.Plugin;
 import cn.nukkit.plugin.PluginBase;
 import cn.nukkit.utils.Config;
 
@@ -64,9 +65,18 @@ public final class NEXORAAdminRanks extends PluginBase {
     public void setRank(UUID id, String rank) {
         ranks.set("players." + id, rank.toLowerCase(Locale.ROOT));
         ranks.save();
+        refreshOnlinePlayer(id);
     }
 
-    public void removeRank(UUID id) { ranks.remove("players." + id); ranks.save(); }
+    public void removeRank(UUID id) { ranks.remove("players." + id); ranks.save(); refreshOnlinePlayer(id); }
+
+    private void refreshOnlinePlayer(UUID id) {
+        Player player = getServer().getPlayer(id);
+        Plugin survival = getServer().getPluginManager().getPlugin("NEXORA_Survival");
+        if (player == null || survival == null || !survival.isEnabled()) return;
+        try { survival.getClass().getMethod("refreshRankDisplay", Player.class).invoke(survival, player); }
+        catch (ReflectiveOperationException ex) { getLogger().warning("Не удалось обновить отображение ранга: " + ex.getMessage()); }
+    }
 
     public String getPrefix(UUID id) {
         String rank = getAdminRankId(id);
