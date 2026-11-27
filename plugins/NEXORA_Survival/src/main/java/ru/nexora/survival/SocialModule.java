@@ -46,41 +46,55 @@ final class SocialModule implements Listener {
         return plugin.getConfig().getString("default-rank", "player");
     }
 
-    private static final String RANK_CHARSET =
-            "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
-            + "АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ"
-            + "абвгдеёжзийклмнопрстуфхцчшщъыьэюя"
-            + "0123456789_-";
-    private static final int RANK_GLYPH_BASE = 0xE300;
-    private static final int RANK_GRADIENT_STEPS = 10;
+    // Independent PUA glyph range: clan gradients end at U+F74F.
+    private static final int RANK_GLYPH_BASE = 0xF750;
+    private static final int RANK_GRADIENT_STEPS = 3;
 
     String prefix(Player player) {
-        String id = rankId(player.getUniqueId());
+        String id = rankId(player.getUniqueId()).toLowerCase(Locale.ROOT);
         String label = plugin.getConfig().getString("ranks." + id + ".label", "");
-        int gradient = switch (id.toLowerCase(Locale.ROOT)) {
-            case "aurvex", "kryon" -> 1;
-            case "zyreth", "solvex" -> 2;
-            case "veloria", "eclyra" -> 3;
-            case "nymeris", "nexorion" -> 0;
-            default -> -1;
-        };
-        if (gradient < 0 || label.isEmpty()) {
+        int offset = rankGlyphOffset(id);
+        if (offset < 0 || label.isEmpty()) {
             return plugin.getConfig().getString("ranks." + id + ".prefix", "§7Игрок");
         }
-        return rankGradient(label, gradient);
+        return rankGradient(label, offset);
     }
 
-    private String rankGradient(String value, int gradient) {
+    private int rankGlyphOffset(String id) {
+        return switch (id) {
+            case "aurvex" -> 0;
+            case "zyreth" -> 18;
+            case "veloria" -> 36;
+            case "kryon" -> 57;
+            case "nymeris" -> 72;
+            case "solvex" -> 93;
+            case "eclyra" -> 111;
+            case "nexorion" -> 129;
+            case "helper" -> 153;
+            case "junior_moder" -> 171;
+            case "moder" -> 219;
+            case "senior_moder" -> 246;
+            case "admin" -> 294;
+            case "chief_admin" -> 333;
+            default -> -1;
+        };
+    }
+
+    private String rankGradient(String value, int offset) {
         StringBuilder out = new StringBuilder();
-        int length = value.length();
-        for (int i = 0; i < length; i++) {
+        int visibleLength = value.replace(" ", "").length();
+        int position = 0;
+        for (int i = 0; i < value.length(); i++) {
             char ch = value.charAt(i);
-            if (ch == ' ') { out.append(' '); continue; }
-            int charIndex = RANK_CHARSET.indexOf(ch);
-            if (charIndex < 0) { out.append(ch); continue; }
-            int step = length <= 1 ? 0 : (int) Math.round((double) i * (RANK_GRADIENT_STEPS - 1) / (length - 1));
-            int codePoint = RANK_GLYPH_BASE + ((gradient * RANK_GRADIENT_STEPS + step) * RANK_CHARSET.length()) + charIndex;
+            if (ch == ' ') {
+                out.append(' ');
+                continue;
+            }
+            int step = visibleLength <= 1 ? 0
+                    : (int) Math.round((double) position * (RANK_GRADIENT_STEPS - 1) / (visibleLength - 1));
+            int codePoint = RANK_GLYPH_BASE + offset + position * RANK_GRADIENT_STEPS + step;
             out.appendCodePoint(codePoint);
+            position++;
         }
         return out.toString();
     }
