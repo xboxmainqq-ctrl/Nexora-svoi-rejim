@@ -7,7 +7,7 @@ display-order: [aurvex, zyreth, veloria, kryon, nymeris, solvex, eclyra, nexorio
 privileges:
   aurvex:
     homes: 4
-    kits: [start, daily, vip]
+    kits: [start, daily, aurvex]
 
     label: "AURVEX"
     gradient: "aurvex"
@@ -20,7 +20,7 @@ privileges:
       - "§8▪ §fДоступ к особому стартовому набору"
   zyreth:
     homes: 5
-    kits: [start, daily, vip]
+    kits: [start, daily, zyreth]
 
     label: "ZYRETH"
     gradient: "zyreth"
@@ -33,7 +33,7 @@ privileges:
       - "§8▪ §fРасширенный набор"
   veloria:
     homes: 6
-    kits: [start, daily, vip]
+    kits: [start, daily, veloria]
 
     label: "VELORIA"
     gradient: "veloria"
@@ -46,7 +46,7 @@ privileges:
       - "§8▪ §fРасширенный набор"
   kryon:
     homes: 7
-    kits: [start, daily, vip]
+    kits: [start, daily, kryon]
 
     label: "KRYON"
     gradient: "kryon"
@@ -59,7 +59,7 @@ privileges:
       - "§8▪ §fОсобый набор KRYON"
   nymeris:
     homes: 8
-    kits: [start, daily, vip]
+    kits: [start, daily, nymeris]
 
     label: "NYMERIS"
     gradient: "nymeris"
@@ -72,7 +72,7 @@ privileges:
       - "§8▪ §fОсобый набор NYMERIS"
   solvex:
     homes: 10
-    kits: [start, daily, vip]
+    kits: [start, daily, solvex]
 
     label: "SOLVEX"
     gradient: "solvex"
@@ -85,7 +85,7 @@ privileges:
       - "§8▪ §fУлучшенный набор SOLVEX"
   eclyra:
     homes: 12
-    kits: [start, daily, vip]
+    kits: [start, daily, eclyra]
 
     label: "ECLYRA"
     gradient: "eclyra"
@@ -98,7 +98,7 @@ privileges:
       - "§8▪ §fПремиальный набор ECLYRA"
   nexorion:
     homes: 16
-    kits: [start, daily, vip]
+    kits: [start, daily, nexorion]
 
     label: "NEXORION"
     gradient: "nexorion"
