@@ -1,9 +1,9 @@
 name: NEXORA_Survival
 main: ru.nexora.survival.NEXORASurvival
-version: "1.0.8"
+version: "1.0.9"
 api: ["1.0.0"]
 author: NEXORA
-description: "Survival: claims, economy, teleport, clans, reports, ranks, chat and kits"
+description: "Survival: economy, teleport, clans, reports, chat and kits"
 commands:
   balance:
     description: Show your balance
@@ -55,9 +55,6 @@ commands:
   tpdeny:
     description: Deny a teleport request
     usage: "/tpdeny"
-  rank:
-    description: Ranks
-    usage: "/rank [list|info|set]"
   kit:
     description: Receive a kit
     usage: "/kit [name]"
@@ -99,5 +96,5 @@ commands:
     usage: "/gear give <player> <id>"
 permissions:
   nexora.survival.admin:
-    description: Administer NEXORA Survival (bypass claims, set spawn and warps, manage ranks and balances)
+    description: Administer NEXORA Survival (set spawn and warps, manage balances)
     default: op
