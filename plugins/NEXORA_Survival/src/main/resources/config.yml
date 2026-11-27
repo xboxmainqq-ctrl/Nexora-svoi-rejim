@@ -61,10 +61,6 @@ economy:
     "367": {name: "Гнилая плоть", price: 1}
     "375": {name: "Паучий глаз", price: 3}
 
-claims:
-  price: 50                  # price of one 16x16 chunk
-  refund-percent: 50         # returned when a chunk is released
-  expand-price-per-block: 2  # price for each newly added block when expanding a region
 
 chat:
   enabled: true
@@ -72,10 +68,10 @@ chat:
 
 default-rank: player
 ranks:
-  player: {prefix: "§7Игрок", homes: 3, claims: 4, kits: [start, daily]}
-  vip: {prefix: "§aVIP", homes: 6, claims: 8, kits: [start, daily, vip]}
-  moder: {prefix: "§9Модер", homes: 10, claims: 12, kits: [start, daily, vip]}
-  admin: {prefix: "§cАдмин", homes: 20, claims: 30, kits: [start, daily, vip]}
+  player: {prefix: "§7Игрок", homes: 3, kits: [start, daily]}
+  vip: {prefix: "§aVIP", homes: 6, kits: [start, daily, vip]}
+  moder: {prefix: "§9Модер", homes: 10, kits: [start, daily, vip]}
+  admin: {prefix: "§cАдмин", homes: 20, kits: [start, daily, vip]}
 
 start-kit-on-first-join: true
 # cooldown-hours: 0 means the kit can be taken only once.
