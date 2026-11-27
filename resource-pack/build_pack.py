@@ -644,6 +644,13 @@ def main():
     make_clan_gradient_font.build_all()
     import make_rank_gradient_font
     make_rank_gradient_font.build_all()
+    # Bedrock reads bitmap glyph sheets from textures/font, not the pack-root font folder.
+    from shutil import copy2
+    glyph_source = ROOT / "font"
+    glyph_target = ROOT / "textures" / "font"
+    glyph_target.mkdir(parents=True, exist_ok=True)
+    for glyph_sheet in glyph_source.glob("glyph_*.png"):
+        copy2(glyph_sheet, glyph_target / glyph_sheet.name)
     # glyph_E2.png remains reserved for the existing rarity labels.
     BUILD.mkdir(parents=True, exist_ok=True)
     output = BUILD / "NEXORA_Beasts_RP.mcpack"
