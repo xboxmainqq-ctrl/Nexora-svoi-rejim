@@ -6,7 +6,13 @@ import cn.nukkit.command.CommandSender;
 import cn.nukkit.event.EventHandler;
 import cn.nukkit.event.Listener;
 import cn.nukkit.event.block.BlockBreakEvent;
+import cn.nukkit.event.block.BlockBurnEvent;
+import cn.nukkit.event.block.BlockFromToEvent;
+import cn.nukkit.event.block.BlockIgniteEvent;
+import cn.nukkit.event.block.BlockPistonEvent;
 import cn.nukkit.event.block.BlockPlaceEvent;
+import cn.nukkit.event.entity.EntityExplodeEvent;
+import cn.nukkit.math.BlockFace;
 import cn.nukkit.event.player.PlayerInteractEvent;
 import cn.nukkit.inventory.InventoryHolder;
 import cn.nukkit.item.Item;
@@ -26,7 +32,7 @@ import static ru.nexora.survival.NEXORASurvival.PREFIX;
 /**
  * Land claims. One claim is one 16x16 chunk (all heights). The owner and the players he trusts
  * can build and open containers there; everybody else can not.
- * Not covered: explosions, pistons, flowing liquids and mob griefing.
+ * Environmental protection also blocks explosions, piston transfers, liquid flow and fire.
  */
 final class ClaimModule implements Listener {
     private static final int BUCKET = 325;
@@ -88,6 +94,83 @@ final class ClaimModule implements Listener {
         warn(player, "§cЭта территория принадлежит §e"
                 + store.cfg.getString("claims." + claimKey + ".ownerName", "другому игроку") + "§c.");
         return false;
+    }
+
+    /**
+     * Returns the protection domain at a block: empty for wilderness, "spawn" for spawn
+     * protection, or the UUID of the region owner. Comparing domains prevents mechanisms
+     * from moving blocks or fluids across a protected border.
+     */
+    private String protectionDomain(Level level, int x, int z) {
+        if (plugin.teleports().inSpawnProtection(level, x, z)) return "spawn";
+        return ownerOf(key(level, x >> 4, z >> 4));
+    }
+
+    private boolean protectedAt(Level level, int x, int z) {
+        return !protectionDomain(level, x, z).isEmpty();
+    }
+
+    @EventHandler
+    public void onExplosion(EntityExplodeEvent event) {
+        // Keep the explosion itself, but remove every block inside a claim or spawn protection.
+        event.getBlockList().removeIf(block ->
+                protectedAt(block.getLevel(), block.getFloorX(), block.getFloorZ()));
+        if (event.getIgnitions() != null) {
+            event.getIgnitions().removeIf(block ->
+                    protectedAt(block.getLevel(), block.getFloorX(), block.getFloorZ()));
+        }
+    }
+
+    @EventHandler
+    public void onPiston(BlockPistonEvent event) {
+        Block piston = event.getBlock();
+        Level level = piston.getLevel();
+        String domain = protectionDomain(level, piston.getFloorX(), piston.getFloorZ());
+        BlockFace direction = event.getDirection();
+
+        for (Block moved : event.getBlocks()) {
+            String sourceDomain = protectionDomain(level, moved.getFloorX(), moved.getFloorZ());
+            String targetDomain = protectionDomain(level,
+                    moved.getFloorX() + direction.getXOffset(),
+                    moved.getFloorZ() + direction.getZOffset());
+            if (!domain.equals(sourceDomain) || !sourceDomain.equals(targetDomain)) {
+                event.setCancelled(true);
+                return;
+            }
+        }
+        for (Block destroyed : event.getDestroyedBlocks()) {
+            if (!domain.equals(protectionDomain(level, destroyed.getFloorX(), destroyed.getFloorZ()))) {
+                event.setCancelled(true);
+                return;
+            }
+        }
+    }
+
+    @EventHandler
+    public void onLiquidFlow(BlockFromToEvent event) {
+        Block from = event.getFrom();
+        Block to = event.getTo();
+        String sourceDomain = protectionDomain(from.getLevel(), from.getFloorX(), from.getFloorZ());
+        String targetDomain = protectionDomain(to.getLevel(), to.getFloorX(), to.getFloorZ());
+        if (!sourceDomain.equals(targetDomain) && !targetDomain.isEmpty()) {
+            event.setCancelled(true);
+        }
+    }
+
+    @EventHandler
+    public void onFireIgnite(BlockIgniteEvent event) {
+        Block block = event.getBlock();
+        if (protectedAt(block.getLevel(), block.getFloorX(), block.getFloorZ())) {
+            event.setCancelled(true);
+        }
+    }
+
+    @EventHandler
+    public void onFireBurn(BlockBurnEvent event) {
+        Block block = event.getBlock();
+        if (protectedAt(block.getLevel(), block.getFloorX(), block.getFloorZ())) {
+            event.setCancelled(true);
+        }
     }
 
     @EventHandler
