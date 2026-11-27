@@ -639,9 +639,11 @@ def main():
     rarity_looks.build_all(ROOT, chunk, zlib, struct)
     import rarity_particles
     rarity_particles.build_all(ROOT, chunk, zlib, struct)
-    # Generate the clan-name bitmap glyphs used for true per-letter gradients.
+    # Generate clan glyphs first, then independent privilege/staff gradient glyphs.
     import make_clan_gradient_font
     make_clan_gradient_font.build_all()
+    import make_rank_gradient_font
+    make_rank_gradient_font.build_all()
     # glyph_E2.png remains reserved for the existing rarity labels.
     BUILD.mkdir(parents=True, exist_ok=True)
     output = BUILD / "NEXORA_Beasts_RP.mcpack"
