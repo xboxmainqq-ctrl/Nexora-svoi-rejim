@@ -12,6 +12,8 @@ import cn.nukkit.event.block.BlockIgniteEvent;
 import cn.nukkit.event.block.BlockPistonEvent;
 import cn.nukkit.event.block.BlockPlaceEvent;
 import cn.nukkit.event.entity.EntityExplodeEvent;
+import cn.nukkit.event.entity.EntityBlockChangeEvent;
+import cn.nukkit.event.entity.EntityInteractEvent;
 import cn.nukkit.math.BlockFace;
 import cn.nukkit.event.player.PlayerInteractEvent;
 import cn.nukkit.inventory.InventoryHolder;
@@ -32,7 +34,7 @@ import static ru.nexora.survival.NEXORASurvival.PREFIX;
 /**
  * Land claims. One claim is one 16x16 chunk (all heights). The owner and the players he trusts
  * can build and open containers there; everybody else can not.
- * Environmental protection also blocks explosions, piston transfers, liquid flow and fire.
+ * Environmental protection also blocks explosions, piston transfers, liquid flow, fire and mob block interactions.
  */
 final class ClaimModule implements Listener {
     private static final int BUCKET = 325;
@@ -152,7 +154,28 @@ final class ClaimModule implements Listener {
         Block to = event.getTo();
         String sourceDomain = protectionDomain(from.getLevel(), from.getFloorX(), from.getFloorZ());
         String targetDomain = protectionDomain(to.getLevel(), to.getFloorX(), to.getFloorZ());
-        if (!sourceDomain.equals(targetDomain) && !targetDomain.isEmpty()) {
+        if (!sourceDomain.equals(targetDomain)
+                && (!sourceDomain.isEmpty() || !targetDomain.isEmpty())) {
+            event.setCancelled(true);
+        }
+    }
+
+    /** Prevent entities from changing blocks inside protected areas (e.g. falling blocks). */
+    @EventHandler
+    public void onEntityBlockChange(EntityBlockChangeEvent event) {
+        Block from = event.getFrom();
+        Block to = event.getTo();
+        if (protectedAt(from.getLevel(), from.getFloorX(), from.getFloorZ())
+                || protectedAt(to.getLevel(), to.getFloorX(), to.getFloorZ())) {
+            event.setCancelled(true);
+        }
+    }
+
+    /** Mobs cannot trigger physical block interactions such as pressure plates in claims. */
+    @EventHandler
+    public void onEntityInteract(EntityInteractEvent event) {
+        Block block = event.getBlock();
+        if (block != null && protectedAt(block.getLevel(), block.getFloorX(), block.getFloorZ())) {
             event.setCancelled(true);
         }
     }
