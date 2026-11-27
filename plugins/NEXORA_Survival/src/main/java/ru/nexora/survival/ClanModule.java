@@ -303,6 +303,7 @@ final class ClanModule implements Listener {
         store.cfg.set("clans." + id + ".officers", new ArrayList<String>());
         changed();
         p.sendMessage(PREFIX + "§aКлан §b" + clanName + " §aсоздан! Ты его лидер.");
+        colorMenu(p);
     }
 
     private void invite(CommandSender sender, String[] args) {
