@@ -356,7 +356,7 @@ final class ClaimModule implements Listener {
         int slot = 0;
         for (Player target : plugin.getServer().getOnlinePlayers().values()) {
             if (target.getUniqueId().equals(player.getUniqueId())) continue;
-            if (slot >= 27) break;
+            if (slot >= 26) break;
             online.add(target);
             menu.setItem(slot++, menuItem(388, "§a" + target.getName(),
                     "§7Нажми, чтобы дать доступ", "§8Строительство на твоих регионах"));
@@ -401,7 +401,7 @@ final class ClaimModule implements Listener {
                     "§7Нажми, чтобы забрать доступ"));
         }
         if (ids.isEmpty()) {
-            menu.setItem(13, menuItem(纸ItemId(), "§7Список пуст",
+            menu.setItem(13, menuItem(paperItemId(), "§7Список пуст",
                     "§7Ты ещё никому не выдавал доступ"));
         }
         menu.setItem(26, menuItem(262, "§e§lНАЗАД"));
