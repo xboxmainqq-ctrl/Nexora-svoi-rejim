@@ -38,11 +38,11 @@ public final class NEXORASurvival extends PluginBase {
         economy = new EconomyModule(this);
         teleports = new TeleportModule(this);
         social = new SocialModule(this);
-        rankBridge.migrateLegacy();
         gear = new GearModule(this);
         clans = new ClanModule(this);
         reports = new ReportModule(this);
         moderation = new ModerationModule(this);
+        rankBridge.migrateLegacy();
         for (Listener listener : new Listener[]{economy, teleports, social, gear, clans, moderation}) {
             getServer().getPluginManager().registerEvents(listener, this);
         }
@@ -92,6 +92,11 @@ public final class NEXORASurvival extends PluginBase {
     SocialModule social() { return social; }
     RankBridge rankBridge() { return rankBridge; }
     ClanModule clans() { return clans; }
+
+    /** Called by the standalone rank plugins after an online player's rank changes. */
+    public void refreshRankDisplay(Player player) {
+        if (player != null && social != null && clans != null) social.refreshDisplay(player);
+    }
 
     static boolean isAdmin(CommandSender sender) {
         return sender.isOp() || sender.hasPermission("nexora.survival.admin");
