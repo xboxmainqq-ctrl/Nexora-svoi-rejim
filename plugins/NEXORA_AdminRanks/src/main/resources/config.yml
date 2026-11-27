@@ -5,4 +5,4 @@ ranks:
   moder: {label: "МОДЕРАТОР", homes: 10, kits: [start, daily, vip]}
   senior_moder: {label: "СТАРШИЙ МОДЕРАТОР", homes: 10, kits: [start, daily, vip]}
   admin: {label: "АДМИНИСТРАТОР", homes: 20, kits: [start, daily, vip]}
-  chief_admin: {label: "ГЛАВНЫЙ АДМИНИСТРАТОР", homes: 20, kits: [start, daily, vip]}
+  staff: {label: "STAFF", homes: 20, kits: [start, daily, vip]}
