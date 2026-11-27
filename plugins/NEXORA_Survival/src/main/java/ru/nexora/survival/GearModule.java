@@ -195,12 +195,13 @@ final class GearModule implements Listener {
     }
 
     private void openChestLater(Player player, Runnable action) {
-        plugin.getServer().getScheduler().scheduleDelayedTask(plugin, action, 10);
+        plugin.getServer().getScheduler().scheduleDelayedTask(plugin, action, 2);
     }
 
     /**
-     * Replaces any previously tracked shop window before opening the next one.
-     * FakeInventories rejects opening the same inventory twice.
+     * Opens a shop window only after the previous window has been removed.
+     * Category transitions are already delayed by openChestLater, so do not
+     * add a second delay here.
      */
     private void showMenu(Player player, ChestFakeInventory menu) {
         UUID playerId = player.getUniqueId();
@@ -213,20 +214,22 @@ final class GearModule implements Listener {
             } catch (IllegalStateException ignored) {
                 // The previous window may already have been closed by the client.
             }
+            openMenus.remove(playerId, previous);
         }
 
         openMenus.put(playerId, menu);
-        openChestLater(player, () -> {
-            if (!player.isOnline() || openMenus.get(playerId) != menu) return;
-            try {
-                player.addWindow(menu);
-            } catch (IllegalStateException exception) {
-                openMenus.remove(playerId, menu);
-                player.sendMessage(PREFIX + "§cНе удалось открыть магазин. Закрой другое меню и попробуй снова.");
-                plugin.getLogger().warning("Could not open NEXORA shop for " + player.getName()
-                        + ": " + exception.getMessage());
-            }
-        });
+        if (!player.isOnline()) {
+            openMenus.remove(playerId, menu);
+            return;
+        }
+        try {
+            player.addWindow(menu);
+        } catch (IllegalStateException exception) {
+            openMenus.remove(playerId, menu);
+            player.sendMessage(PREFIX + "§cНе удалось открыть магазин. Закрой другое меню и попробуй снова.");
+            plugin.getLogger().warning("Could not open NEXORA shop for " + player.getName()
+                    + ": " + exception.getMessage());
+        }
     }
 
     private void closeMenu(Player player, ChestFakeInventory menu) {
