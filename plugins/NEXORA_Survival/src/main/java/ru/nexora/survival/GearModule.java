@@ -327,10 +327,12 @@ final class GearModule implements Listener {
         Item item = Item.get(shopItem.itemId(), shopItem.meta(), shopItem.count());
         if (!player.getInventory().canAddItem(item)) {
             player.sendMessage(PREFIX + "§cОсвободи место в инвентаре перед покупкой.");
+            openShopItemCategory(player, list, title);
             return;
         }
         if (!plugin.economy().withdraw(player.getUniqueId(), shopItem.price())) {
             player.sendMessage(PREFIX + "§cПокупка не прошла: баланс изменился.");
+            openShopItemCategory(player, list, title);
             return;
         }
         player.getInventory().addItem(item);
@@ -350,11 +352,13 @@ final class GearModule implements Listener {
         for (Item item : items) {
             if (!player.getInventory().canAddItem(item)) {
                 player.sendMessage(PREFIX + "§cОсвободи место в инвентаре перед покупкой.");
+                openShopGearCategory(player, list, armor);
                 return;
             }
         }
         if (!plugin.economy().withdraw(player.getUniqueId(), gear.price())) {
             player.sendMessage(PREFIX + "§cПокупка не прошла: баланс изменился.");
+            openShopGearCategory(player, list, armor);
             return;
         }
         for (Item item : items) player.getInventory().addItem(item);
