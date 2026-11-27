@@ -20,7 +20,7 @@ import java.util.UUID;
 public final class NEXORADonate extends PluginBase {
     private static final String PREFIX = "§8[§dNEXORA§8] §r";
     private static final int GLYPH_BASE = 0xF750;
-    private static final int GRADIENT_STEPS = 3;
+    private static final int GRADIENT_STEPS = 5;
     private Config ranks;
 
     @Override
@@ -141,9 +141,9 @@ public final class NEXORADonate extends PluginBase {
 
     private int rankOffset(String id) {
         return switch (id.toLowerCase(Locale.ROOT)) {
-            case "aurvex" -> 0; case "zyreth" -> 18; case "veloria" -> 36;
-            case "kryon" -> 57; case "nymeris" -> 72; case "solvex" -> 93;
-            case "eclyra" -> 111; case "nexorion" -> 129; default -> -1;
+            case "aurvex" -> 0; case "zyreth" -> 30; case "veloria" -> 60;
+            case "kryon" -> 95; case "nymeris" -> 120; case "solvex" -> 155;
+            case "eclyra" -> 185; case "nexorion" -> 215; default -> -1;
         };
     }
 
