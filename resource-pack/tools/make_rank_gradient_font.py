@@ -19,14 +19,14 @@ FONT_PATH = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
 
 # start/end colors are intentionally separate from the clan palettes.
 RANKS = [
-    ("aurvex", "AURVEX", (92, 246, 212), (86, 200, 247)),
-    ("zyreth", "ZYRETH", (255, 128, 200), (167, 139, 250)),
-    ("veloria", "VELORIA", (255, 225, 166), (255, 159, 135)),
-    ("kryon", "KRYON", (139, 231, 255), (213, 242, 255)),
-    ("nymeris", "NYMERIS", (255, 138, 114), (255, 82, 107)),
-    ("solvex", "SOLVEX", (255, 240, 106), (255, 181, 46)),
-    ("eclyra", "ECLYRA", (121, 216, 255), (169, 155, 255)),
-    ("nexorion", "NEXORION", (90, 140, 255), (181, 107, 255)),
+    ("aurvex", "AURVEX", (72, 231, 197), (58, 155, 234)),
+    ("zyreth", "ZYRETH", (255, 119, 183), (155, 107, 255)),
+    ("veloria", "VELORIA", (255, 224, 138), (255, 140, 157)),
+    ("kryon", "KRYON", (117, 223, 255), (215, 245, 255)),
+    ("nymeris", "NYMERIS", (255, 117, 94), (197, 29, 100)),
+    ("solvex", "SOLVEX", (255, 240, 106), (255, 155, 56)),
+    ("eclyra", "ECLYRA", (100, 216, 255), (167, 139, 250)),
+    ("nexorion", "NEXORION", (76, 125, 255), (209, 107, 255)),
     # Staff gradients are brighter and more metallic than player privileges.
     ("helper", "ХЕЛПЕР", (48, 242, 178), (86, 223, 255)),
     ("junior_moder", "МЛАДШИЙ МОДЕРАТОР", (67, 139, 255), (100, 244, 255)),
