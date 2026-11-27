@@ -1,6 +1,6 @@
 name: NEXORA_Survival
 main: ru.nexora.survival.NEXORASurvival
-version: "1.0.0"
+version: "1.0.1"
 api: ["1.0.0"]
 author: NEXORA
 description: "Vanilla survival basics: homes, spawn, warps, TPA, claims, economy, ranks, chat and kits"
