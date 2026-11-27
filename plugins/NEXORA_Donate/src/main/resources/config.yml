@@ -8,7 +8,8 @@ privileges:
   vip:
     name: "§a✦ VIP"
     short: "§aVIP §8• §7Старт привилегий"
-    gradient: "emerald"
+    label: "VIP"
+    gradient: "ocean"
     price: "§eСкоро на сайте"
     description: "Отличный выбор для тех, кто хочет выделиться и получить приятные бонусы."
     benefits:
@@ -19,7 +20,8 @@ privileges:
   premium:
     name: "§b✦ PREMIUM"
     short: "§bPREMIUM §8• §7Больше возможностей"
-    gradient: "aqua"
+    label: "PREMIUM"
+    gradient: "royal"
     price: "§eСкоро на сайте"
     description: "Больше удобства, заметный статус и расширенные возможности для активной игры."
     benefits:
@@ -30,7 +32,8 @@ privileges:
   elite:
     name: "§d✦ ELITE"
     short: "§dELITE §8• §7Привилегия высокого уровня"
-    gradient: "violet"
+    label: "ELITE"
+    gradient: "neon"
     price: "§eСкоро на сайте"
     description: "Для игроков, которые хотят получить максимум комфорта и подчеркнуть свой стиль."
     benefits:
@@ -41,6 +44,7 @@ privileges:
   legend:
     name: "§6✦ LEGEND"
     short: "§6LEGEND §8• §7Высшая донат-привилегия"
+    label: "LEGEND"
     gradient: "sunset"
     price: "§eСкоро на сайте"
     description: "Максимальный статус NEXORA с самым полным набором игровых преимуществ."
