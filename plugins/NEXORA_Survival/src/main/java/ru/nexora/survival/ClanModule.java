@@ -47,10 +47,114 @@ final class ClanModule implements Listener {
         return "";
     }
 
+    private static final String[] COLOR_CODES = {"0","1","2","3","4","5","6","7","8","9","a","b","c","d","e","f"};
+    private static final int[] COLOR_RGB = {
+            0x000000, 0x0000AA, 0x00AA00, 0x00AAAA, 0xAA0000, 0xAA00AA, 0xFFAA00, 0xAAAAAA,
+            0x555555, 0x5555FF, 0x55FF55, 0x55FFFF, 0xFF5555, 0xFF55FF, 0xFFFF55, 0xFFFFFF
+    };
+
     String tag(Player player) {
         String id = clanId(player.getUniqueId());
-        if (id.isEmpty()) return "";
-        return "§8[§b" + store.cfg.getString("clans." + id + ".name", id) + "§8]";
+        return id.isEmpty() ? "" : tag(id);
+    }
+
+    private String tag(String id) {
+        String clanName = store.cfg.getString("clans." + id + ".name", id);
+        String from = store.cfg.getString("clans." + id + ".color.from", "b");
+        String to = store.cfg.getString("clans." + id + ".color.to", from);
+        return gradientText("[" + clanName + "]", from, to) + "§r";
+    }
+
+    private String gradientText(String value, String from, String to) {
+        int a = colorIndex(from), b = colorIndex(to);
+        StringBuilder out = new StringBuilder();
+        for (int i = 0; i < value.length(); i++) {
+            double t = value.length() <= 1 ? 0 : (double) i / (value.length() - 1);
+            int rgb = mix(COLOR_RGB[a], COLOR_RGB[b], t);
+            out.append('§').append(COLOR_CODES[nearestColor(rgb)]).append(value.charAt(i));
+        }
+        return out.toString();
+    }
+
+    private int mix(int a, int b, double t) {
+        int r = (int) (((a >> 16) & 255) * (1 - t) + ((b >> 16) & 255) * t);
+        int g = (int) (((a >> 8) & 255) * (1 - t) + ((b >> 8) & 255) * t);
+        int bl = (int) ((a & 255) * (1 - t) + (b & 255) * t);
+        return (r << 16) | (g << 8) | bl;
+    }
+
+    private int nearestColor(int rgb) {
+        int best = 0;
+        long bestDistance = Long.MAX_VALUE;
+        for (int i = 0; i < COLOR_RGB.length; i++) {
+            int c = COLOR_RGB[i];
+            long dr = ((rgb >> 16) & 255) - ((c >> 16) & 255);
+            long dg = ((rgb >> 8) & 255) - ((c >> 8) & 255);
+            long db = (rgb & 255) - (c & 255);
+            long distance = dr * dr + dg * dg + db * db;
+            if (distance < bestDistance) { bestDistance = distance; best = i; }
+        }
+        return best;
+    }
+
+    private int colorIndex(String value) {
+        String v = value == null ? "" : value.trim().toLowerCase(Locale.ROOT);
+        String[] names = {"black","dark_blue","dark_green","dark_aqua","dark_red","dark_purple","gold","gray",
+                "dark_gray","blue","green","aqua","red","light_purple","yellow","white"};
+        String[] ru = {"чёрный","черный","тёмно-синий","темно-синий","тёмно-зелёный","темно-зелёный",
+                "бирюзовый","тёмно-красный","темно-красный","фиолетовый","золотой","серый",
+                "тёмно-серый","темно-серый","синий","зелёный","зеленый","голубой","красный",
+                "розовый","жёлтый","желтый","белый"};
+        String[] codes = {"0","1","2","3","4","5","6","7","8","9","a","b","c","d","e","f"};
+        for (int i = 0; i < codes.length; i++) if (v.equals(codes[i]) || v.equals(names[i])) return i;
+        String[] aliases = {"black","dark_blue","dark_green","dark_aqua","dark_red","dark_purple","gold","gray",
+                "dark_gray","blue","green","aqua","red","light_purple","yellow","white"};
+        for (int i = 0; i < aliases.length; i++) if (v.equals(aliases[i])) return i;
+        for (int i = 0; i < ru.length; i++) if (v.equals(ru[i])) {
+            int[] map = {0,0,1,1,2,2,3,4,4,5,6,7,8,8,9,10,10,11,12,13,14,14,15};
+            return map[i];
+        }
+        return -1;
+    }
+
+    private boolean setColors(Player player, String id, String from, String to) {
+        int a = colorIndex(from), b = colorIndex(to);
+        if (a < 0 || b < 0) {
+            player.sendMessage(PREFIX + "§cНеизвестный цвет. Используй код 0–9 или a–f, либо название цвета.");
+            return false;
+        }
+        store.cfg.set("clans." + id + ".color.from", COLOR_CODES[a]);
+        store.cfg.set("clans." + id + ".color.to", COLOR_CODES[b]);
+        changed();
+        player.sendMessage(PREFIX + "§aЦвет клана изменён: " + gradientText("ПРИМЕР", COLOR_CODES[a], COLOR_CODES[b]));
+        return true;
+    }
+
+    private void colorMenu(Player player) {
+        String id = clanId(player.getUniqueId());
+        if (id.isEmpty()) { player.sendMessage(PREFIX + "§cТы не состоишь в клане."); return; }
+        if (!role(id, player.getUniqueId()).equals("лидер")) {
+            player.sendMessage(PREFIX + "§cМенять оформление клана может только лидер.");
+            return;
+        }
+        FormWindowSimple form = new FormWindowSimple("§l§0ЦВЕТ КЛАНА", "§7Выбери однотонный цвет или градиент.\n§8Настройка будет видна всем игрокам.");
+        String[] labels = {"§0Чёрный","§1Тёмно-синий","§2Тёмно-зелёный","§3Бирюзовый","§4Тёмно-красный","§5Фиолетовый",
+                "§6Золотой","§7Серый","§8Тёмно-серый","§9Синий","§aЗелёный","§bГолубой","§cКрасный","§dРозовый","§eЖёлтый","§fБелый",
+                "§c§lГрадиент: Красный → Золотой","§b§lГрадиент: Голубой → Фиолетовый","§a§lГрадиент: Зелёный → Жёлтый","§d§lГрадиент: Розовый → Голубой",
+                "§7Сбросить цвет"};
+        for (String label : labels) form.addButton(new ElementButton(label));
+        form.addHandler(FormResponseHandler.withoutPlayer(ignored -> {
+            if (form.wasClosed()) return;
+            int choice = form.getResponse().getClickedButtonId();
+            if (choice < 0 || choice >= labels.length || !player.isOnline()) return;
+            if (choice < 16) setColors(player, id, COLOR_CODES[choice], COLOR_CODES[choice]);
+            else if (choice == 16) setColors(player, id, "c", "6");
+            else if (choice == 17) setColors(player, id, "b", "5");
+            else if (choice == 18) setColors(player, id, "a", "e");
+            else if (choice == 19) setColors(player, id, "d", "b");
+            else setColors(player, id, "b", "b");
+        }));
+        player.showFormWindow(form);
     }
 
     private String role(String id, UUID player) {
@@ -91,6 +195,8 @@ final class ClanModule implements Listener {
             case "demote" -> demote(sender, args);
             case "transfer" -> transfer(sender, args);
             case "info" -> info(sender);
+            case "color" -> clanColor(sender, args);
+            case "gradient" -> clanGradient(sender, args);
             case "list" -> list(sender);
             case "help" -> help(sender);
             default -> help(sender);
@@ -279,6 +385,30 @@ final class ClanModule implements Listener {
         store.cfg.set("clans." + id + ".officers", officers);
     }
 
+    private void clanColor(CommandSender sender, String[] args) {
+        Player p = player(sender); if (p == null) return;
+        String id = clanId(p.getUniqueId());
+        if (id.isEmpty()) { p.sendMessage(PREFIX + "§cТы не состоишь в клане."); return; }
+        if (args.length == 1) { colorMenu(p); return; }
+        if (!role(id, p.getUniqueId()).equals("лидер")) { p.sendMessage(PREFIX + "§cМенять цвет может только лидер клана."); return; }
+        if (args.length == 2 && args[1].equalsIgnoreCase("reset")) { setColors(p, id, "b", "b"); return; }
+        if (args.length != 2) { p.sendMessage(PREFIX + "§e/clan color <цвет> §7или §e/clan color reset"); return; }
+        setColors(p, id, args[1], args[1]);
+    }
+
+    private void clanGradient(CommandSender sender, String[] args) {
+        Player p = player(sender); if (p == null) return;
+        String id = clanId(p.getUniqueId());
+        if (id.isEmpty()) { p.sendMessage(PREFIX + "§cТы не состоишь в клане."); return; }
+        if (!role(id, p.getUniqueId()).equals("лидер")) { p.sendMessage(PREFIX + "§cМенять оформление может только лидер клана."); return; }
+        if (args.length != 3) {
+            p.sendMessage(PREFIX + "§e/clan gradient <цвет1> <цвет2>");
+            p.sendMessage(PREFIX + "§7Пример: §e/clan gradient red blue");
+            return;
+        }
+        setColors(p, id, args[1], args[2]);
+    }
+
     private void info(CommandSender sender) {
         Player p = player(sender); if (p == null) return;
         String id = clanId(p.getUniqueId());
@@ -328,7 +458,7 @@ final class ClanModule implements Listener {
         if (args.length == 0) { p.sendMessage(PREFIX + "§e/cc <сообщение>"); return; }
         String message = NEXORASurvival.clean(String.join(" ", args));
         if (message.isEmpty()) return;
-        broadcast(id, "§8[§b" + name(id) + "§8] §f" + p.getName() + "§7: §f" + message);
+        broadcast(id, tag(id) + " §f" + p.getName() + "§7: §f" + message);
     }
 
     private void broadcast(String id, String message) {
@@ -355,6 +485,7 @@ final class ClanModule implements Listener {
             if (choice == 0) info(p);
             else if (choice == 1) list(p);
             else if (choice == 2) help(p);
+            else if (choice == 4) colorMenu(p);
         }));
         p.showFormWindow(form);
     }
@@ -367,6 +498,8 @@ final class ClanModule implements Listener {
         sender.sendMessage("§e/clan invite <игрок> §7— пригласить");
         sender.sendMessage("§e/clan accept §7/ §e/clan deny §7— принять/отклонить");
         sender.sendMessage("§e/clan info §7/ §e/clan list §7— информация/список");
+        sender.sendMessage("§e/clan color §7— меню цвета клана (лидер)");
+        sender.sendMessage("§e/clan gradient <цвет1> <цвет2> §7— градиент (лидер)");
         sender.sendMessage("§e/clan kick <игрок> §7— исключить");
         sender.sendMessage("§e/clan promote/demote <игрок> §7— заместитель");
         sender.sendMessage("§e/clan transfer <игрок> §7— передать лидерство");
