@@ -20,6 +20,9 @@ import cn.nukkit.inventory.InventoryHolder;
 import cn.nukkit.item.Item;
 import cn.nukkit.level.Level;
 import cn.nukkit.utils.ConfigSection;
+import com.nukkitx.fakeinventories.FakeInventoriesListener;
+import com.nukkitx.fakeinventories.inventory.ChestFakeInventory;
+import com.nukkitx.fakeinventories.inventory.FakeInventories;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -47,6 +50,9 @@ final class ClaimModule implements Listener {
     ClaimModule(NEXORASurvival plugin) {
         this.plugin = plugin;
         this.store = new Store(new File(plugin.getDataFolder(), "claims.yml"));
+        // Register the click and fake-block packet handlers for virtual chest menus.
+        plugin.getServer().getPluginManager().registerEvents(
+                new FakeInventoriesListener(new FakeInventories()), plugin);
     }
 
     void flush() {
@@ -256,28 +262,170 @@ final class ClaimModule implements Listener {
         return true;
     }
 
+    private Item menuItem(int id, String name, String... lore) {
+        Item item = Item.get(id);
+        item.setCount(1);
+        item.setCustomName(name);
+        item.setLore(lore);
+        return item;
+    }
+
     private void openMenu(Player player) {
-        NEXORASurvival.choose(player, "§l§6NEXORA • РЕГИОНЫ",
-                "§7Управление защитой территории\n§8Текущий участок: §f"
-                        + (player.getFloorX() >> 4) + ", " + (player.getFloorZ() >> 4)
-                        + "\n\n§7Выбери действие:",
-                List.of("§a✚  Заприватить участок", "§c✖  Снять приват здесь",
-                        "§b⌖  Информация об участке", "§e▤  Мои регионы", "§7❔  Помощь"),
-                index -> {
-                    switch (index) {
-                        case 0 -> claim(player);
-                        case 1 -> NEXORASurvival.choose(player, "§l§cСНЯТИЕ ПРИВАТА",
-                                "§7Освободить участок, на котором ты стоишь?\n§cЗащита территории будет снята.",
-                                List.of("§cДа, снять приват", "§aОтмена"), confirm -> {
-                                    if (confirm == 0) unclaim(player);
-                                    else openMenu(player);
-                                });
-                        case 2 -> info(player);
-                        case 3 -> listClaims(player);
-                        case 4 -> help(player);
-                        default -> openMenu(player);
-                    }
-                });
+        ChestFakeInventory menu = new ChestFakeInventory(null, "§l§6NEXORA • РЕГИОНЫ");
+        Item filler = menuItem(160, "§8 ");
+        for (int slot = 0; slot < 27; slot++) menu.setItem(slot, filler.clone());
+
+        menu.setItem(10, menuItem(284, "§a§lЗАПРИВАТИТЬ УЧАСТОК",
+                "§7Защитить текущий чанк 16×16", "§eНажми, чтобы создать регион"));
+        menu.setItem(12, menuItem(152, "§c§lСНЯТЬ ПРИВАТ",
+                "§7Освободить участок под ногами", "§eНажми для подтверждения"));
+        menu.setItem(14, menuItem(358, "§b§lИНФОРМАЦИЯ",
+                "§7Узнать владельца и доверенных игроков"));
+        menu.setItem(16, menuItem(340, "§e§lМОИ РЕГИОНЫ",
+                "§7Посмотреть список своих приватов"));
+        menu.setItem(22, menuItem(388, "§d§lДОВЕРЕННЫЕ ИГРОКИ",
+                "§7Добавить друга или забрать доступ", "§7Доступ действует на все твои регионы"));
+        menu.setItem(26, menuItem(166, "§cЗакрыть меню"));
+
+        menu.addListener(event -> {
+            event.setCancelled();
+            int slot = event.getAction().getSlot();
+            Runnable action = switch (slot) {
+                case 10 -> () -> claim(player);
+                case 12 -> () -> openUnclaimConfirm(player);
+                case 14 -> () -> info(player);
+                case 16 -> () -> listClaims(player);
+                case 22 -> () -> openTrustMenu(player);
+                case 26 -> null;
+                default -> null;
+            };
+            if (slot == 26) {
+                player.removeWindow(menu);
+            } else if (action != null) {
+                player.removeWindow(menu);
+                plugin.getServer().getScheduler().scheduleDelayedTask(action, 1);
+            }
+        });
+        player.addWindow(menu);
+    }
+
+    private void openUnclaimConfirm(Player player) {
+        ChestFakeInventory menu = new ChestFakeInventory(null, "§l§cПОДТВЕРЖДЕНИЕ");
+        menu.setItem(11, menuItem(152, "§c§lДА, СНЯТЬ ПРИВАТ",
+                "§7Защита этого участка будет удалена"));
+        menu.setItem(15, menuItem(35, "§a§lОТМЕНА",
+                "§7Вернуться в меню регионов"));
+        menu.addListener(event -> {
+            event.setCancelled();
+            int slot = event.getAction().getSlot();
+            if (slot != 11 && slot != 15) return;
+            player.removeWindow(menu);
+            plugin.getServer().getScheduler().scheduleDelayedTask(() -> {
+                if (slot == 11) unclaim(player);
+                else openMenu(player);
+            }, 1);
+        });
+        player.addWindow(menu);
+    }
+
+    private void openTrustMenu(Player player) {
+        ChestFakeInventory menu = new ChestFakeInventory(null, "§l§dДОВЕРЕННЫЕ ИГРОКИ");
+        menu.setItem(11, menuItem(388, "§a§lДОБАВИТЬ ИГРОКА",
+                "§7Выбрать игрока из тех, кто онлайн"));
+        menu.setItem(15, menuItem(339, "§c§lУБРАТЬ ДОСТУП",
+                "§7Посмотреть список доверенных"));
+        menu.setItem(22, menuItem(262, "§e§lНАЗАД",
+                "§7Вернуться к регионам"));
+        menu.addListener(event -> {
+            event.setCancelled();
+            int slot = event.getAction().getSlot();
+            if (slot != 11 && slot != 15 && slot != 22) return;
+            player.removeWindow(menu);
+            plugin.getServer().getScheduler().scheduleDelayedTask(() -> {
+                if (slot == 11) openOnlineTrustMenu(player);
+                else if (slot == 15) openTrustedPlayersMenu(player);
+                else openMenu(player);
+            }, 1);
+        });
+        player.addWindow(menu);
+    }
+
+    private void openOnlineTrustMenu(Player player) {
+        ChestFakeInventory menu = new ChestFakeInventory(null, "§l§aВЫБОР ИГРОКА");
+        List<Player> online = new ArrayList<>();
+        int slot = 0;
+        for (Player target : plugin.getServer().getOnlinePlayers().values()) {
+            if (target.getUniqueId().equals(player.getUniqueId())) continue;
+            if (slot >= 27) break;
+            online.add(target);
+            menu.setItem(slot++, menuItem(388, "§a" + target.getName(),
+                    "§7Нажми, чтобы дать доступ", "§8Строительство на твоих регионах"));
+        }
+        if (online.isEmpty()) {
+            menu.setItem(13, menuItem( barrierItemId(), "§7Нет игроков онлайн",
+                    "§7Кроме тебя сейчас никого нет"));
+        }
+        menu.setItem(26, menuItem(262, "§e§lНАЗАД"));
+        menu.addListener(event -> {
+            event.setCancelled();
+            int clicked = event.getAction().getSlot();
+            if (clicked == 26) {
+                player.removeWindow(menu);
+                plugin.getServer().getScheduler().scheduleDelayedTask(() -> openTrustMenu(player), 1);
+                return;
+            }
+            if (clicked < 0 || clicked >= online.size()) return;
+            Player target = online.get(clicked);
+            player.removeWindow(menu);
+            plugin.getServer().getScheduler().scheduleDelayedTask(() -> {
+                trustTarget(player, target);
+                openTrustMenu(player);
+            }, 1);
+        });
+        player.addWindow(menu);
+    }
+
+    private int barrierItemId() {
+        return 166;
+    }
+
+    private void openTrustedPlayersMenu(Player player) {
+        ChestFakeInventory menu = new ChestFakeInventory(null, "§l§cСПИСОК ДОСТУПА");
+        List<String> ids = new ArrayList<>();
+        String section = "trust." + player.getUniqueId();
+        for (String id : store.cfg.getSection(section).getKeys(false)) {
+            if (ids.size() >= 26) break;
+            ids.add(id);
+            String name = store.cfg.getString(section + "." + id, id);
+            menu.setItem(ids.size() - 1, menuItem(339, "§c" + name,
+                    "§7Нажми, чтобы забрать доступ"));
+        }
+        if (ids.isEmpty()) {
+            menu.setItem(13, menuItem(纸ItemId(), "§7Список пуст",
+                    "§7Ты ещё никому не выдавал доступ"));
+        }
+        menu.setItem(26, menuItem(262, "§e§lНАЗАД"));
+        menu.addListener(event -> {
+            event.setCancelled();
+            int clicked = event.getAction().getSlot();
+            if (clicked == 26) {
+                player.removeWindow(menu);
+                plugin.getServer().getScheduler().scheduleDelayedTask(() -> openTrustMenu(player), 1);
+                return;
+            }
+            if (clicked < 0 || clicked >= ids.size()) return;
+            String id = ids.get(clicked);
+            player.removeWindow(menu);
+            plugin.getServer().getScheduler().scheduleDelayedTask(() -> {
+                untrustId(player, id);
+                openTrustedPlayersMenu(player);
+            }, 1);
+        });
+        player.addWindow(menu);
+    }
+
+    private int 纸ItemId() {
+        return 339;
     }
 
     private void help(Player player) {
@@ -324,7 +472,7 @@ final class ClaimModule implements Listener {
         store.cfg.set(base + ".cx", cx);
         store.cfg.set(base + ".cz", cz);
         store.touch();
-        player.sendMessage(PREFIX + "§aУчасток §f" + cx + ", " + cz + " §aтеперь твой. Друзей добавляй: §e/rg trust <игрок>");
+        player.sendMessage(PREFIX + "§aУчасток §f" + cx + ", " + cz + " §aтеперь твой. Друзей добавляй через §e/rg §a→ §dДоверенные игроки.");
     }
 
     private void unclaim(Player player) {
@@ -373,11 +521,20 @@ final class ClaimModule implements Listener {
             player.sendMessage(PREFIX + "§cИгрок не найден или не в сети.");
             return;
         }
+        trustTarget(player, target);
+    }
+
+    private void trustTarget(Player player, Player target) {
         if (target.getUniqueId().equals(player.getUniqueId())) {
-            player.sendMessage(PREFIX + "§cТы и так хозяин.");
+            player.sendMessage(PREFIX + "§cНельзя добавить самого себя.");
             return;
         }
-        store.cfg.set("trust." + player.getUniqueId() + "." + target.getUniqueId(), target.getName());
+        String path = "trust." + player.getUniqueId() + "." + target.getUniqueId();
+        if (store.cfg.exists(path)) {
+            player.sendMessage(PREFIX + "§e" + target.getName() + " §7уже есть в списке доверенных.");
+            return;
+        }
+        store.cfg.set(path, target.getName());
         store.touch();
         player.sendMessage(PREFIX + "§f" + target.getName() + " §aможет строить на всех твоих участках.");
         target.sendMessage(PREFIX + "§f" + player.getName() + " §aдал тебе право строить на своих участках.");
@@ -391,14 +548,21 @@ final class ClaimModule implements Listener {
         String section = "trust." + player.getUniqueId();
         for (String id : store.cfg.getSection(section).getKeys(false)) {
             String name = store.cfg.getString(section + "." + id, "");
-            if (name.equalsIgnoreCase(args[0].toLowerCase(Locale.ROOT))) {
-                store.cfg.remove(section + "." + id);
-                store.touch();
-                player.sendMessage(PREFIX + "§f" + name + " §7больше не может строить на твоих участках.");
+            if (name.equalsIgnoreCase(args[0])) {
+                untrustId(player, id);
                 return;
             }
         }
         player.sendMessage(PREFIX + "§cТакого игрока нет в твоём списке доверенных.");
+    }
+
+    private void untrustId(Player player, String id) {
+        String section = "trust." + player.getUniqueId();
+        String name = store.cfg.getString(section + "." + id, id);
+        if (!store.cfg.exists(section + "." + id)) return;
+        store.cfg.remove(section + "." + id);
+        store.touch();
+        player.sendMessage(PREFIX + "§f" + name + " §7больше не может строить на твоих участках.");
     }
 
     private void info(Player player) {
