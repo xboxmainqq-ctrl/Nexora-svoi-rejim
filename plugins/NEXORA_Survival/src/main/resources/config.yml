@@ -33,7 +33,7 @@ claims:
 
 chat:
   enabled: true
-  format: "§8[{prefix}§8] §f{name}§7: §f{message}"
+  format: "§8[{prefix}§8] {clan} §f{name}§7: §f{message}"
 
 default-rank: player
 ranks:
