@@ -71,8 +71,14 @@ ranks:
   solvex: {prefix: "§dSOLVEX", label: "SOLVEX", homes: 10, kits: [start, daily, vip]}
   eclyra: {prefix: "§5ECLYRA", label: "ECLYRA", homes: 12, kits: [start, daily, vip]}
   nexorion: {prefix: "§6NEXORION", label: "NEXORION", homes: 16, kits: [start, daily, vip]}
-  moder: {prefix: "§9Модер", label: "МОДЕР", homes: 10, kits: [start, daily, vip]}
-  admin: {prefix: "§cАдмин", label: "АДМИН", homes: 20, kits: [start, daily, vip]}
+
+  # Staff ranks have their own metallic gradients and are not listed in /donate.
+  helper: {prefix: "§bХелпер", label: "ХЕЛПЕР", homes: 3, kits: [start, daily]}
+  junior_moder: {prefix: "§bМладший модератор", label: "МЛАДШИЙ МОДЕРАТОР", homes: 3, kits: [start, daily]}
+  moder: {prefix: "§dМодератор", label: "МОДЕРАТОР", homes: 10, kits: [start, daily, vip]}
+  senior_moder: {prefix: "§cСтарший модератор", label: "СТАРШИЙ МОДЕРАТОР", homes: 10, kits: [start, daily, vip]}
+  admin: {prefix: "§6Администратор", label: "АДМИНИСТРАТОР", homes: 20, kits: [start, daily, vip]}
+  chief_admin: {prefix: "§eГлавный администратор", label: "ГЛАВНЫЙ АДМИНИСТРАТОР", homes: 20, kits: [start, daily, vip]}
 
 start-kit-on-first-join: true
 kits:
