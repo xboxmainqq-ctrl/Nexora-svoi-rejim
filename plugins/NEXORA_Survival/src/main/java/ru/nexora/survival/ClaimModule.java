@@ -401,7 +401,7 @@ final class ClaimModule implements Listener {
                     "§7Нажми, чтобы забрать доступ"));
         }
         if (ids.isEmpty()) {
-            menu.setItem(13, menuItem(paperItemId(), "§7Список пуст",
+            menu.setItem(13, menuItem(339, "§7Список пуст",
                     "§7Ты ещё никому не выдавал доступ"));
         }
         menu.setItem(26, menuItem(262, "§e§lНАЗАД"));
@@ -422,10 +422,6 @@ final class ClaimModule implements Listener {
             }, 1);
         });
         player.addWindow(menu);
-    }
-
-    private int 纸ItemId() {
-        return 339;
     }
 
     private void help(Player player) {
