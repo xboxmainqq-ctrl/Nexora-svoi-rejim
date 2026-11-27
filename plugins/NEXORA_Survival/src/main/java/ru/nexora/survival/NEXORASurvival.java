@@ -24,6 +24,7 @@ public final class NEXORASurvival extends PluginBase {
     private ClanModule clans;
     private ReportModule reports;
     private ModerationModule moderation;
+    private RankBridge rankBridge;
 
     @Override
     public void onEnable() {
@@ -33,9 +34,11 @@ public final class NEXORASurvival extends PluginBase {
             return;
         }
         saveDefaultConfig();
+        rankBridge = new RankBridge(this);
         economy = new EconomyModule(this);
         teleports = new TeleportModule(this);
         social = new SocialModule(this);
+        rankBridge.migrateLegacy();
         gear = new GearModule(this);
         clans = new ClanModule(this);
         reports = new ReportModule(this);
@@ -45,7 +48,7 @@ public final class NEXORASurvival extends PluginBase {
         }
         // Data files are written once a minute and on shutdown, not after every change.
         getServer().getScheduler().scheduleRepeatingTask(this, this::flushAll, 20 * 60);
-        getLogger().info("NEXORA_Survival включён: экономика, телепорты, кланы, ранги, киты и арсенал.");
+        getLogger().info("NEXORA_Survival включён: экономика, телепорты, кланы, чат, киты и арсенал. Ранги подключены из отдельных плагинов.");
     }
 
     @Override
@@ -87,6 +90,7 @@ public final class NEXORASurvival extends PluginBase {
     EconomyModule economy() { return economy; }
     TeleportModule teleports() { return teleports; }
     SocialModule social() { return social; }
+    RankBridge rankBridge() { return rankBridge; }
     ClanModule clans() { return clans; }
 
     static boolean isAdmin(CommandSender sender) {
