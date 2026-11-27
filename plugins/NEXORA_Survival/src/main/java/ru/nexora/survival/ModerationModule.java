@@ -95,10 +95,6 @@ final class ModerationModule implements Listener {
         String duration = "навсегда";
         if (args.length >= 3) {
             long parsed = parseDuration(args[1]);
-            if (parsed == -1L) {
-                sender.sendMessage(PREFIX + "§cНеверный срок. Пример: 30m, 2h, 7d или perm.");
-                return;
-            }
             if (parsed > 0L) {
                 expires = System.currentTimeMillis() + parsed;
                 duration = prettyDuration(parsed);
