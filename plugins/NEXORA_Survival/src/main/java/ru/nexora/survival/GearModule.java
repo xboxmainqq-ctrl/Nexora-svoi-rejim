@@ -24,6 +24,67 @@ final class GearModule implements Listener {
                         double damageBonus, double defensePerPiece, boolean armorSet,
                         String perkDescription) { }
 
+
+    private record ShopItem(String name, String description, int itemId, int meta,
+                            int count, int price) { }
+
+    private static final List<ShopItem> FOOD = List.of(
+            new ShopItem("§6Хлеб", "§7Еда на каждый день", 297, 0, 16, 45),
+            new ShopItem("§6Яблоки", "§7Быстрый перекус", 260, 0, 16, 35),
+            new ShopItem("§6Стейк", "§7Сытная еда", 364, 0, 16, 80),
+            new ShopItem("§6Жареная свинина", "§7Сытная еда", 320, 0, 16, 75),
+            new ShopItem("§6Жареная рыба", "§7Еда для путешествий", 350, 0, 16, 55),
+            new ShopItem("§6Печёный картофель", "§7Простой запас еды", 393, 0, 16, 45),
+            new ShopItem("§6Золотое яблоко", "§7Редкая еда для PvP", 322, 0, 2, 180),
+            new ShopItem("§6Тыквенный пирог", "§7Сладкий запас еды", 400, 0, 8, 55)
+    );
+    private static final List<ShopItem> BLOCKS = List.of(
+            new ShopItem("§7Булыжник", "§7Строительный блок", 4, 0, 64, 35),
+            new ShopItem("§7Камень", "§7Строительный блок", 1, 0, 64, 45),
+            new ShopItem("§6Дубовые доски", "§7Для строительства и крафта", 5, 0, 64, 55),
+            new ShopItem("§6Дубовые брёвна", "§7Материал для строительства", 17, 0, 32, 65),
+            new ShopItem("§fСтекло", "§7Для окон и декора", 20, 0, 32, 70),
+            new ShopItem("§eПесок", "§7Строительство и плавка", 12, 0, 64, 35),
+            new ShopItem("§7Гравий", "§7Строительный материал", 13, 0, 64, 35),
+            new ShopItem("§5Обсидиан", "§7Прочный блок для баз", 49, 0, 16, 220),
+            new ShopItem("§cНезерак", "§7Блок Нижнего мира", 87, 0, 32, 70),
+            new ShopItem("§bБлок железа", "§7Хранение ресурсов",  blockIronId(), 0, 4, 240)
+    );
+    private static final List<ShopItem> FARMING = List.of(
+            new ShopItem("§aСемена пшеницы", "§7Посадка пшеницы", 295, 0, 16, 20),
+            new ShopItem("§aСемена тыквы", "§7Посадка тыквы", 361, 0, 8, 25),
+            new ShopItem("§aСемена арбуза", "§7Посадка арбуза", 362, 0, 8, 25),
+            new ShopItem("§aМорковь", "§7Для посадки и еды",  carrotsId(), 0, 16, 30),
+            new ShopItem("§aКартофель", "§7Для посадки и еды",  potatoesId(), 0, 16, 30),
+            new ShopItem("§aСахарный тростник", "§7Для фермы и крафта", 338, 0, 16, 35),
+            new ShopItem("§aТыква", "§7Для фермы", 86, 0, 8, 30),
+            new ShopItem("§aАрбуз", "§7Для фермы", 103, 0, 8, 35),
+            new ShopItem("§aКостная мука", "§7Ускоряет рост растений", 351, 15, 16, 45),
+            new ShopItem("§aВедро воды", "§7Для полива и ферм",  waterBucketId(), 0, 1, 90)
+    );
+    private static final List<ShopItem> MATERIALS = List.of(
+            new ShopItem("§fЖелезный слиток", "§7Материал для крафта", 265, 0, 16, 110),
+            new ShopItem("§6Золотой слиток", "§7Материал для крафта", 266, 0, 8, 100),
+            new ShopItem("§bАлмаз", "§7Ценный ресурс", 264, 0, 4, 260),
+            new ShopItem("§aИзумруд", "§7Ценный ресурс", 388, 0, 4, 160),
+            new ShopItem("§8Уголь", "§7Топливо для печи", 263, 0, 32, 65),
+            new ShopItem("§cРедстоун", "§7Для механизмов", 331, 0, 32, 75),
+            new ShopItem("§fНить", "§7Для крафта", 287, 0, 16, 45),
+            new ShopItem("§cПорох", "§7Для крафта", 289, 0, 16, 70),
+            new ShopItem("§fКожа", "§7Для крафта", 334, 0, 16, 65),
+            new ShopItem("§aСлизь", "§7Для механизмов", 341, 0, 8, 90)
+    );
+
+    private static int blockIronId() { return 42; }
+    private static int carrotsId() { return  carrotsItemId(); }
+    private static int carrotsItemId() { return  carrotItemId(); }
+    private static int carrotItemId() { return  carrotLegacyId(); }
+    private static int carrotLegacyId() { return 391; }
+    private static int potatoesId() { return  potatoLegacyId(); }
+    private static int potatoLegacyId() { return 392; }
+    private static int waterBucketId() { return  bucketLegacyId(); }
+    private static int bucketLegacyId() { return 326; }
+
     private static final String MARKER = "§0NEXORA_GEAR:";
     private static final List<Gear> WEAPONS = List.of(
             new Gear("rust_blade", "§7Ржавая сабля", "§7+1 урона · яд на 2 сек.", 268, 250, 1.0, 0, false, "Яд"),
@@ -78,7 +139,7 @@ final class GearModule implements Listener {
     }
 
     boolean handle(CommandSender sender, String command, String[] args) {
-        if (!command.equals("weapons") && !command.equals("gear")) return false;
+        if (!command.equals("shop") && !command.equals("gear")) return false;
         if (command.equals("gear")) {
             if (!NEXORASurvival.isAdmin(sender)) {
                 sender.sendMessage(PREFIX + "§cНедостаточно прав.");
@@ -118,32 +179,85 @@ final class GearModule implements Listener {
         return null;
     }
 
+
     private void openRoot(Player player) {
-        FormWindowSimple form = new FormWindowSimple("§l§0✦ NEXORA · АРСЕНАЛ",
-                "§8━━━━━━━━━━━━━━━━━━\n§7Экипировка для PvE и PvP\n"
-                        + "§7Бонусы оружия срабатывают при попадании. Защита брони работает при получении урона.\n"
-                        + "§8━━━━━━━━━━━━━━━━━━\n§eБаланс: §f" + plugin.economy().balance(player.getUniqueId())
-                        + "\n§7Выбери категорию:");
-        form.addButton(new ElementButton("§l§c⚔ ОРУЖИЕ\n§8Клинки, топоры, луки и посохи"));
-        form.addButton(new ElementButton("§l§b✥ БРОНЯ\n§8Пять алмазных комплектов с разной защитой"));
-        form.addButton(new ElementButton("§l§7⛏ ДОБЫЧА\n§8Кирки"));
-        form.addButton(new ElementButton("§l§6⚒ ЛЕСОРУБ\n§8Топоры"));
-        form.addButton(new ElementButton("§l§e▰ ЗЕМЛЕКОП\n§8Лопаты"));
-        form.addButton(new ElementButton("§l§a♣ ФЕРМА\n§8Мотыги"));
-        form.addButton(new ElementButton("§l§b✦ ИНСТРУМЕНТЫ\n§8Ножницы, удочка, огниво"));
+        FormWindowSimple form = new FormWindowSimple("§l§0✦ NEXORA · МАГАЗИН",
+                "§8━━━━━━━━━━━━━━━━━━\n§7Покупай полезные предметы за монеты.\n"
+                        + "§eТвой баланс: §f" + plugin.economy().balance(player.getUniqueId())
+                        + " §6монет\n§8━━━━━━━━━━━━━━━━━━\n§7Выбери раздел:");
+        form.addButton(new ElementButton("§l§6🍖 ЕДА\n§8Еда и золотые яблоки"));
+        form.addButton(new ElementButton("§l§c⚔ ОРУЖИЕ\n§8Мечи, топоры, луки и посохи"));
+        form.addButton(new ElementButton("§l§b✥ БРОНЯ\n§8Комплекты и защита"));
+        form.addButton(new ElementButton("§l§7⚒ ИНСТРУМЕНТЫ\n§8Кирки, топоры, лопаты и другое"));
+        form.addButton(new ElementButton("§l§6▦ БЛОКИ\n§8Строительство и укрепление базы"));
+        form.addButton(new ElementButton("§l§a♣ ФЕРМА\n§8Семена, растения и инвентарь"));
+        form.addButton(new ElementButton("§l§d✦ РЕСУРСЫ\n§8Руды и материалы для крафта"));
         form.addButton(new ElementButton("§7Закрыть"));
         form.addHandler(FormResponseHandler.withoutPlayer(ignored -> {
             if (form.wasClosed()) return;
             int selected = form.getResponse().getClickedButtonId();
-            if (selected == 0) openList(player, WEAPONS, false);
-            if (selected == 1) openList(player, ARMOR, true);
-            if (selected == 2) openList(player, MINING_TOOLS, false);
-            if (selected == 3) openList(player, WOOD_TOOLS, false);
-            if (selected == 4) openList(player, DIGGING_TOOLS, false);
-            if (selected == 5) openList(player, FARM_TOOLS, false);
-            if (selected == 6) openList(player, UTILITY_TOOLS, false);
+            switch (selected) {
+                case 0 -> openShopList(player, FOOD, "§l§0🍖 ЕДА");
+                case 1 -> openList(player, WEAPONS, false);
+                case 2 -> openList(player, ARMOR, true);
+                case 3 -> openList(player, combineTools(), false);
+                case 4 -> openShopList(player, BLOCKS, "§l§0▦ БЛОКИ");
+                case 5 -> openShopList(player, FARMING, "§l§0♣ ФЕРМА");
+                case 6 -> openShopList(player, MATERIALS, "§l§0✦ РЕСУРСЫ");
+                default -> { }
+            }
         }));
         player.showFormWindow(form);
+    }
+
+    private List<Gear> combineTools() {
+        List<Gear> all = new ArrayList<>();
+        all.addAll(MINING_TOOLS);
+        all.addAll(WOOD_TOOLS);
+        all.addAll(DIGGING_TOOLS);
+        all.addAll(FARM_TOOLS);
+        all.addAll(UTILITY_TOOLS);
+        return all;
+    }
+
+    private void openShopList(Player player, List<ShopItem> items, String title) {
+        FormWindowSimple form = new FormWindowSimple(title,
+                "§7Выбери товар для покупки.\n§8Цены указаны за весь набор.");
+        for (ShopItem item : items) {
+            form.addButton(new ElementButton(item.name() + "\n" + item.description()
+                    + "\n§fКоличество: §e" + item.count() + " §8· §6" + item.price() + " монет"));
+        }
+        form.addButton(new ElementButton("§7← Назад"));
+        form.addHandler(FormResponseHandler.withoutPlayer(ignored -> {
+            if (form.wasClosed()) return;
+            int index = form.getResponse().getClickedButtonId();
+            if (index >= 0 && index < items.size()) purchaseShopItem(player, items.get(index), items, title);
+            else openRoot(player);
+        }));
+        player.showFormWindow(form);
+    }
+
+    private void purchaseShopItem(Player player, ShopItem shopItem, List<ShopItem> list, String title) {
+        long balance = plugin.economy().balance(player.getUniqueId());
+        if (balance < shopItem.price()) {
+            player.sendMessage(PREFIX + "§cНе хватает монет. Нужно §e" + shopItem.price()
+                    + "§c, у тебя §e" + balance + "§c.");
+            openShopList(player, list, title);
+            return;
+        }
+        Item item = Item.get(shopItem.itemId(), shopItem.meta(), shopItem.count());
+        if (!player.getInventory().canAddItem(item)) {
+            player.sendMessage(PREFIX + "§cОсвободи место в инвентаре перед покупкой.");
+            return;
+        }
+        if (!plugin.economy().withdraw(player.getUniqueId(), shopItem.price())) {
+            player.sendMessage(PREFIX + "§cПокупка не прошла: баланс изменился.");
+            return;
+        }
+        player.getInventory().addItem(item);
+        player.sendMessage(PREFIX + "§aКуплено: " + shopItem.name() + " §7×" + shopItem.count()
+                + " §8за §e" + shopItem.price() + " монет§a.");
+        openShopList(player, list, title);
     }
 
     private void openList(Player player, List<Gear> items, boolean armor) {
