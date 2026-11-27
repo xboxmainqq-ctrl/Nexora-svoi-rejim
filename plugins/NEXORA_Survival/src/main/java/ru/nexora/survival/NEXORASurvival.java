@@ -1,0 +1,102 @@
+package ru.nexora.survival;
+
+import cn.nukkit.Player;
+import cn.nukkit.command.Command;
+import cn.nukkit.command.CommandSender;
+import cn.nukkit.event.Listener;
+import cn.nukkit.form.element.ElementButton;
+import cn.nukkit.form.handler.FormResponseHandler;
+import cn.nukkit.form.window.FormWindowSimple;
+import cn.nukkit.plugin.PluginBase;
+
+import java.util.List;
+import java.util.Locale;
+import java.util.function.IntConsumer;
+
+public final class NEXORASurvival extends PluginBase {
+    static final String PREFIX = "§6✦ NEXORA §8» ";
+    private static final long MAX_AMOUNT = 1_000_000_000L;
+
+    private EconomyModule economy;
+    private TeleportModule teleports;
+    private ClaimModule claims;
+    private SocialModule social;
+
+    @Override
+    public void onEnable() {
+        if (!getDataFolder().exists() && !getDataFolder().mkdirs()) {
+            getLogger().error("Не удалось создать папку NEXORA_Survival.");
+            getServer().getPluginManager().disablePlugin(this);
+            return;
+        }
+        saveDefaultConfig();
+        economy = new EconomyModule(this);
+        teleports = new TeleportModule(this);
+        claims = new ClaimModule(this);
+        social = new SocialModule(this);
+        for (Listener listener : new Listener[]{economy, teleports, claims, social}) {
+            getServer().getPluginManager().registerEvents(listener, this);
+        }
+        // Data files are written once a minute and on shutdown, not after every change.
+        getServer().getScheduler().scheduleRepeatingTask(this, this::flushAll, 20 * 60);
+        getLogger().info("NEXORA_Survival включён: дома, варпы, TPA, приваты, экономика, ранги и киты.");
+    }
+
+    @Override
+    public void onDisable() {
+        flushAll();
+    }
+
+    private void flushAll() {
+        if (economy != null) economy.flush();
+        if (teleports != null) teleports.flush();
+        if (claims != null) claims.flush();
+        if (social != null) social.flush();
+    }
+
+    @Override
+    public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+        String name = command.getName().toLowerCase(Locale.ROOT);
+        return economy.handle(sender, name, args)
+                || teleports.handle(sender, name, args)
+                || claims.handle(sender, name, args)
+                || social.handle(sender, name, args);
+    }
+
+    EconomyModule economy() { return economy; }
+    TeleportModule teleports() { return teleports; }
+    SocialModule social() { return social; }
+
+    static boolean isAdmin(CommandSender sender) {
+        return sender.isOp() || sender.hasPermission("nexora.survival.admin");
+    }
+
+    /** Removes colour codes and control characters from text typed by a player. */
+    static String clean(String text) {
+        if (text == null) return "";
+        return text.replace("§", "").replaceAll("\\p{Cntrl}", "").trim();
+    }
+
+    /** Parses a whole number of coins; returns -1 if it is not a valid amount. */
+    static long parseAmount(String text, boolean allowZero) {
+        try {
+            long value = Long.parseLong(text.trim());
+            if (value < 0 || value > MAX_AMOUNT || (value == 0 && !allowZero)) return -1;
+            return value;
+        } catch (NumberFormatException ex) {
+            return -1;
+        }
+    }
+
+    /** Shows a touch-friendly list; onPick gets the index of the pressed button. */
+    static void choose(Player player, String title, String body, List<String> labels, IntConsumer onPick) {
+        FormWindowSimple form = new FormWindowSimple(title, body);
+        for (String label : labels) form.addButton(new ElementButton(label));
+        form.addHandler(FormResponseHandler.withoutPlayer(ignored -> {
+            if (form.wasClosed()) return;
+            int index = form.getResponse().getClickedButtonId();
+            if (index >= 0 && index < labels.size()) onPick.accept(index);
+        }));
+        player.showFormWindow(form);
+    }
+}

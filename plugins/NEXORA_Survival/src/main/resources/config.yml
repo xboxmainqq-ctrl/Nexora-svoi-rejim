@@ -1,0 +1,58 @@
+# NEXORA_Survival settings.
+# Item ids are legacy numeric ids: "id:meta:count". Keep the quotes around ids used as keys.
+
+teleport:
+  warmup-seconds: 3          # stand still this long before a teleport (admins skip it)
+  cooldown-seconds: 10       # pause between teleports (admins skip it)
+  tpa-timeout-seconds: 60    # how long a /tpa request stays valid
+  spawn-protect-radius: 16   # nobody but admins can build this close to the spawn (0 = off)
+
+economy:
+  currency: "монет"
+  start-balance: 100
+  # Price per single item. Item meta is ignored, renamed or enchanted items are never sold.
+  sell-prices:
+    "263": {name: "Уголь", price: 2}
+    "265": {name: "Железный слиток", price: 6}
+    "266": {name: "Золотой слиток", price: 8}
+    "264": {name: "Алмаз", price: 50}
+    "388": {name: "Изумруд", price: 30}
+    "331": {name: "Красная пыль", price: 1}
+    "296": {name: "Пшеница", price: 1}
+    "391": {name: "Морковь", price: 1}
+    "392": {name: "Картофель", price: 1}
+    "338": {name: "Сахарный тростник", price: 1}
+    "287": {name: "Нить", price: 2}
+    "289": {name: "Порох", price: 3}
+    "352": {name: "Кость", price: 1}
+
+claims:
+  price: 50                  # price of one 16x16 chunk
+  refund-percent: 50         # returned when a chunk is released
+
+chat:
+  enabled: true
+  format: "§8[{prefix}§8] §f{name}§7: §f{message}"
+
+default-rank: player
+ranks:
+  player: {prefix: "§7Игрок", homes: 3, claims: 4, kits: [start, daily]}
+  vip: {prefix: "§aVIP", homes: 6, claims: 8, kits: [start, daily, vip]}
+  moder: {prefix: "§9Модер", homes: 10, claims: 12, kits: [start, daily, vip]}
+  admin: {prefix: "§cАдмин", homes: 20, claims: 30, kits: [start, daily, vip]}
+
+start-kit-on-first-join: true
+# cooldown-hours: 0 means the kit can be taken only once.
+kits:
+  start:
+    name: "Стартовый набор"
+    cooldown-hours: 0
+    items: ["272:0:1", "273:0:1", "274:0:1", "275:0:1", "364:0:16", "50:0:16"]
+  daily:
+    name: "Ежедневный набор"
+    cooldown-hours: 24
+    items: ["364:0:8", "50:0:16", "260:0:4"]
+  vip:
+    name: "VIP-набор"
+    cooldown-hours: 72
+    items: ["264:0:2", "364:0:16"]

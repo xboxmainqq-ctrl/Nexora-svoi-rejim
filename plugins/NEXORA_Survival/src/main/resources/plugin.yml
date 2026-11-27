@@ -1,0 +1,92 @@
+name: NEXORA_Survival
+main: ru.nexora.survival.NEXORASurvival
+version: "1.0.0"
+api: ["1.0.0"]
+author: NEXORA
+description: "Vanilla survival basics: homes, spawn, warps, TPA, claims, economy, ranks, chat and kits"
+commands:
+  balance:
+    description: Show your balance
+    usage: "/balance [player]"
+    aliases: ["bal", "money"]
+  pay:
+    description: Send coins to a player
+    usage: "/pay <player> <amount>"
+  baltop:
+    description: Richest players
+    usage: "/baltop"
+  sell:
+    description: Sell resources for coins
+    usage: "/sell hand [amount] | /sell all"
+  prices:
+    description: Sell price list
+    usage: "/prices"
+  eco:
+    description: Manage balances (admin)
+    usage: "/eco <give|take|set> <player> <amount>"
+  sethome:
+    description: Save a home
+    usage: "/sethome [name]"
+  home:
+    description: Teleport to a home
+    usage: "/home [name]"
+  delhome:
+    description: Delete a home
+    usage: "/delhome <name>"
+  homes:
+    description: List your homes
+    usage: "/homes"
+  spawn:
+    description: Teleport to spawn
+    usage: "/spawn"
+  setspawn:
+    description: Set the spawn (admin)
+    usage: "/setspawn"
+  warp:
+    description: Teleport to a warp
+    usage: "/warp [name]"
+    aliases: ["warps"]
+  setwarp:
+    description: Create a warp (admin)
+    usage: "/setwarp <name>"
+  delwarp:
+    description: Delete a warp (admin)
+    usage: "/delwarp <name>"
+  tpa:
+    description: Ask to teleport to a player
+    usage: "/tpa <player>"
+  tpaccept:
+    description: Accept a teleport request
+    usage: "/tpaccept"
+  tpdeny:
+    description: Deny a teleport request
+    usage: "/tpdeny"
+  claim:
+    description: Claim the current chunk
+    usage: "/claim"
+  unclaim:
+    description: Release the current chunk
+    usage: "/unclaim"
+  claims:
+    description: List your claims
+    usage: "/claims"
+  trust:
+    description: Let a player build on your claims
+    usage: "/trust <player>"
+  untrust:
+    description: Take building rights away
+    usage: "/untrust <player>"
+  claiminfo:
+    description: Who owns this chunk
+    usage: "/claiminfo"
+  rank:
+    description: Ranks
+    usage: "/rank [list|info|set]"
+  kit:
+    description: Receive a kit
+    usage: "/kit [name]"
+    aliases: ["kits"]
+permissions:
+  nexora.survival.admin:
+    description: Administer NEXORA Survival (bypass claims, set spawn and warps, manage ranks and balances)
+    default: op
