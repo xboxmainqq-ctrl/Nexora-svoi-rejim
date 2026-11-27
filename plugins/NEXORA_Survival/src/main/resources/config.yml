@@ -69,9 +69,12 @@ chat:
 default-rank: player
 ranks:
   player: {prefix: "§7Игрок", homes: 3, kits: [start, daily]}
-  vip: {prefix: "§aVIP", homes: 6, kits: [start, daily, vip]}
-  moder: {prefix: "§9Модер", homes: 10, kits: [start, daily, vip]}
-  admin: {prefix: "§cАдмин", homes: 20, kits: [start, daily, vip]}
+  vip: {prefix: "§bVIP", label: "VIP", homes: 6, kits: [start, daily, vip]}
+  premium: {prefix: "§dPREMIUM", label: "PREMIUM", homes: 8, kits: [start, daily, vip]}
+  elite: {prefix: "§dELITE", label: "ELITE", homes: 12, kits: [start, daily, vip]}
+  legend: {prefix: "§6LEGEND", label: "LEGEND", homes: 16, kits: [start, daily, vip]}
+  moder: {prefix: "§9Модер", label: "МОДЕР", homes: 10, kits: [start, daily, vip]}
+  admin: {prefix: "§cАдмин", label: "АДМИН", homes: 20, kits: [start, daily, vip]}
 
 start-kit-on-first-join: true
 # cooldown-hours: 0 means the kit can be taken only once.
