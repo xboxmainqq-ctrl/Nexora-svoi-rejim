@@ -52,11 +52,6 @@ final class SocialModule implements Listener {
         return plugin.getConfig().getInt("ranks." + rankId(player.getUniqueId()) + ".homes", 3);
     }
 
-    int claimsLimit(Player player) {
-        if (NEXORASurvival.isAdmin(player)) return 1000;
-        return plugin.getConfig().getInt("ranks." + rankId(player.getUniqueId()) + ".claims", 4);
-    }
-
     private void applyDisplay(Player player) {
         player.setDisplayName(player.getName());
         String rankTag = "§8[§r" + prefix(player) + "§8]";
@@ -130,7 +125,7 @@ final class SocialModule implements Listener {
                 for (String id : plugin.getConfig().getSection("ranks").getKeys(false)) {
                     sender.sendMessage("§8• §f" + id + " §8— " + plugin.getConfig().getString("ranks." + id + ".prefix", id)
                             + " §8(дома: §f" + plugin.getConfig().getInt("ranks." + id + ".homes", 3)
-                            + "§8, приваты: §f" + plugin.getConfig().getInt("ranks." + id + ".claims", 4) + "§8)");
+                            + "§8)");
                 }
             }
             case "info" -> {
