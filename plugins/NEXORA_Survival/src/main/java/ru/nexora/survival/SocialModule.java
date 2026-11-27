@@ -21,87 +21,24 @@ import static ru.nexora.survival.NEXORASurvival.PREFIX;
 /** Ranks (prefix and limits), chat format and kits. */
 final class SocialModule implements Listener {
     private final NEXORASurvival plugin;
-    private final Store ranks;
     private final Store kits;
 
     SocialModule(NEXORASurvival plugin) {
         this.plugin = plugin;
-        this.ranks = new Store(new File(plugin.getDataFolder(), "ranks.yml"));
         this.kits = new Store(new File(plugin.getDataFolder(), "kits.yml"));
     }
 
-    void flush() { ranks.flush(); kits.flush(); }
+    void flush() { kits.flush(); }
 
-    String rankId(UUID id) {
-        String rank = ranks.cfg.getString("players." + id, "");
-        // Migrate old public rank IDs to the new NEXORA names without resetting players.
-        rank = switch (rank.toLowerCase(Locale.ROOT)) {
-            case "vip" -> "aurvex";
-            case "premium" -> "veloria";
-            case "elite" -> "solvex";
-            case "legend" -> "nexorion";
-            default -> rank;
-        };
-        if (!rank.isEmpty() && plugin.getConfig().exists("ranks." + rank + ".prefix")) return rank;
-        return plugin.getConfig().getString("default-rank", "player");
-    }
-
-    // Independent PUA glyph range: clan gradients end at U+F74F.
-    private static final int RANK_GLYPH_BASE = 0xF750;
-    private static final int RANK_GRADIENT_STEPS = 3;
+    String rankId(UUID id) { return plugin.rankBridge().rankId(id); }
 
     String prefix(Player player) {
-        String id = rankId(player.getUniqueId()).toLowerCase(Locale.ROOT);
-        String label = plugin.getConfig().getString("ranks." + id + ".label", "");
-        int offset = rankGlyphOffset(id);
-        if (offset < 0 || label.isEmpty()) {
-            return plugin.getConfig().getString("ranks." + id + ".prefix", "§7Игрок");
-        }
-        return rankGradient(label, offset);
-    }
-
-    private int rankGlyphOffset(String id) {
-        return switch (id) {
-            case "aurvex" -> 0;
-            case "zyreth" -> 18;
-            case "veloria" -> 36;
-            case "kryon" -> 57;
-            case "nymeris" -> 72;
-            case "solvex" -> 93;
-            case "eclyra" -> 111;
-            case "nexorion" -> 129;
-            case "helper" -> 153;
-            case "junior_moder" -> 171;
-            case "moder" -> 219;
-            case "senior_moder" -> 246;
-            case "admin" -> 294;
-            case "chief_admin" -> 333;
-            default -> -1;
-        };
-    }
-
-    private String rankGradient(String value, int offset) {
-        StringBuilder out = new StringBuilder();
-        int visibleLength = value.replace(" ", "").length();
-        int position = 0;
-        for (int i = 0; i < value.length(); i++) {
-            char ch = value.charAt(i);
-            if (ch == ' ') {
-                out.append(' ');
-                continue;
-            }
-            int step = visibleLength <= 1 ? 0
-                    : (int) Math.round((double) position * (RANK_GRADIENT_STEPS - 1) / (visibleLength - 1));
-            int codePoint = RANK_GLYPH_BASE + offset + position * RANK_GRADIENT_STEPS + step;
-            out.appendCodePoint(codePoint);
-            position++;
-        }
-        return out.toString();
+        return plugin.rankBridge().prefix(player.getUniqueId());
     }
 
     int homesLimit(Player player) {
         if (NEXORASurvival.isAdmin(player)) return 100;
-        return plugin.getConfig().getInt("ranks." + rankId(player.getUniqueId()) + ".homes", 3);
+        return plugin.rankBridge().homesLimit(player.getUniqueId());
     }
 
     private void applyDisplay(Player player) {
@@ -165,7 +102,7 @@ final class SocialModule implements Listener {
 
     private boolean kitAllowed(Player player, String kit) {
         if (NEXORASurvival.isAdmin(player)) return true;
-        return plugin.getConfig().getStringList("ranks." + rankId(player.getUniqueId()) + ".kits").contains(kit);
+        return plugin.rankBridge().hasKit(player.getUniqueId(), kit);
     }
 
     private boolean kitReady(Player player, String kit) {
