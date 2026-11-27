@@ -258,10 +258,10 @@ final class GearModule implements Listener {
             event.setCancelled();
             int slot = event.getAction().getSlot();
             if (slot < 10 || slot > 16) {
-                if (slot == 22) player.removeWindow(menu);
+                if (slot == 22) closeMenu(player, menu);
                 return;
             }
-            player.removeWindow(menu);
+            closeMenu(player, menu);
             openChestLater(player, () -> {
                 switch (slot) {
                     case 10 -> openShopItemCategory(player, FOOD, "§6ЕДА");
@@ -274,7 +274,7 @@ final class GearModule implements Listener {
                 }
             });
         });
-        player.addWindow(menu);
+        showMenu(player, menu);
     }
 
     private void fillShopFrame(ChestFakeInventory menu) {
@@ -299,14 +299,14 @@ final class GearModule implements Listener {
             int slot = event.getAction().getSlot();
             int index = slotIndex(slot);
             if (slot != 18 && slot != 26 && (index < 0 || index >= items.size())) return;
-            player.removeWindow(menu);
+            closeMenu(player, menu);
             if (slot == 26) return;
             openChestLater(player, () -> {
                 if (slot == 18) openRoot(player);
                 else purchaseShopItem(player, items.get(index), items, title);
             });
         });
-        player.addWindow(menu);
+        showMenu(player, menu);
     }
 
     private void openShopGearCategory(Player player, List<Gear> items, boolean armor) {
@@ -331,14 +331,14 @@ final class GearModule implements Listener {
             int slot = event.getAction().getSlot();
             int index = slotIndex(slot);
             if (slot != 18 && slot != 26 && (index < 0 || index >= items.size())) return;
-            player.removeWindow(menu);
+            closeMenu(player, menu);
             if (slot == 26) return;
             openChestLater(player, () -> {
                 if (slot == 18) openRoot(player);
                 else purchase(player, items.get(index), items, armor);
             });
         });
-        player.addWindow(menu);
+        showMenu(player, menu);
     }
 
     private int slotIndex(int slot) {
