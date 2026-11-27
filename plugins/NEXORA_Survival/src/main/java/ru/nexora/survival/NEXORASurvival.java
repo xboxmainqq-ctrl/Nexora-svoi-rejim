@@ -21,6 +21,7 @@ public final class NEXORASurvival extends PluginBase {
     private TeleportModule teleports;
     private ClaimModule claims;
     private SocialModule social;
+    private GearModule gear;
 
     @Override
     public void onEnable() {
@@ -34,12 +35,13 @@ public final class NEXORASurvival extends PluginBase {
         teleports = new TeleportModule(this);
         claims = new ClaimModule(this);
         social = new SocialModule(this);
-        for (Listener listener : new Listener[]{economy, teleports, claims, social}) {
+        gear = new GearModule(this);
+        for (Listener listener : new Listener[]{economy, teleports, claims, social, gear}) {
             getServer().getPluginManager().registerEvents(listener, this);
         }
         // Data files are written once a minute and on shutdown, not after every change.
         getServer().getScheduler().scheduleRepeatingTask(this, this::flushAll, 20 * 60);
-        getLogger().info("NEXORA_Survival включён: дома, варпы, TPA, приваты, экономика, ранги и киты.");
+        getLogger().info("NEXORA_Survival включён: экономика, приваты, телепорты, ранги, киты и арсенал оружия/брони.");
     }
 
     @Override
@@ -60,7 +62,8 @@ public final class NEXORASurvival extends PluginBase {
         return economy.handle(sender, name, args)
                 || teleports.handle(sender, name, args)
                 || claims.handle(sender, name, args)
-                || social.handle(sender, name, args);
+                || social.handle(sender, name, args)
+                || gear.handle(sender, name, args);
     }
 
     EconomyModule economy() { return economy; }
