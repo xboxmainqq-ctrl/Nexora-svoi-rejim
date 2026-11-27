@@ -19,6 +19,8 @@ import cn.nukkit.event.player.PlayerInteractEvent;
 import cn.nukkit.inventory.InventoryHolder;
 import cn.nukkit.item.Item;
 import cn.nukkit.level.Level;
+import cn.nukkit.level.particle.FlameParticle;
+import cn.nukkit.math.Vector3;
 import cn.nukkit.utils.ConfigSection;
 
 import java.io.File;
@@ -112,6 +114,26 @@ final class ClaimModule implements Listener {
             if (minX <= b && maxX >= a && minZ <= d && maxZ >= c) return true;
         }
         return false;
+    }
+
+    /** Draws a lightweight temporary-looking outline preview with particles after both points are selected. */
+    private void showSelectionBorder(Player player, int[] p) {
+        if (p == null || p[0] == Integer.MIN_VALUE || p[2] == Integer.MIN_VALUE) return;
+        int minX = Math.min(p[0], p[2]), maxX = Math.max(p[0], p[2]);
+        int minZ = Math.min(p[1], p[3]), maxZ = Math.max(p[1], p[3]);
+        int y = player.getFloorY() + 1;
+        Level level = player.getLevel();
+        int stepX = Math.max(1, (maxX - minX) / 40);
+        int stepZ = Math.max(1, (maxZ - minZ) / 40);
+        for (int x = minX; x <= maxX; x += stepX) {
+            level.addParticle(new FlameParticle(new Vector3(x + 0.5, y, minZ + 0.5)));
+            if (maxZ != minZ) level.addParticle(new FlameParticle(new Vector3(x + 0.5, y, maxZ + 0.5)));
+        }
+        for (int z = minZ; z <= maxZ; z += stepZ) {
+            level.addParticle(new FlameParticle(new Vector3(minX + 0.5, y, z + 0.5)));
+            if (maxX != minX) level.addParticle(new FlameParticle(new Vector3(maxX + 0.5, y, z + 0.5)));
+        }
+        player.sendMessage(PREFIX + "§bГраница выделения отмечена частицами.");
     }
 
     // ---- Protection ----
@@ -274,6 +296,7 @@ final class ClaimModule implements Listener {
                 p[2] = block.getFloorX(); p[3] = block.getFloorZ();
                 player.sendMessage(PREFIX + "§aТочка 2: §f" + p[2] + ", " + p[3]);
             }
+            showSelectionBorder(player, p);
             event.setCancelled(true);
             return;
         }
