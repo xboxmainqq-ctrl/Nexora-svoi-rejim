@@ -6,7 +6,7 @@ The Java plugin maps each character to the same codepoint formula below.
 Requires Pillow; the generated glyph pages are packed into NEXORA_Beasts_RP.
 """
 from pathlib import Path
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw, ImageFont, ImageFilter
 
 ROOT = Path(__file__).resolve().parents[1] / "NEXORA_Beasts_RP"
 CHARSET = (
@@ -37,58 +37,58 @@ def shade(rgb, amount):
     return tuple(max(0, min(255, round(c * amount))) for c in rgb)
 
 
-def make_glyph(ch, rgb, font):
-    size = CELL * SCALE
-    mask = Image.new("L", (size, size), 0)
-    draw = ImageDraw.Draw(mask)
-    if ch != " ":
-        bbox = draw.textbbox((0, 0), ch, font=font, stroke_width=0)
-        w, h = bbox[2] - bbox[0], bbox[3] - bbox[1]
-        x = (size - w) // 2 - bbox[0]
-        y = (size - h) // 2 - bbox[1] - 1
+def build_masks(font):
+    """Rasterize each supported character only once, then reuse it for all gradients."""
+    masks = {}
+    for ch in CHARSET:
+        mask = Image.new("L", (CELL * SCALE, CELL * SCALE), 0)
+        draw = ImageDraw.Draw(mask)
+        bbox = draw.textbbox((0, 0), ch, font=font)
+        width, height = bbox[2] - bbox[0], bbox[3] - bbox[1]
+        x = (CELL * SCALE - width) // 2 - bbox[0]
+        y = (CELL * SCALE - height) // 2 - bbox[1] - 1
         draw.text((x, y), ch, font=font, fill=255)
-
-    # A restrained dark outline keeps small letters legible on every chat background.
-    shadow = Image.new("L", (size, size), 0)
-    shadow.paste(mask, (SCALE, SCALE))
-    shadow = shadow.filter(ImageFilterMax())
-    result = Image.new("RGBA", (size, size), (0, 0, 0, 0))
-    shadow_px = shadow.load()
-    mask_px = mask.load()
-    out = result.load()
-    for y in range(size):
-        vertical = y / max(1, size - 1)
-        face = mix(shade(rgb, 1.18), shade(rgb, 0.88), vertical)
-        for x in range(size):
-            if shadow_px[x, y] and not mask_px[x, y]:
-                out[x, y] = (19, 18, 31, min(190, shadow_px[x, y]))
-            elif mask_px[x, y]:
-                out[x, y] = (*face, mask_px[x, y])
-    return result.resize((CELL, CELL), Image.Resampling.LANCZOS)
+        shadow = Image.new("L", mask.size, 0)
+        shadow.paste(mask, (SCALE, SCALE))
+        shadow = shadow.filter(ImageFilter.MaxFilter(3))
+        masks[ch] = (
+            mask.resize((CELL, CELL), Image.Resampling.LANCZOS),
+            shadow.resize((CELL, CELL), Image.Resampling.LANCZOS),
+        )
+    return masks
 
 
-def ImageFilterMax():
-    # A tiny dilation implemented with Pillow's MaxFilter without importing more modules globally.
-    from PIL import ImageFilter
-    return ImageFilter.MaxFilter(3)
+def make_glyph(mask, shadow, rgb):
+    face = Image.new("RGBA", (CELL, CELL), (0, 0, 0, 0))
+    face_alpha = mask.load()
+    face_px = face.load()
+    for y in range(CELL):
+        row_color = mix(shade(rgb, 1.16), shade(rgb, 0.86), y / (CELL - 1))
+        for x in range(CELL):
+            alpha = face_alpha[x, y]
+            if alpha:
+                face_px[x, y] = (*row_color, alpha)
+    outline = Image.new("RGBA", (CELL, CELL), (19, 18, 31, 0))
+    outline.putalpha(shadow)
+    return Image.alpha_composite(outline, face)
 
 
 def build_all():
     font = ImageFont.truetype(FONT_PATH, 48)
+    masks = build_masks(font)
     total = len(PALETTES) * STEPS * len(CHARSET)
-    pages = {}
-    for page_index in range((total + 255) // 256):
-        pages[page_index] = Image.new("RGBA", (SHEET, SHEET), (0, 0, 0, 0))
+    pages = {
+        page: Image.new("RGBA", (SHEET, SHEET), (0, 0, 0, 0))
+        for page in range((total + 255) // 256)
+    }
 
-    for gradient_index, (name, start, end) in enumerate(PALETTES):
+    for gradient_index, (_, start, end) in enumerate(PALETTES):
         for step in range(STEPS):
-            t = step / (STEPS - 1)
-            rgb = mix(start, end, t)
+            rgb = mix(start, end, step / (STEPS - 1))
             for char_index, ch in enumerate(CHARSET):
                 codepoint = BASE + ((gradient_index * STEPS + step) * len(CHARSET)) + char_index
-                offset = codepoint - BASE
-                page_index, slot = divmod(offset, 256)
-                glyph = make_glyph(ch, rgb, font)
+                page_index, slot = divmod(codepoint - BASE, 256)
+                glyph = make_glyph(*masks[ch], rgb)
                 x = (slot % 16) * CELL
                 y = (slot // 16) * CELL
                 pages[page_index].alpha_composite(glyph, (x, y))
@@ -97,8 +97,7 @@ def build_all():
     font_dir.mkdir(parents=True, exist_ok=True)
     for page_index, sheet in pages.items():
         page = (BASE >> 8) + page_index
-        path = font_dir / f"glyph_{page:02X}.png"
-        sheet.save(path, optimize=True)
+        sheet.save(font_dir / f"glyph_{page:02X}.png", optimize=True)
     print(f"Generated {total} clan-gradient glyphs in {len(pages)} pages (U+{BASE:04X}..U+{BASE + total - 1:04X}).")
 
 
