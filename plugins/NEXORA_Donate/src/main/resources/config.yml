@@ -7,7 +7,7 @@ display-order: [aurvex, zyreth, veloria, kryon, nymeris, solvex, eclyra, nexorio
 privileges:
   aurvex:
     label: "AURVEX"
-    gradient: "ocean"
+    gradient: "aurvex"
     short: "Искра нового пути"
     price: "§eСкоро на сайте"
     description: "AURVEX — первый знак отличия NEXORA. Спокойная сила океана для тех, кто только начинает собирать свою историю."
@@ -17,7 +17,7 @@ privileges:
       - "§8▪ §fДоступ к особому стартовому набору"
   zyreth:
     label: "ZYRETH"
-    gradient: "neon"
+    gradient: "zyreth"
     short: "Энергия движения"
     price: "§eСкоро на сайте"
     description: "ZYRETH создан для активных игроков. Его яркое свечение выделяет тех, кто постоянно в движении."
@@ -27,7 +27,7 @@ privileges:
       - "§8▪ §fРасширенный набор"
   veloria:
     label: "VELORIA"
-    gradient: "royal"
+    gradient: "veloria"
     short: "Грань совершенства"
     price: "§eСкоро на сайте"
     description: "VELORIA — элегантный статус с королевским переливом. Для игроков, которым важны стиль и комфорт."
@@ -37,7 +37,7 @@ privileges:
       - "§8▪ §fРасширенный набор"
   kryon:
     label: "KRYON"
-    gradient: "ocean"
+    gradient: "kryon"
     short: "Холодная мощь"
     price: "§eСкоро на сайте"
     description: "KRYON воплощает ледяное спокойствие и уверенность. Его холодный оттенок заметен в каждом сообщении."
@@ -47,7 +47,7 @@ privileges:
       - "§8▪ §fОсобый набор KRYON"
   nymeris:
     label: "NYMERIS"
-    gradient: "sunset"
+    gradient: "nymeris"
     short: "Пламя глубин"
     price: "§eСкоро на сайте"
     description: "NYMERIS — редкий статус с переливом закатного пламени. Для тех, кто уже оставил след в мире NEXORA."
@@ -57,7 +57,7 @@ privileges:
       - "§8▪ §fОсобый набор NYMERIS"
   solvex:
     label: "SOLVEX"
-    gradient: "neon"
+    gradient: "solvex"
     short: "Импульс звезды"
     price: "§eСкоро на сайте"
     description: "SOLVEX — мощный сияющий ранг для уверенных игроков, которым доступно ещё больше удобства."
@@ -67,7 +67,7 @@ privileges:
       - "§8▪ §fУлучшенный набор SOLVEX"
   eclyra:
     label: "ECLYRA"
-    gradient: "royal"
+    gradient: "eclyra"
     short: "Сияние вне времени"
     price: "§eСкоро на сайте"
     description: "ECLYRA — почти мифический статус NEXORA. Глубокий королевский градиент подчёркивает его редкость."
@@ -77,7 +77,7 @@ privileges:
       - "§8▪ §fПремиальный набор ECLYRA"
   nexorion:
     label: "NEXORION"
-    gradient: "sunset"
+    gradient: "nexorion"
     short: "Легенда вселенной NEXORA"
     price: "§eСкоро на сайте"
     description: "NEXORION — вершина игровой линейки. Имя, созданное для тех, кто хочет носить самый высокий статус проекта."
@@ -86,3 +86,19 @@ privileges:
       - "§8▪ §fДо 16 точек дома"
       - "§8▪ §fМаксимальный набор NEXORION"
       - "§8▪ §fСамое заметное оформление в чате"
+    homes: 4
+    kits: [start, daily, vip]
+    homes: 5
+    kits: [start, daily, vip]
+    homes: 6
+    kits: [start, daily, vip]
+    homes: 7
+    kits: [start, daily, vip]
+    homes: 8
+    kits: [start, daily, vip]
+    homes: 10
+    kits: [start, daily, vip]
+    homes: 12
+    kits: [start, daily, vip]
+    homes: 16
+    kits: [start, daily, vip]
