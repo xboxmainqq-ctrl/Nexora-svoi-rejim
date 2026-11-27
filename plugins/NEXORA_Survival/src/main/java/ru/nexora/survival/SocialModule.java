@@ -30,12 +30,7 @@ final class SocialModule implements Listener {
         this.kits = new Store(new File(plugin.getDataFolder(), "kits.yml"));
     }
 
-    void flush() {
-        ranks.flush();
-        kits.flush();
-    }
-
-    // ---- Ranks ----
+    void flush() { ranks.flush(); kits.flush(); }
 
     String rankId(UUID id) {
         String rank = ranks.cfg.getString("players." + id, "");
@@ -43,8 +38,6 @@ final class SocialModule implements Listener {
         return plugin.getConfig().getString("default-rank", "player");
     }
 
-    // Rank labels use the same pre-rendered bitmap gradients as clan tags in NEXORA_Beasts_RP.
-    // No §x RGB codes: each letter is a real coloured glyph supplied by the resource pack.
     private static final String RANK_CHARSET =
             "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
             + "АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ"
@@ -57,11 +50,10 @@ final class SocialModule implements Listener {
         String id = rankId(player.getUniqueId());
         String label = plugin.getConfig().getString("ranks." + id + ".label", "");
         int gradient = switch (id.toLowerCase(Locale.ROOT)) {
-            case "vip" -> 1;       // ocean: cyan -> blue
-            case "premium" -> 3;   // royal: violet -> gold
-            case "elite", "moder" -> 2; // neon: pink -> violet
-            case "legend" -> 0;    // sunset: pink -> gold
-            case "admin" -> 3;
+            case "aurvex", "kryon" -> 1;
+            case "zyreth", "solvex" -> 2;
+            case "veloria", "eclyra" -> 3;
+            case "nymeris", "nexorion" -> 0;
             default -> -1;
         };
         if (gradient < 0 || label.isEmpty()) {
@@ -75,15 +67,9 @@ final class SocialModule implements Listener {
         int length = value.length();
         for (int i = 0; i < length; i++) {
             char ch = value.charAt(i);
-            if (ch == ' ') {
-                out.append(' ');
-                continue;
-            }
+            if (ch == ' ') { out.append(' '); continue; }
             int charIndex = RANK_CHARSET.indexOf(ch);
-            if (charIndex < 0) {
-                out.append(ch);
-                continue;
-            }
+            if (charIndex < 0) { out.append(ch); continue; }
             int step = length <= 1 ? 0 : (int) Math.round((double) i * (RANK_GRADIENT_STEPS - 1) / (length - 1));
             int codePoint = RANK_GLYPH_BASE + ((gradient * RANK_GRADIENT_STEPS + step) * RANK_CHARSET.length()) + charIndex;
             out.appendCodePoint(codePoint);
@@ -105,8 +91,6 @@ final class SocialModule implements Listener {
 
     void refreshDisplay(Player player) { applyDisplay(player); }
 
-    // ---- Events ----
-
     @EventHandler
     public void onJoin(PlayerJoinEvent event) {
         Player player = event.getPlayer();
@@ -115,7 +99,6 @@ final class SocialModule implements Listener {
         boolean firstJoin = !kits.cfg.exists("players." + player.getUniqueId() + ".start");
         if (firstJoin && plugin.getConfig().getBoolean("start-kit-on-first-join", true)
                 && plugin.getConfig().exists("kits.start.items")) {
-            // Wait a second so the client is fully in the world.
             plugin.getServer().getScheduler().scheduleDelayedTask(plugin, () -> {
                 if (!player.isOnline()) return;
                 plugin.teleports().sendToSpawn(player);
@@ -144,8 +127,6 @@ final class SocialModule implements Listener {
         plugin.getServer().broadcastMessage(line);
     }
 
-    // ---- Commands ----
-
     boolean handle(CommandSender sender, String cmd, String[] args) {
         switch (cmd) {
             case "kit" -> {
@@ -159,8 +140,6 @@ final class SocialModule implements Listener {
         }
         return true;
     }
-
-    // ---- Kits ----
 
     private boolean kitAllowed(Player player, String kit) {
         if (NEXORASurvival.isAdmin(player)) return true;
@@ -230,7 +209,6 @@ final class SocialModule implements Listener {
                 plugin.getLogger().warning("Набор " + kit + ": неверный предмет «" + spec + "», ожидается id:meta:count");
                 continue;
             }
-            // Whatever does not fit is dropped next to the player, nothing is lost.
             for (Item leftover : player.getInventory().addItem(item)) {
                 player.getLevel().dropItem(player, leftover);
             }
