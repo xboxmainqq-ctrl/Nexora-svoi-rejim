@@ -23,6 +23,7 @@ public final class NEXORASurvival extends PluginBase {
     private SocialModule social;
     private GearModule gear;
     private ClanModule clans;
+    private ReportModule reports;
 
     @Override
     public void onEnable() {
@@ -38,6 +39,7 @@ public final class NEXORASurvival extends PluginBase {
         social = new SocialModule(this);
         gear = new GearModule(this);
         clans = new ClanModule(this);
+        reports = new ReportModule(this);
         for (Listener listener : new Listener[]{economy, teleports, claims, social, gear, clans}) {
             getServer().getPluginManager().registerEvents(listener, this);
         }
@@ -57,6 +59,7 @@ public final class NEXORASurvival extends PluginBase {
         if (claims != null) claims.flush();
         if (social != null) social.flush();
         if (clans != null) clans.flush();
+        if (reports != null) reports.flush();
     }
 
     @Override
@@ -67,6 +70,7 @@ public final class NEXORASurvival extends PluginBase {
                 || claims.handle(sender, name, args)
                 || social.handle(sender, name, args)
                 || clans.handle(sender, name, args)
+                || reports.handle(sender, name, args)
                 || gear.handle(sender, name, args);
     }
 
