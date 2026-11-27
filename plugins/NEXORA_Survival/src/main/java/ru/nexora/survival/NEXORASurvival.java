@@ -19,7 +19,6 @@ public final class NEXORASurvival extends PluginBase {
 
     private EconomyModule economy;
     private TeleportModule teleports;
-    private ClaimModule claims;
     private SocialModule social;
     private GearModule gear;
     private ClanModule clans;
@@ -36,18 +35,17 @@ public final class NEXORASurvival extends PluginBase {
         saveDefaultConfig();
         economy = new EconomyModule(this);
         teleports = new TeleportModule(this);
-        claims = new ClaimModule(this);
         social = new SocialModule(this);
         gear = new GearModule(this);
         clans = new ClanModule(this);
         reports = new ReportModule(this);
         moderation = new ModerationModule(this);
-        for (Listener listener : new Listener[]{economy, teleports, claims, social, gear, clans, moderation}) {
+        for (Listener listener : new Listener[]{economy, teleports, social, gear, clans, moderation}) {
             getServer().getPluginManager().registerEvents(listener, this);
         }
         // Data files are written once a minute and on shutdown, not after every change.
         getServer().getScheduler().scheduleRepeatingTask(this, this::flushAll, 20 * 60);
-        getLogger().info("NEXORA_Survival включён: экономика, приваты, телепорты, кланы, ранги, киты и арсенал.");
+        getLogger().info("NEXORA_Survival включён: экономика, телепорты, кланы, ранги, киты и арсенал.");
     }
 
     @Override
@@ -58,7 +56,6 @@ public final class NEXORASurvival extends PluginBase {
     private void flushAll() {
         if (economy != null) economy.flush();
         if (teleports != null) teleports.flush();
-        if (claims != null) claims.flush();
         if (social != null) social.flush();
         if (clans != null) clans.flush();
         if (reports != null) reports.flush();
@@ -70,7 +67,6 @@ public final class NEXORASurvival extends PluginBase {
         String name = command.getName().toLowerCase(Locale.ROOT);
         return economy.handle(sender, name, args)
                 || teleports.handle(sender, name, args)
-                || claims.handle(sender, name, args)
                 || social.handle(sender, name, args)
                 || clans.handle(sender, name, args)
                 || reports.handle(sender, name, args)
