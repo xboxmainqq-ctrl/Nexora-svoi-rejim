@@ -218,18 +218,20 @@ final class GearModule implements Listener {
         }
 
         openMenus.put(playerId, menu);
-        if (!player.isOnline()) {
-            openMenus.remove(playerId, menu);
-            return;
-        }
-        try {
-            player.addWindow(menu);
-        } catch (IllegalStateException exception) {
-            openMenus.remove(playerId, menu);
-            player.sendMessage(PREFIX + "§cНе удалось открыть магазин. Закрой другое меню и попробуй снова.");
-            plugin.getLogger().warning("Could not open NEXORA shop for " + player.getName()
-                    + ": " + exception.getMessage());
-        }
+        // Opening directly from a command callback can happen while Nukkit is
+        // still processing the current inventory/window event. Defer every
+        // shop window (including the root menu) to the next server ticks.
+        openChestLater(player, () -> {
+            if (!player.isOnline() || openMenus.get(playerId) != menu) return;
+            try {
+                player.addWindow(menu);
+            } catch (IllegalStateException exception) {
+                openMenus.remove(playerId, menu);
+                player.sendMessage(PREFIX + "§cНе удалось открыть магазин. Закрой другое меню и попробуй снова.");
+                plugin.getLogger().warning("Could not open NEXORA shop for " + player.getName()
+                        + ": " + exception.getMessage());
+            }
+        });
     }
 
     private void closeMenu(Player player, ChestFakeInventory menu) {
