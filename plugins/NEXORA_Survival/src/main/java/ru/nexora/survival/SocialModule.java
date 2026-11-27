@@ -43,8 +43,52 @@ final class SocialModule implements Listener {
         return plugin.getConfig().getString("default-rank", "player");
     }
 
+    // Rank labels use the same pre-rendered bitmap gradients as clan tags in NEXORA_Beasts_RP.
+    // No §x RGB codes: each letter is a real coloured glyph supplied by the resource pack.
+    private static final String RANK_CHARSET =
+            "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
+            + "АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ"
+            + "абвгдеёжзийклмнопрстуфхцчшщъыьэюя"
+            + "0123456789_-";
+    private static final int RANK_GLYPH_BASE = 0xE300;
+    private static final int RANK_GRADIENT_STEPS = 10;
+
     String prefix(Player player) {
-        return plugin.getConfig().getString("ranks." + rankId(player.getUniqueId()) + ".prefix", "§7Игрок");
+        String id = rankId(player.getUniqueId());
+        String label = plugin.getConfig().getString("ranks." + id + ".label", "");
+        int gradient = switch (id.toLowerCase(Locale.ROOT)) {
+            case "vip" -> 1;       // ocean: cyan -> blue
+            case "premium" -> 3;   // royal: violet -> gold
+            case "elite", "moder" -> 2; // neon: pink -> violet
+            case "legend" -> 0;    // sunset: pink -> gold
+            case "admin" -> 3;
+            default -> -1;
+        };
+        if (gradient < 0 || label.isEmpty()) {
+            return plugin.getConfig().getString("ranks." + id + ".prefix", "§7Игрок");
+        }
+        return rankGradient(label, gradient);
+    }
+
+    private String rankGradient(String value, int gradient) {
+        StringBuilder out = new StringBuilder();
+        int length = value.length();
+        for (int i = 0; i < length; i++) {
+            char ch = value.charAt(i);
+            if (ch == ' ') {
+                out.append(' ');
+                continue;
+            }
+            int charIndex = RANK_CHARSET.indexOf(ch);
+            if (charIndex < 0) {
+                out.append(ch);
+                continue;
+            }
+            int step = length <= 1 ? 0 : (int) Math.round((double) i * (RANK_GRADIENT_STEPS - 1) / (length - 1));
+            int codePoint = RANK_GLYPH_BASE + ((gradient * RANK_GRADIENT_STEPS + step) * RANK_CHARSET.length()) + charIndex;
+            out.appendCodePoint(codePoint);
+        }
+        return out.toString();
     }
 
     int homesLimit(Player player) {
