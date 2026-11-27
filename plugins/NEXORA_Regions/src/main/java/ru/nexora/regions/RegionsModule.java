@@ -25,6 +25,8 @@ import cn.nukkit.math.Vector3;
 import cn.nukkit.utils.ConfigSection;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -50,7 +52,17 @@ final class RegionsModule implements Listener {
 
     RegionsModule(NEXORARegions plugin) {
         this.plugin = plugin;
-        this.store = new RegionsStore(new File(plugin.getDataFolder(), "regions.yml"));
+        File target = new File(plugin.getDataFolder(), "regions.yml");
+        File legacy = new File("plugins/NEXORA_Survival/claims.yml");
+        if (!target.exists() && legacy.isFile()) {
+            try {
+                Files.copy(legacy.toPath(), target.toPath());
+                plugin.getLogger().info("Старые приваты перенесены из NEXORA_Survival/claims.yml.");
+            } catch (IOException ex) {
+                plugin.getLogger().warning("Не удалось перенести старые приваты: " + ex.getMessage());
+            }
+        }
+        this.store = new RegionsStore(target);
     }
 
     void flush() {
@@ -577,7 +589,7 @@ final class RegionsModule implements Listener {
             player.sendMessage(PREFIX + "§cЛимит приватов: §e" + limit + "§c. Освободи ненужный: §e/rg unclaim");
             return;
         }
-        long price = plugin.getConfig().getLong("regions.price", 0L);
+        long price = 0L;
         String name = args.length > 0 ? NEXORARegions.clean(String.join("_", args)) : "region";
         if (name.length() > 24) name = name.substring(0, 24);
         String claimKey = "r_" + UUID.randomUUID().toString().replace("-", "").substring(0, 12);
@@ -674,7 +686,7 @@ final class RegionsModule implements Listener {
         }
 
         long addedBlocks = newArea - oldArea;
-        long rate = Math.max(0L, plugin.getConfig().getLong("regions.expand-price-per-block", 0L));
+        long rate = 0L;
         if (rate > 0 && addedBlocks > Long.MAX_VALUE / rate) {
             player.sendMessage(PREFIX + "§cСтоимость расширения слишком велика.");
             return;
@@ -807,9 +819,7 @@ final class RegionsModule implements Listener {
         }
         store.cfg.remove("claims." + claimKey);
         store.touch();
-        long refund = plugin.getConfig().getLong("regions.price", 0L)
-                * plugin.getConfig().getInt("regions.refund-percent", 0) / 100;
-        if (mine && refund > 0) 
+        long refund = 0L;
         player.sendMessage(PREFIX + "§aУчасток освобождён." + (mine && refund > 0
                 ? " Возвращено: " + NEXORARegions.money(refund) : ""));
     }
