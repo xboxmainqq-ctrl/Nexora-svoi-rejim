@@ -24,6 +24,7 @@ public final class NEXORASurvival extends PluginBase {
     private GearModule gear;
     private ClanModule clans;
     private ReportModule reports;
+    private ModerationModule moderation;
 
     @Override
     public void onEnable() {
@@ -40,7 +41,8 @@ public final class NEXORASurvival extends PluginBase {
         gear = new GearModule(this);
         clans = new ClanModule(this);
         reports = new ReportModule(this);
-        for (Listener listener : new Listener[]{economy, teleports, claims, social, gear, clans}) {
+        moderation = new ModerationModule(this);
+        for (Listener listener : new Listener[]{economy, teleports, claims, social, gear, clans, moderation}) {
             getServer().getPluginManager().registerEvents(listener, this);
         }
         // Data files are written once a minute and on shutdown, not after every change.
@@ -60,6 +62,7 @@ public final class NEXORASurvival extends PluginBase {
         if (social != null) social.flush();
         if (clans != null) clans.flush();
         if (reports != null) reports.flush();
+        if (moderation != null) moderation.flush();
     }
 
     @Override
@@ -71,6 +74,7 @@ public final class NEXORASurvival extends PluginBase {
                 || social.handle(sender, name, args)
                 || clans.handle(sender, name, args)
                 || reports.handle(sender, name, args)
+                || moderation.handle(sender, name, args)
                 || gear.handle(sender, name, args);
     }
 
