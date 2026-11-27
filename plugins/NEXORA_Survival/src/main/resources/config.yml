@@ -29,6 +29,7 @@ economy:
 claims:
   price: 50                  # price of one 16x16 chunk
   refund-percent: 50         # returned when a chunk is released
+  expand-price-per-block: 2  # price for each newly added block when expanding a region
 
 chat:
   enabled: true
