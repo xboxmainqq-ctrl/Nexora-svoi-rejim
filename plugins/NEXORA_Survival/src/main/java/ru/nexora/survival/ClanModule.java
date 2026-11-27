@@ -302,7 +302,7 @@ final class ClanModule implements Listener {
 
     private String onlineName(String uuid) {
         try {
-            Player p = plugin.getServer().getPlayer(UUID.fromString(uuid));
+            Player p = plugin.getServer().getPlayer(UUID.fromString(uuid)).orElse(null);
             if (p != null) return p.getName();
         } catch (IllegalArgumentException ignored) { }
         return store.cfg.getString("names." + uuid, uuid.length() > 8 ? uuid.substring(0, 8) : uuid);
