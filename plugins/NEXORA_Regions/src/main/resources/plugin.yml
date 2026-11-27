@@ -1,0 +1,14 @@
+name: NEXORA_Regions
+main: ru.nexora.regions.NEXORARegions
+version: "1.0.0"
+api: ["1.0.0"]
+author: NEXORA
+description: "Standalone region protection, management and flags"
+commands:
+  rg:
+    description: Region protection commands
+    usage: "/rg help"
+permissions:
+  nexora.regions.admin:
+    description: Bypass and manage all NEXORA regions
+    default: op
