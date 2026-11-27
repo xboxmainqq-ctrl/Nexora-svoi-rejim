@@ -71,7 +71,7 @@ public final class NEXORAAdminRanks extends PluginBase {
     public void removeRank(UUID id) { ranks.remove("players." + id); ranks.save(); refreshOnlinePlayer(id); }
 
     private void refreshOnlinePlayer(UUID id) {
-        Player player = getServer().getPlayer(id);
+        Player player = getServer().getPlayer(id).orElse(null);
         Plugin survival = getServer().getPluginManager().getPlugin("NEXORA_Survival");
         if (player == null || survival == null || !survival.isEnabled()) return;
         try { survival.getClass().getMethod("refreshRankDisplay", Player.class).invoke(survival, player); }
