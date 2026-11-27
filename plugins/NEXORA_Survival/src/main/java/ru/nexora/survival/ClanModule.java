@@ -47,8 +47,15 @@ final class ClanModule implements Listener {
         return "";
     }
 
-    // Bedrock 1.19.80+ supports true RGB text colors with §x§R§R§G§G§B§B.
-    // No custom font or resource-pack glyphs are needed for clan tags.
+    // Clan gradient letters are rendered by custom glyphs from NEXORA_Beasts_RP.
+    // Each glyph is a real coloured bitmap letter; no §x RGB formatting is used.
+    private static final String CLAN_CHARSET =
+            "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
+            + "АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ"
+            + "абвгдеёжзийклмнопрстуфхцчшщъыьэюя"
+            + "0123456789_-";
+    private static final int GLYPH_BASE = 0xE300;
+    private static final int GRADIENT_STEPS = 10;
     private static final String[] SOLID_NAMES = {
             "Красный", "Коралловый", "Оранжевый", "Золотой", "Жёлтый", "Лаймовый",
             "Зелёный", "Изумрудный", "Бирюзовый", "Голубой", "Синий", "Королевский синий",
@@ -60,24 +67,11 @@ final class ClanModule implements Listener {
             0x8B5CF6, 0xB56BFF, 0xFF63B8, 0xF4F7FF
     };
     private static final String[] GRADIENT_NAMES = {
-            "Закат", "Океан", "Неон", "Огонь", "Лес", "Королевский",
-            "Золото", "Лёд", "Вишня", "Карамель", "Токсик", "Аква"
+            "Закат", "Океан", "Неон", "Королевский"
     };
     private static final String[] GRADIENT_IDS = {
-            "sunset", "ocean", "neon", "fire", "forest", "royal",
-            "gold", "ice", "cherry", "cotton", "toxic", "aqua"
+            "sunset", "ocean", "neon", "royal"
     };
-    private static final int[][] GRADIENT_RGB = {
-            {0xFF512F, 0xF09819}, {0x00C6FF, 0x0072FF}, {0xFF00CC, 0x333399},
-            {0xFF416C, 0xFF4B2B}, {0x11998E, 0x38EF7D}, {0x4776E6, 0x8E54E9},
-            {0xF7971E, 0xFFE259}, {0x74EBD5, 0xACB6E5}, {0xEB3349, 0xF45C43},
-            {0xF6D365, 0xFDA085}, {0x76B852, 0x8DC26F}, {0x00F5A0, 0x00D9F5}
-    };
-    private static final int[] LEGACY_RGB = {
-            0x000000, 0x0000AA, 0x00AA00, 0x00AAAA, 0xAA0000, 0xAA00AA, 0xFFAA00, 0xAAAAAA,
-            0x555555, 0x5555FF, 0x55FF55, 0x55FFFF, 0xFF5555, 0xFF55FF, 0xFFFF55, 0xFFFFFF
-    };
-    private static final String LEGACY_CODES = "0123456789abcdef";
 
     String tag(Player player) {
         String id = clanId(player.getUniqueId());
@@ -87,28 +81,42 @@ final class ClanModule implements Listener {
     private String tag(String id) {
         String clanName = store.cfg.getString("clans." + id + ".name", id);
         String type = store.cfg.getString("clans." + id + ".color.type", "");
-        String fallbackFrom = store.cfg.getString("clans." + id + ".color.from", "b");
-        String fallbackTo = store.cfg.getString("clans." + id + ".color.to", fallbackFrom);
-        if (type.isEmpty()) {
-            // Migrate clans created with the previous palette-based color setting.
-            int from = legacyRgb(fallbackFrom, 0x38C9FF);
-            int to = legacyRgb(fallbackTo, from);
-            if (from != to) return gradientText("[" + clanName + "]", from, to) + "§r";
-            return solidText("[" + clanName + "]", from) + "§r";
-        }
         if (type.equals("gradient")) {
-            int from = parseHex(store.cfg.getString("clans." + id + ".color.fromHex", "38C9FF"), 0x38C9FF);
-            int to = parseHex(store.cfg.getString("clans." + id + ".color.toHex", "0072FF"), 0x0072FF);
-            return gradientText("[" + clanName + "]", from, to) + "§r";
+            String gradient = store.cfg.getString("clans." + id + ".color.gradient", "ocean");
+            return "§8[" + gradientGlyphs(clanName, gradient) + "§8]";
         }
-        int rgb = parseHex(store.cfg.getString("clans." + id + ".color.solid", "38C9FF"), 0x38C9FF);
-        return solidText("[" + clanName + "]", rgb) + "§r";
+        String value = store.cfg.getString("clans." + id + ".color.solid", "38C9FF");
+        int rgb = parseHex(value, 0x38C9FF);
+        return "§8[" + solidText(clanName, rgb) + "§8]";
     }
 
-    private int legacyRgb(String code, int fallback) {
-        if (code == null || code.length() != 1) return fallback;
-        int index = LEGACY_CODES.indexOf(code.toLowerCase(Locale.ROOT));
-        return index < 0 ? fallback : LEGACY_RGB[index];
+    private int gradientIndex(String id) {
+        for (int i = 0; i < GRADIENT_IDS.length; i++) {
+            if (GRADIENT_IDS[i].equalsIgnoreCase(id)) return i;
+        }
+        return 1; // ocean
+    }
+
+    private String gradientGlyphs(String value, String gradientId) {
+        int gradient = gradientIndex(gradientId);
+        StringBuilder out = new StringBuilder();
+        int length = value.length();
+        for (int i = 0; i < length; i++) {
+            char ch = value.charAt(i);
+            if (ch == ' ') {
+                out.append(' ');
+                continue;
+            }
+            int charIndex = CLAN_CHARSET.indexOf(ch);
+            if (charIndex < 0) {
+                out.append(ch);
+                continue;
+            }
+            int step = length <= 1 ? 0 : (int) Math.round((double) i * (GRADIENT_STEPS - 1) / (length - 1));
+            int codePoint = GLYPH_BASE + ((gradient * GRADIENT_STEPS + step) * CLAN_CHARSET.length()) + charIndex;
+            out.appendCodePoint(codePoint);
+        }
+        return out.toString();
     }
 
     private int parseHex(String value, int fallback) {
@@ -134,23 +142,6 @@ final class ClanModule implements Listener {
         return out.toString();
     }
 
-    private String gradientText(String value, int from, int to) {
-        StringBuilder out = new StringBuilder();
-        for (int i = 0; i < value.length(); i++) {
-            double t = value.length() <= 1 ? 0 : (double) i / (value.length() - 1);
-            int rgb = mix(from, to, t);
-            out.append(hexCode(rgb)).append(value.charAt(i));
-        }
-        return out.toString();
-    }
-
-    private int mix(int a, int b, double t) {
-        int r = (int) Math.round(((a >> 16) & 255) * (1 - t) + ((b >> 16) & 255) * t);
-        int g = (int) Math.round(((a >> 8) & 255) * (1 - t) + ((b >> 8) & 255) * t);
-        int bl = (int) Math.round((a & 255) * (1 - t) + (b & 255) * t);
-        return (r << 16) | (g << 8) | bl;
-    }
-
     private boolean setSolid(Player player, String id, int rgb) {
         store.cfg.set("clans." + id + ".color.type", "solid");
         store.cfg.set("clans." + id + ".color.solid", String.format(Locale.ROOT, "%06X", rgb & 0xFFFFFF));
@@ -159,13 +150,12 @@ final class ClanModule implements Listener {
         return true;
     }
 
-    private boolean setGradient(Player player, String id, int from, int to, String gradientName) {
+    private boolean setGradient(Player player, String id, String gradientId, String gradientName) {
         store.cfg.set("clans." + id + ".color.type", "gradient");
-        store.cfg.set("clans." + id + ".color.fromHex", String.format(Locale.ROOT, "%06X", from & 0xFFFFFF));
-        store.cfg.set("clans." + id + ".color.toHex", String.format(Locale.ROOT, "%06X", to & 0xFFFFFF));
+        store.cfg.set("clans." + id + ".color.gradient", gradientId);
         changed();
-        player.sendMessage(PREFIX + "§aГрадиент клана изменён: " + gradientText("[" + name(id) + "]", from, to)
-                + " §8(" + gradientName + ")");
+        player.sendMessage(PREFIX + "§aГрадиент клана изменён: §8[" + gradientGlyphs(name(id), gradientId)
+                + "§8] §7(" + gradientName + ")");
         return true;
     }
 
@@ -185,9 +175,9 @@ final class ClanModule implements Listener {
         String id = clanId(player.getUniqueId());
         if (!canChangeColor(player, id)) return;
         FormWindowSimple form = new FormWindowSimple("§l§0ОФОРМЛЕНИЕ КЛАНА",
-                "§7Сначала выбери однотонный цвет или готовый RGB-градиент.\n§8Изменение сразу появится в чате и над участниками.");
+                "§7Выбери однотонный цвет или настоящий градиент из текстур ресурс-пака.\n§8Градиент будет виден в чате и над игроками.");
         form.addButton(new ElementButton("§l§fОДНОТОННЫЕ ЦВЕТА\n§8Выбрать один цвет"));
-        form.addButton(new ElementButton("§l§bГОТОВЫЕ ГРАДИЕНТЫ\n§8Два плавно переходящих цвета"));
+        form.addButton(new ElementButton("§l§bГОТОВЫЕ ГРАДИЕНТЫ\n§8Плавный переход оттенков"));
         form.addButton(new ElementButton("§7СБРОСИТЬ ОФОРМЛЕНИЕ\n§8Вернуть голубой цвет"));
         form.addButton(new ElementButton("§cНАЗАД"));
         form.addHandler(FormResponseHandler.withoutPlayer(ignored -> {
@@ -219,15 +209,15 @@ final class ClanModule implements Listener {
     private void gradientMenu(Player player, String id) {
         FormWindowSimple form = new FormWindowSimple("§l§0ГОТОВЫЕ ГРАДИЕНТЫ", "§7Выбери стиль оформления клана:");
         for (int i = 0; i < GRADIENT_NAMES.length; i++) {
-            String preview = gradientText(GRADIENT_NAMES[i].toUpperCase(Locale.ROOT), GRADIENT_RGB[i][0], GRADIENT_RGB[i][1]);
-            form.addButton(new ElementButton(preview + "\n§8RGB-градиент"));
+            String preview = gradientGlyphs(GRADIENT_NAMES[i].toUpperCase(Locale.ROOT), GRADIENT_IDS[i]);
+            form.addButton(new ElementButton(preview + "\n§8Настоящий градиент"));
         }
         form.addButton(new ElementButton("§cНАЗАД"));
         form.addHandler(FormResponseHandler.withoutPlayer(ignored -> {
             if (form.wasClosed() || !player.isOnline()) return;
             int choice = form.getResponse().getClickedButtonId();
             if (choice >= 0 && choice < GRADIENT_NAMES.length) {
-                setGradient(player, id, GRADIENT_RGB[choice][0], GRADIENT_RGB[choice][1], GRADIENT_NAMES[choice]);
+                setGradient(player, id, GRADIENT_IDS[choice], GRADIENT_NAMES[choice]);
             } else if (choice == GRADIENT_NAMES.length) colorMenu(player);
         }));
         player.showFormWindow(form);
@@ -291,7 +281,7 @@ final class ClanModule implements Listener {
         if (args.length < 2) { p.sendMessage(PREFIX + "§e/clan create <название>"); return; }
         if (!clanId(p.getUniqueId()).isEmpty()) { p.sendMessage(PREFIX + "§cТы уже состоишь в клане."); return; }
         String clanName = NEXORASurvival.clean(String.join(" ", java.util.Arrays.copyOfRange(args, 1, args.length)));
-        if (clanName.length() < 3 || clanName.length() > 16 || !clanName.matches("[\\p{L}\\p{N}_ -]+")) {
+        if (clanName.length() < 3 || clanName.length() > 16 || !clanName.matches("[A-Za-zА-Яа-яЁё0-9_ -]+")) {
             p.sendMessage(PREFIX + "§cНазвание: 3–16 символов, буквы, цифры, пробел, _ или -.");
             return;
         }
@@ -481,12 +471,12 @@ final class ClanModule implements Listener {
         if (!canChangeColor(p, id)) return;
         if (args.length != 2) {
             p.sendMessage(PREFIX + "§e/clan gradient <название>");
-            p.sendMessage(PREFIX + "§7Готовые варианты: sunset, ocean, neon, fire, forest, royal, gold, ice, cherry, cotton, toxic, aqua");
+            p.sendMessage(PREFIX + "§7Готовые варианты: sunset, ocean, neon, royal");
             return;
         }
         for (int i = 0; i < GRADIENT_IDS.length; i++) {
             if (GRADIENT_IDS[i].equalsIgnoreCase(args[1]) || GRADIENT_NAMES[i].equalsIgnoreCase(args[1])) {
-                setGradient(p, id, GRADIENT_RGB[i][0], GRADIENT_RGB[i][1], GRADIENT_NAMES[i]);
+                setGradient(p, id, GRADIENT_IDS[i], GRADIENT_NAMES[i]);
                 return;
             }
         }
