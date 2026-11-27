@@ -59,8 +59,10 @@ final class SocialModule implements Listener {
 
     private void applyDisplay(Player player) {
         player.setDisplayName(player.getName());
-        player.setNameTag(prefix(player) + " §f" + player.getName());
+        player.setNameTag(prefix(player) + " " + plugin.clans().tag(player) + " §f" + player.getName());
     }
+
+    void refreshDisplay(Player player) { applyDisplay(player); }
 
     // ---- Events ----
 
@@ -98,6 +100,7 @@ final class SocialModule implements Listener {
         String line = plugin.getConfig().getString("chat.format", "§8[{prefix}§8] §f{name}§7: §f{message}")
                 .replace("{prefix}", prefix(player))
                 .replace("{name}", player.getName())
+                .replace("{clan}", plugin.clans().tag(player))
                 .replace("{message}", message);
         plugin.getServer().broadcastMessage(line);
     }
