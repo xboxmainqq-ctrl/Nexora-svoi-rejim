@@ -78,6 +78,10 @@ final class ClaimModule implements Listener {
         return store.cfg.exists("trust." + owner + "." + player);
     }
 
+    private boolean isCoOwner(String claimKey, UUID player) {
+        return store.cfg.exists("claims." + claimKey + ".members." + player);
+    }
+
     private String flagValue(String claimKey, String flag) {
         String fallback = switch (flag) {
             case "pvp" -> "allow";
@@ -241,7 +245,8 @@ final class ClaimModule implements Listener {
         }
         String claimKey = claimKeyAt(level, x, z);
         String owner = claimKey.isEmpty() ? "" : ownerOf(claimKey);
-        if (owner.isEmpty() || owner.equals(player.getUniqueId().toString())) return true;
+        if (owner.isEmpty() || owner.equals(player.getUniqueId().toString())
+                || isCoOwner(claimKey, player.getUniqueId())) return true;
         if (isTrusted(owner, player.getUniqueId())) return true;
         warn(player, "§cЭта территория принадлежит §e"
                 + store.cfg.getString("claims." + claimKey + ".ownerName", "другому игроку") + "§c.");
@@ -430,6 +435,14 @@ final class ClaimModule implements Listener {
             expand(player, java.util.Arrays.copyOfRange(args, 1, args.length));
             return true;
         }
+        if (args[0].equalsIgnoreCase("transfer")) {
+            transfer(player, java.util.Arrays.copyOfRange(args, 1, args.length));
+            return true;
+        }
+        if (args[0].equalsIgnoreCase("coowner") || args[0].equalsIgnoreCase("member")) {
+            manageCoOwner(player, java.util.Arrays.copyOfRange(args, 1, args.length));
+            return true;
+        }
         if (args[0].equalsIgnoreCase("wand")) {
             player.getInventory().addItem(Item.get(271, 0, 1));
             player.sendMessage(PREFIX + "§aТопор выделения: §eЛКМ §7— точка 1, §eПКМ §7— точка 2.");
@@ -461,7 +474,8 @@ final class ClaimModule implements Listener {
         NEXORASurvival.choose(player, "§l§6NEXORA • РЕГИОНЫ",
                 "§7Выдели территорию деревянным топором: ЛКМ — точка 1, ПКМ — точка 2.",
                 List.of("§aСоздать регион по выделению", "§cСнять приват здесь", "§bИнформация",
-                        "§eМои регионы", "§dДоверенные игроки", "§6Расширить регион", "§7Инструкция"),
+                        "§eМои регионы", "§dДоверенные игроки", "§6Расширить регион",
+                        "§bСовладельцы и передача", "§7Инструкция"),
                 index -> {
                     switch (index) {
                         case 0 -> claim(player, new String[0]);
@@ -475,7 +489,13 @@ final class ClaimModule implements Listener {
                             player.sendMessage("§7Цена: §e" + plugin.getConfig().getLong("claims.expand-price-per-block", 2L)
                                     + " §7монет за каждый добавленный блок.");
                         }
-                        case 6 -> help(player);
+                        case 6 -> {
+                            player.sendMessage(PREFIX + "§e/rg coowner add <игрок> §7— добавить совладельца текущего региона.");
+                            player.sendMessage(PREFIX + "§e/rg coowner remove <игрок> §7— убрать совладельца.");
+                            player.sendMessage(PREFIX + "§e/rg coowner list §7— список совладельцев.");
+                            player.sendMessage(PREFIX + "§e/rg transfer <игрок> §7— передать регион.");
+                        }
+                        case 7 -> help(player);
                     }
                 });
     }
@@ -527,6 +547,10 @@ final class ClaimModule implements Listener {
         player.sendMessage("§e/rg flag §8— §7список флагов и их описание");
         player.sendMessage("§e/rg flag <флаг> <allow|deny> §8— §7настроить флаг региона");
         player.sendMessage("§e/rg expand <north|south|east|west> <блоки> §8— §7расширить регион за монеты");
+        player.sendMessage("§e/rg transfer <игрок> §8— §7передать регион новому владельцу");
+        player.sendMessage("§e/rg coowner add <игрок> §8— §7добавить совладельца текущего региона");
+        player.sendMessage("§e/rg coowner remove <игрок> §8— §7убрать совладельца");
+        player.sendMessage("§e/rg coowner list §8— §7список совладельцев");
     }
 
     private void claim(Player player, String[] args) {
@@ -680,6 +704,106 @@ final class ClaimModule implements Listener {
                 + "§a. Стоимость: " + plugin.economy().money(NEXORASurvival.isAdmin(player) ? 0L : price) + "§a.");
     }
 
+    private void transfer(Player player, String[] args) {
+        if (args.length < 1) {
+            player.sendMessage(PREFIX + "§e/rg transfer <игрок>");
+            return;
+        }
+        String id = claimKeyAt(player.getLevel(), player.getFloorX(), player.getFloorZ());
+        if (id.isEmpty()) {
+            player.sendMessage(PREFIX + "§cВстань внутрь региона, который хочешь передать.");
+            return;
+        }
+        if (!ownerOf(id).equals(player.getUniqueId().toString()) && !NEXORASurvival.isAdmin(player)) {
+            player.sendMessage(PREFIX + "§cПередать регион может только его владелец или администратор.");
+            return;
+        }
+        Player target = plugin.getServer().getPlayer(args[0]);
+        if (target == null) {
+            player.sendMessage(PREFIX + "§cИгрок должен быть онлайн, чтобы передать ему регион.");
+            return;
+        }
+        if (target.getUniqueId().equals(player.getUniqueId())) {
+            player.sendMessage(PREFIX + "§cТы уже владелец этого региона.");
+            return;
+        }
+        String base = "claims." + id;
+        store.cfg.set(base + ".owner", target.getUniqueId().toString());
+        store.cfg.set(base + ".ownerName", target.getName());
+        store.cfg.remove(base + ".members." + target.getUniqueId());
+        store.touch();
+        player.sendMessage(PREFIX + "§aРегион §f" + store.cfg.getString(base + ".name", "region")
+                + " §aпередан игроку §f" + target.getName() + "§a.");
+        target.sendMessage(PREFIX + "§aТеперь ты владелец региона §f"
+                + store.cfg.getString(base + ".name", "region") + "§a.");
+    }
+
+    private void manageCoOwner(Player player, String[] args) {
+        String id = claimKeyAt(player.getLevel(), player.getFloorX(), player.getFloorZ());
+        if (id.isEmpty()) {
+            player.sendMessage(PREFIX + "§cВстань внутрь своего региона.");
+            return;
+        }
+        if (!ownerOf(id).equals(player.getUniqueId().toString()) && !NEXORASurvival.isAdmin(player)) {
+            player.sendMessage(PREFIX + "§cУправлять совладельцами может только владелец или администратор.");
+            return;
+        }
+        String base = "claims." + id + ".members";
+        String action = args.length == 0 ? "list" : args[0].toLowerCase(Locale.ROOT);
+        if (action.equals("list")) {
+            List<String> names = new ArrayList<>();
+            for (String uuid : store.cfg.getSection(base).getKeys(false)) {
+                names.add(store.cfg.getString(base + "." + uuid, uuid));
+            }
+            player.sendMessage(PREFIX + "§bСовладельцы региона: §f"
+                    + (names.isEmpty() ? "нет" : String.join("§7, §f", names)));
+            return;
+        }
+        if (!action.equals("add") && !action.equals("remove")) {
+            player.sendMessage(PREFIX + "§e/rg coowner <add|remove|list> [игрок]");
+            return;
+        }
+        if (args.length < 2) {
+            player.sendMessage(PREFIX + "§e/rg coowner " + action + " <игрок>");
+            return;
+        }
+        Player target = plugin.getServer().getPlayer(args[1]);
+        if (target == null) {
+            player.sendMessage(PREFIX + "§cИгрок должен быть онлайн.");
+            return;
+        }
+        if (target.getUniqueId().equals(player.getUniqueId())
+                || target.getUniqueId().toString().equals(ownerOf(id))) {
+            player.sendMessage(PREFIX + "§cНельзя добавить владельца в совладельцы.");
+            return;
+        }
+        String memberPath = base + "." + target.getUniqueId();
+        if (action.equals("add")) {
+            if (store.cfg.exists(memberPath)) {
+                player.sendMessage(PREFIX + "§eЭтот игрок уже совладелец.");
+                return;
+            }
+            if (store.cfg.getSection(base).getKeys(false).size() >= 10) {
+                player.sendMessage(PREFIX + "§cВ одном регионе может быть не больше 10 совладельцев.");
+                return;
+            }
+            store.cfg.set(memberPath, target.getName());
+            store.touch();
+            player.sendMessage(PREFIX + "§a" + target.getName() + " добавлен в совладельцы региона.");
+            target.sendMessage(PREFIX + "§aТебя назначили совладельцем региона §f"
+                    + store.cfg.getString("claims." + id + ".name", "region") + "§a.");
+        } else {
+            if (!store.cfg.exists(memberPath)) {
+                player.sendMessage(PREFIX + "§cЭтот игрок не является совладельцем.");
+                return;
+            }
+            store.cfg.remove(memberPath);
+            store.touch();
+            player.sendMessage(PREFIX + "§e" + target.getName() + " больше не совладелец региона.");
+            target.sendMessage(PREFIX + "§cТвои права совладельца региона отозваны.");
+        }
+    }
+
     private void unclaim(Player player) {
         Level level = player.getLevel();
         String claimKey = claimKeyAt(level, player.getFloorX(), player.getFloorZ());
@@ -784,7 +908,13 @@ final class ClaimModule implements Listener {
         for (String id : store.cfg.getSection("trust." + owner).getKeys(false)) {
             names.add(store.cfg.getString("trust." + owner + "." + id, "?"));
         }
-        player.sendMessage(PREFIX + "§7Хозяин: §f" + store.cfg.getString("claims." + claimKey + ".ownerName", "?")
-                + (names.isEmpty() ? "" : "\n§7Доверенные: §f" + String.join("§7, §f", names)));
+        List<String> members = new ArrayList<>();
+        for (String uuid : store.cfg.getSection("claims." + claimKey + ".members").getKeys(false)) {
+            members.add(store.cfg.getString("claims." + claimKey + ".members." + uuid, uuid));
+        }
+        player.sendMessage(PREFIX + "§7Регион: §f" + store.cfg.getString("claims." + claimKey + ".name", "region"));
+        player.sendMessage("§7Хозяин: §f" + store.cfg.getString("claims." + claimKey + ".ownerName", "?"));
+        if (!members.isEmpty()) player.sendMessage("§bСовладельцы: §f" + String.join("§7, §f", members));
+        if (!names.isEmpty()) player.sendMessage("§7Доверенные: §f" + String.join("§7, §f", names));
     }
 }
