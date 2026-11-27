@@ -212,6 +212,10 @@ final class GearModule implements Listener {
         menu.addListener(event -> {
             event.setCancelled();
             int slot = event.getAction().getSlot();
+            if (slot < 10 || slot > 16) {
+                if (slot == 22) player.removeWindow(menu);
+                return;
+            }
             player.removeWindow(menu);
             openChestLater(player, () -> {
                 switch (slot) {
@@ -222,7 +226,6 @@ final class GearModule implements Listener {
                     case 14 -> openShopItemCategory(player, BLOCKS, "§6БЛОКИ");
                     case 15 -> openShopItemCategory(player, FARMING, "§aФЕРМА");
                     case 16 -> openShopItemCategory(player, MATERIALS, "§dРЕСУРСЫ");
-                    default -> { }
                 }
             });
         });
@@ -249,18 +252,13 @@ final class GearModule implements Listener {
         menu.addListener(event -> {
             event.setCancelled();
             int slot = event.getAction().getSlot();
+            int index = slotIndex(slot);
+            if (slot != 18 && slot != 26 && (index < 0 || index >= items.size())) return;
             player.removeWindow(menu);
+            if (slot == 26) return;
             openChestLater(player, () -> {
-                if (slot == 18) {
-                    openRoot(player);
-                    return;
-                }
-                int index = slotIndex(slot);
-                if (index >= 0 && index < items.size()) {
-                    purchaseShopItem(player, items.get(index), items, title);
-                } else if (slot != 26) {
-                    openShopItemCategory(player, items, title);
-                }
+                if (slot == 18) openRoot(player);
+                else purchaseShopItem(player, items.get(index), items, title);
             });
         });
         player.addWindow(menu);
@@ -286,15 +284,13 @@ final class GearModule implements Listener {
         menu.addListener(event -> {
             event.setCancelled();
             int slot = event.getAction().getSlot();
+            int index = slotIndex(slot);
+            if (slot != 18 && slot != 26 && (index < 0 || index >= items.size())) return;
             player.removeWindow(menu);
+            if (slot == 26) return;
             openChestLater(player, () -> {
-                if (slot == 18) {
-                    openRoot(player);
-                    return;
-                }
-                int index = slotIndex(slot);
-                if (index >= 0 && index < items.size()) purchase(player, items.get(index), items, armor);
-                else if (slot != 26) openShopGearCategory(player, items, armor);
+                if (slot == 18) openRoot(player);
+                else purchase(player, items.get(index), items, armor);
             });
         });
         player.addWindow(menu);
