@@ -78,6 +78,16 @@ public final class NEXORASurvival extends PluginBase {
                 || gear.handle(sender, name, args);
     }
 
+    /** Public economy bridge used by optional companion plugins such as NEXORA_Seller. */
+    public long getBalance(java.util.UUID id) {
+        return economy.balance(id);
+    }
+
+    /** Credits a player's shared Survival balance. */
+    public void deposit(java.util.UUID id, long amount) {
+        economy.deposit(id, amount);
+    }
+
     EconomyModule economy() { return economy; }
     TeleportModule teleports() { return teleports; }
     SocialModule social() { return social; }
