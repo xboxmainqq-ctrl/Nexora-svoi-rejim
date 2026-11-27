@@ -60,25 +60,7 @@ chat:
   enabled: true
   format: "§8[§r{prefix}§8] {clan} §f{name}§7: §f{message}"
 
-default-rank: player
-ranks:
-  player: {prefix: "§7Игрок", homes: 3, kits: [start, daily]}
-  aurvex: {prefix: "§bAURVEX", label: "AURVEX", homes: 4, kits: [start, daily, vip]}
-  zyreth: {prefix: "§dZYRETH", label: "ZYRETH", homes: 5, kits: [start, daily, vip]}
-  veloria: {prefix: "§5VELORIA", label: "VELORIA", homes: 6, kits: [start, daily, vip]}
-  kryon: {prefix: "§bKRYON", label: "KRYON", homes: 7, kits: [start, daily, vip]}
-  nymeris: {prefix: "§6NYMERIS", label: "NYMERIS", homes: 8, kits: [start, daily, vip]}
-  solvex: {prefix: "§dSOLVEX", label: "SOLVEX", homes: 10, kits: [start, daily, vip]}
-  eclyra: {prefix: "§5ECLYRA", label: "ECLYRA", homes: 12, kits: [start, daily, vip]}
-  nexorion: {prefix: "§6NEXORION", label: "NEXORION", homes: 16, kits: [start, daily, vip]}
-
-  # Staff ranks have their own metallic gradients and are not listed in /donate.
-  helper: {prefix: "§bХелпер", label: "ХЕЛПЕР", homes: 3, kits: [start, daily]}
-  junior_moder: {prefix: "§bМладший модератор", label: "МЛАДШИЙ МОДЕРАТОР", homes: 3, kits: [start, daily]}
-  moder: {prefix: "§dМодератор", label: "МОДЕРАТОР", homes: 10, kits: [start, daily, vip]}
-  senior_moder: {prefix: "§cСтарший модератор", label: "СТАРШИЙ МОДЕРАТОР", homes: 10, kits: [start, daily, vip]}
-  admin: {prefix: "§6Администратор", label: "АДМИНИСТРАТОР", homes: 20, kits: [start, daily, vip]}
-  chief_admin: {prefix: "§eГлавный администратор", label: "ГЛАВНЫЙ АДМИНИСТРАТОР", homes: 20, kits: [start, daily, vip]}
+# Ранги и привилегии находятся в отдельных плагинах NEXORA_Donate и NEXORA_AdminRanks.
 
 start-kit-on-first-join: true
 kits:
