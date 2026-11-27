@@ -92,6 +92,7 @@ final class RankBridge {
                 case "premium" -> "veloria";
                 case "elite" -> "solvex";
                 case "legend" -> "nexorion";
+                case "chief_admin" -> "staff";
                 default -> old;
             };
             if (old.isEmpty() || old.equals("player")) continue;
@@ -116,7 +117,7 @@ final class RankBridge {
 
     private boolean isStaff(String id) {
         return switch (id) {
-            case "helper", "junior_moder", "moder", "senior_moder", "admin", "chief_admin" -> true;
+            case "helper", "junior_moder", "moder", "senior_moder", "admin", "staff", "chief_admin" -> true;
             default -> false;
         };
     }
