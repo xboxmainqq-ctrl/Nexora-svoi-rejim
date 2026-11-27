@@ -649,6 +649,9 @@ def main():
     glyph_source = ROOT / "font"
     glyph_target = ROOT / "textures" / "font"
     glyph_target.mkdir(parents=True, exist_ok=True)
+    # Drop sheets from older builds (rank glyphs used to spill into F8/F9) so they are not packed.
+    for old_sheet in glyph_target.glob("glyph_*.png"):
+        old_sheet.unlink()
     for glyph_sheet in glyph_source.glob("glyph_*.png"):
         copy2(glyph_sheet, glyph_target / glyph_sheet.name)
     # glyph_E2.png remains reserved for the existing rarity labels.

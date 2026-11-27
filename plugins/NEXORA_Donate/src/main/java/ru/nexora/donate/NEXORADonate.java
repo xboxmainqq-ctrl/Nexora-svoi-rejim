@@ -7,20 +7,42 @@ import cn.nukkit.form.element.ElementButton;
 import cn.nukkit.form.handler.FormResponseHandler;
 import cn.nukkit.form.window.FormWindowSimple;
 import cn.nukkit.plugin.Plugin;
-import cn.nukkit.plugin.Plugin;
 import cn.nukkit.plugin.PluginBase;
 import cn.nukkit.utils.Config;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.UUID;
 
 public final class NEXORADonate extends PluginBase {
     private static final String PREFIX = "§8[§dNEXORA§8] §r";
     private static final int GLYPH_BASE = 0xF750;
-    private static final int GRADIENT_STEPS = 5;
+
+    /**
+     * Privilege id and the label baked into the resource-pack font, in glyph order. Must match
+     * RANKS in resource-pack/tools/make_rank_gradient_font.py (verify_rank_glyph_map.py checks it).
+     * Offsets are cumulative letter counts, so these 8 ranks use glyphs 0..50 (NEXORA_AdminRanks continues at 51).
+     */
+    private static final String[][] GLYPH_TABLE = {
+            {"aurvex", "AURVEX"}, {"zyreth", "ZYRETH"}, {"veloria", "VELORIA"}, {"kryon", "KRYON"},
+            {"nymeris", "NYMERIS"}, {"solvex", "SOLVEX"}, {"eclyra", "ECLYRA"}, {"nexorion", "NEXORION"},
+    };
+    private static final Map<String, String> GLYPH_LABELS = new LinkedHashMap<>();
+    private static final Map<String, Integer> GLYPH_OFFSETS = new LinkedHashMap<>();
+
+    static {
+        int offset = 0;
+        for (String[] row : GLYPH_TABLE) {
+            GLYPH_LABELS.put(row[0], row[1]);
+            GLYPH_OFFSETS.put(row[0], offset);
+            offset += row[1].replace(" ", "").length();
+        }
+    }
+
     private Config ranks;
 
     @Override
@@ -124,27 +146,22 @@ public final class NEXORADonate extends PluginBase {
         player.showFormWindow(form);
     }
 
+    /** One glyph per letter (U+F750 + offset + position); the gradient is baked into the font. */
     private String gradientText(String value, String id) {
+        String key = id.toLowerCase(Locale.ROOT);
+        Integer offset = GLYPH_OFFSETS.get(key);
+        if (offset == null) return value;
+        // The built-in label is what the font was drawn for; config text cannot shift the glyphs.
+        String label = GLYPH_LABELS.get(key);
         StringBuilder out = new StringBuilder();
-        int offset = rankOffset(id);
-        int count = value.replace(" ", "").length(), position = 0;
-        for (int i = 0; i < value.length(); i++) {
-            char ch = value.charAt(i);
+        int position = 0;
+        for (int i = 0; i < label.length(); i++) {
+            char ch = label.charAt(i);
             if (ch == ' ') { out.append(' '); continue; }
-            if (offset < 0) { out.append(ch); continue; }
-            int step = count <= 1 ? 0 : (int)Math.round((double)position * (GRADIENT_STEPS - 1) / (count - 1));
-            out.appendCodePoint(GLYPH_BASE + offset + position * GRADIENT_STEPS + step);
+            out.appendCodePoint(GLYPH_BASE + offset + position);
             position++;
         }
         return out.toString();
-    }
-
-    private int rankOffset(String id) {
-        return switch (id.toLowerCase(Locale.ROOT)) {
-            case "aurvex" -> 0; case "zyreth" -> 30; case "veloria" -> 60;
-            case "kryon" -> 95; case "nymeris" -> 120; case "solvex" -> 155;
-            case "eclyra" -> 185; case "nexorion" -> 215; default -> -1;
-        };
     }
 
     public String getRankId(UUID id) {

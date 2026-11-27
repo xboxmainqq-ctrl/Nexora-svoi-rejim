@@ -3,11 +3,15 @@ on:
   push:
     paths:
       - "plugins/NEXORA_Beasts/**"
+      - "plugins/NEXORA_Donate/**"
+      - "plugins/NEXORA_AdminRanks/**"
       - "resource-pack/**"
       - ".github/workflows/beasts.yml"
   pull_request:
     paths:
       - "plugins/NEXORA_Beasts/**"
+      - "plugins/NEXORA_Donate/**"
+      - "plugins/NEXORA_AdminRanks/**"
       - "resource-pack/**"
       - ".github/workflows/beasts.yml"
   workflow_dispatch:
@@ -32,6 +36,9 @@ jobs:
         run: python3 -m pip install Pillow
       - name: Build NEXORA_Beasts Resource Pack
         run: python3 resource-pack/build_pack.py
+      - name: Verify rank glyph map matches the plugins
+        working-directory: resource-pack/tools
+        run: python3 verify_rank_glyph_map.py
       - name: Validate Bedrock resource pack
         run: |
           python3 - <<'PY'
@@ -120,7 +127,7 @@ jobs:
                           "circle_tri", "circle_tri_inv", "circle_hex", "circle_star",
                           "circle_oct", "circle_sun", "circle_flower"):
                   required.add(f"textures/particle/nexora_{tex}.png")
-              required |= {f"textures/font/glyph_{page:02X}.png" for page in range(0xE3, 0xFA)}
+              required |= {f"textures/font/glyph_{page:02X}.png" for page in range(0xE3, 0xF8)}
               missing = required - names
               if missing:
                   raise SystemExit(f"Missing pack files: {sorted(missing)}")
