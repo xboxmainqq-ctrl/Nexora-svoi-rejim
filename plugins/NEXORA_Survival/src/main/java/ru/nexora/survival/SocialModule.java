@@ -34,6 +34,14 @@ final class SocialModule implements Listener {
 
     String rankId(UUID id) {
         String rank = ranks.cfg.getString("players." + id, "");
+        // Migrate old public rank IDs to the new NEXORA names without resetting players.
+        rank = switch (rank.toLowerCase(Locale.ROOT)) {
+            case "vip" -> "aurvex";
+            case "premium" -> "veloria";
+            case "elite" -> "solvex";
+            case "legend" -> "nexorion";
+            default -> rank;
+        };
         if (!rank.isEmpty() && plugin.getConfig().exists("ranks." + rank + ".prefix")) return rank;
         return plugin.getConfig().getString("default-rank", "player");
     }
