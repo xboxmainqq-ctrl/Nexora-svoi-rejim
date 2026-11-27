@@ -110,6 +110,9 @@ final class ClaimModule implements Listener {
      * from moving blocks or fluids across a protected border.
      */
     private String protectionDomain(Level level, int x, int z) {
+        // Some Nukkit-MOT liquid updates create transient Block objects without a Level.
+        // Treat those as wilderness instead of allowing an event-handler NPE.
+        if (level == null) return "";
         if (plugin.teleports().inSpawnProtection(level, x, z)) return "spawn";
         return ownerOf(key(level, x >> 4, z >> 4));
     }
@@ -158,6 +161,7 @@ final class ClaimModule implements Listener {
     public void onLiquidFlow(BlockFromToEvent event) {
         Block from = event.getFrom();
         Block to = event.getTo();
+        if (from == null || to == null) return;
         String sourceDomain = protectionDomain(from.getLevel(), from.getFloorX(), from.getFloorZ());
         String targetDomain = protectionDomain(to.getLevel(), to.getFloorX(), to.getFloorZ());
         if (!sourceDomain.equals(targetDomain)
@@ -306,7 +310,16 @@ final class ClaimModule implements Listener {
                 plugin.getServer().getScheduler().scheduleDelayedTask(action, 1);
             }
         });
-        player.addWindow(menu);
+        // Open on the next tick so Nukkit has finished processing the command packet.
+        plugin.getServer().getScheduler().scheduleDelayedTask(plugin, () -> {
+            if (!player.isOnline()) return;
+            try {
+                player.addWindow(menu);
+            } catch (RuntimeException error) {
+                plugin.getLogger().error("Не удалось открыть chest-меню /rg для " + player.getName(), error);
+                player.sendMessage(PREFIX + "§cНе удалось открыть сундук-меню. Используй §e/rg help§c.");
+            }
+        }, 1);
     }
 
     private void openUnclaimConfirm(Player player) {
