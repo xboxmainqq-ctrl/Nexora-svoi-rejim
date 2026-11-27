@@ -35,7 +35,7 @@ public final class NEXORAAdminRanks extends PluginBase {
         }
         if (args.length < 2) {
             sender.sendMessage("§e/adminrank <игрок> <ранг|remove>");
-            sender.sendMessage("§7Ранги: helper, junior_moder, moder, senior_moder, admin, chief_admin");
+            sender.sendMessage("§7Ранги: helper, junior_moder, moder, senior_moder, admin, staff");
             return true;
         }
         Player target = getServer().getPlayer(args[0]);
@@ -59,6 +59,7 @@ public final class NEXORAAdminRanks extends PluginBase {
 
     public String getAdminRankId(UUID id) {
         String rank = ranks.getString("players." + id, "");
+        if (rank.equalsIgnoreCase("chief_admin")) rank = "staff";
         return getConfig().exists("ranks." + rank + ".label") ? rank : "";
     }
 
@@ -88,7 +89,7 @@ public final class NEXORAAdminRanks extends PluginBase {
             case "moder" -> 219;
             case "senior_moder" -> 246;
             case "admin" -> 294;
-            case "chief_admin" -> 333;
+            case "staff" -> 585;
             default -> -1;
         };
         return offset < 0 ? label : gradient(label, offset);
