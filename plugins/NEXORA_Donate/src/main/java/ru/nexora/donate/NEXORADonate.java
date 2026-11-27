@@ -25,8 +25,7 @@ public final class NEXORADonate extends PluginBase {
     @Override
     public void onEnable() {
         saveDefaultConfig();
-        getLogger().info("Каталог привилегий NEXORA_Donate загружен. Покупка: "
-                + (getConfig().getBoolean("purchase-enabled", false) ? "включена" : "пока отключена"));
+        getLogger().info("Каталог уникальных привилегий NEXORA загружен.");
     }
 
     @Override
@@ -43,7 +42,7 @@ public final class NEXORADonate extends PluginBase {
     private List<String> privilegeIds() {
         List<String> result = new ArrayList<>();
         for (String id : getConfig().getStringList("display-order")) {
-            if (getConfig().exists("privileges." + id + ".name")) result.add(id);
+            if (getConfig().exists("privileges." + id + ".label")) result.add(id);
         }
         return result;
     }
@@ -55,15 +54,15 @@ public final class NEXORADonate extends PluginBase {
             return;
         }
         FormWindowSimple form = new FormWindowSimple(
-                getConfig().getString("title", "§l§0NEXORA DONATE"),
-                getConfig().getString("subtitle", "§7Выбери привилегию:"));
+                getConfig().getString("title", "§l§0NEXORA"),
+                getConfig().getString("subtitle", "§7Выбери привилегию NEXORA:"));
         for (String id : ids) {
             String base = "privileges." + id;
             String label = getConfig().getString(base + ".label", id.toUpperCase(Locale.ROOT));
             String gradient = getConfig().getString(base + ".gradient", "ocean");
-            String preview = gradientText(label, gradient);
             String subtitle = getConfig().getString(base + ".short", "");
-            form.addButton(new ElementButton(preview + (subtitle.isEmpty() ? "" : "\n" + subtitle)));
+            form.addButton(new ElementButton(gradientText(label, gradient)
+                    + (subtitle.isEmpty() ? "" : "\n§8" + subtitle)));
         }
         form.addButton(new ElementButton("§c✕ ЗАКРЫТЬ"));
         form.addHandler(FormResponseHandler.withoutPlayer(ignored -> {
@@ -76,26 +75,26 @@ public final class NEXORADonate extends PluginBase {
 
     private void openDetails(Player player, String id) {
         String base = "privileges." + id;
-        if (!getConfig().exists(base + ".name")) {
+        if (!getConfig().exists(base + ".label")) {
             openCatalog(player);
             return;
         }
         StringBuilder body = new StringBuilder();
         body.append(getConfig().getString(base + ".description", "§7Описание скоро появится.")).append("\n\n");
-        body.append("§l§fПРЕИМУЩЕСТВА\n");
+        body.append("§l§fОСОБЕННОСТИ ПРИВИЛЕГИИ\n");
         for (String benefit : getConfig().getStringList(base + ".benefits")) {
             body.append(benefit).append("\n");
         }
-        body.append("\n§l§fСТОИМОСТЬ\n").append(getConfig().getString(base + ".price", "§eСкоро на сайте"));
+        body.append("\n§l§fСТОИМОСТЬ\n")
+                .append(getConfig().getString(base + ".price", "§eСкоро на сайте"));
         if (!getConfig().getBoolean("purchase-enabled", false)) {
             body.append("\n\n§8Покупка появится после запуска сайта NEXORA.");
         }
 
         String label = getConfig().getString(base + ".label", id.toUpperCase(Locale.ROOT));
         String gradient = getConfig().getString(base + ".gradient", "ocean");
-        FormWindowSimple form = new FormWindowSimple(
-                gradientText(label, gradient), body.toString());
-        form.addButton(new ElementButton("§a↩ НАЗАД К ПРИВИЛЕГИЯМ"));
+        FormWindowSimple form = new FormWindowSimple(gradientText(label, gradient), body.toString());
+        form.addButton(new ElementButton("§a↩ К СПИСКУ ПРИВИЛЕГИЙ"));
         form.addButton(new ElementButton("§c✕ ЗАКРЫТЬ"));
         form.addHandler(FormResponseHandler.withoutPlayer(ignored -> {
             if (form.wasClosed() || !player.isOnline()) return;
@@ -103,6 +102,7 @@ public final class NEXORADonate extends PluginBase {
         }));
         player.showFormWindow(form);
     }
+
     private String gradientText(String value, String gradientId) {
         int gradient = switch (gradientId.toLowerCase(Locale.ROOT)) {
             case "sunset" -> 0;
@@ -115,20 +115,13 @@ public final class NEXORADonate extends PluginBase {
         int length = value.length();
         for (int i = 0; i < length; i++) {
             char ch = value.charAt(i);
-            if (ch == ' ') {
-                out.append(' ');
-                continue;
-            }
+            if (ch == ' ') { out.append(' '); continue; }
             int charIndex = GLYPH_CHARSET.indexOf(ch);
-            if (charIndex < 0) {
-                out.append(ch);
-                continue;
-            }
+            if (charIndex < 0) { out.append(ch); continue; }
             int step = length <= 1 ? 0 : (int) Math.round((double) i * (GRADIENT_STEPS - 1) / (length - 1));
             int codePoint = GLYPH_BASE + ((gradient * GRADIENT_STEPS + step) * GLYPH_CHARSET.length()) + charIndex;
             out.appendCodePoint(codePoint);
         }
         return out.toString();
     }
-
 }
