@@ -14,6 +14,7 @@ import cn.nukkit.event.block.BlockPlaceEvent;
 import cn.nukkit.event.entity.EntityExplodeEvent;
 import cn.nukkit.event.entity.EntityBlockChangeEvent;
 import cn.nukkit.event.entity.EntityInteractEvent;
+import cn.nukkit.event.entity.EntityDamageByEntityEvent;
 import cn.nukkit.math.BlockFace;
 import cn.nukkit.event.player.PlayerInteractEvent;
 import cn.nukkit.inventory.InventoryHolder;
@@ -75,6 +76,88 @@ final class ClaimModule implements Listener {
 
     private boolean isTrusted(String owner, UUID player) {
         return store.cfg.exists("trust." + owner + "." + player);
+    }
+
+    private String flagValue(String claimKey, String flag) {
+        String fallback = switch (flag) {
+            case "pvp" -> "allow";
+            case "explosions", "fire", "mob-grief" -> "deny";
+            default -> "deny";
+        };
+        return store.cfg.getString("claims." + claimKey + ".flags." + flag, fallback);
+    }
+
+    private boolean flagDeniedAt(Level level, int x, int z, String flag) {
+        if (level == null) return false;
+        if (plugin.teleports().inSpawnProtection(level, x, z)) return true;
+        String id = claimKeyAt(level, x, z);
+        return !id.isEmpty() && "deny".equalsIgnoreCase(flagValue(id, flag));
+    }
+
+    private boolean isClaimOwnerOrAdmin(Player player, String claimKey) {
+        return NEXORASurvival.isAdmin(player)
+                || ownerOf(claimKey).equals(player.getUniqueId().toString());
+    }
+
+    private void showFlagHelp(Player player) {
+        player.sendMessage("§6§l✦ NEXORA • Флаги региона");
+        player.sendMessage("§e/rg flag §7— показать все флаги и их назначение.");
+        player.sendMessage("§e/rg flag PvP deny §7— запретить урон между игроками.");
+        player.sendMessage("§e/rg flag PvP allow §7— разрешить PvP.");
+        player.sendMessage("§e/rg flag explosions deny §7— запретить взрывам ломать блоки.");
+        player.sendMessage("§e/rg flag explosions allow §7— разрешить взрывам ломать блоки.");
+        player.sendMessage("§e/rg flag fire deny §7— запретить огню загораться и распространяться.");
+        player.sendMessage("§e/rg flag fire allow §7— разрешить огонь.");
+        player.sendMessage("§e/rg flag mob-grief deny §7— запретить мобам менять блоки и нажимать плиты.");
+        player.sendMessage("§e/rg flag mob-grief allow §7— разрешить мобам такие взаимодействия.");
+        player.sendMessage("§8Значение deny = запрет, allow = разрешение.");
+        String id = claimKeyAt(player.getLevel(), player.getFloorX(), player.getFloorZ());
+        if (!id.isEmpty()) {
+            player.sendMessage("§aФлаги этого региона: §fPvP=" + flagValue(id, "pvp")
+                    + " §7| §fexplosions=" + flagValue(id, "explosions")
+                    + " §7| §ffire=" + flagValue(id, "fire")
+                    + " §7| §fmob-grief=" + flagValue(id, "mob-grief"));
+        } else {
+            player.sendMessage("§7Встань внутрь своего региона, чтобы изменить его флаги.");
+        }
+    }
+
+    private void setFlag(Player player, String[] args) {
+        if (args.length < 2) {
+            showFlagHelp(player);
+            return;
+        }
+        String flag = args[0].toLowerCase(Locale.ROOT);
+        if (flag.equals("explosion")) flag = "explosions";
+        if (flag.equals("mobgrief") || flag.equals("mob_grief")) flag = "mob-grief";
+        if (!List.of("pvp", "explosions", "fire", "mob-grief").contains(flag)) {
+            player.sendMessage(PREFIX + "§cНеизвестный флаг. Напиши §e/rg flag§c для списка.");
+            return;
+        }
+        String value = args[1].toLowerCase(Locale.ROOT);
+        if (!value.equals("allow") && !value.equals("deny")) {
+            player.sendMessage(PREFIX + "§cИспользование: §e/rg flag " + flag + " allow§c или §e/rg flag " + flag + " deny");
+            return;
+        }
+        String id = claimKeyAt(player.getLevel(), player.getFloorX(), player.getFloorZ());
+        if (id.isEmpty()) {
+            player.sendMessage(PREFIX + "§cТы должен стоять внутри своего региона.");
+            return;
+        }
+        if (!isClaimOwnerOrAdmin(player, id)) {
+            player.sendMessage(PREFIX + "§cМенять флаги может только владелец региона или администратор.");
+            return;
+        }
+        store.cfg.set("claims." + id + ".flags." + flag, value);
+        store.touch();
+        String label = switch (flag) {
+            case "pvp" -> "PvP";
+            case "explosions" -> "Взрывы";
+            case "fire" -> "Огонь";
+            default -> "Взаимодействия мобов";
+        };
+        player.sendMessage(PREFIX + "§aФлаг §f" + label + " §aустановлен: "
+                + (value.equals("deny") ? "§cDENY §7(запрещено)" : "§aALLOW §7(разрешено)") + "§a.");
     }
 
     private String claimKeyAt(Level level, int x, int z) {
@@ -181,10 +264,10 @@ final class ClaimModule implements Listener {
     public void onExplosion(EntityExplodeEvent event) {
         // Keep the explosion itself, but remove every block inside a claim or spawn protection.
         event.getBlockList().removeIf(block ->
-                protectedAt(block.getLevel(), block.getFloorX(), block.getFloorZ()));
+                flagDeniedAt(block.getLevel(), block.getFloorX(), block.getFloorZ(), "explosions"));
         if (event.getIgnitions() != null) {
             event.getIgnitions().removeIf(block ->
-                    protectedAt(block.getLevel(), block.getFloorX(), block.getFloorZ()));
+                    flagDeniedAt(block.getLevel(), block.getFloorX(), block.getFloorZ(), "fire"));
         }
     }
 
@@ -231,8 +314,8 @@ final class ClaimModule implements Listener {
     public void onEntityBlockChange(EntityBlockChangeEvent event) {
         Block from = event.getFrom();
         Block to = event.getTo();
-        if (protectedAt(from.getLevel(), from.getFloorX(), from.getFloorZ())
-                || protectedAt(to.getLevel(), to.getFloorX(), to.getFloorZ())) {
+        if (flagDeniedAt(from.getLevel(), from.getFloorX(), from.getFloorZ(), "mob-grief")
+                || flagDeniedAt(to.getLevel(), to.getFloorX(), to.getFloorZ(), "mob-grief")) {
             event.setCancelled(true);
         }
     }
@@ -241,7 +324,7 @@ final class ClaimModule implements Listener {
     @EventHandler
     public void onEntityInteract(EntityInteractEvent event) {
         Block block = event.getBlock();
-        if (block != null && protectedAt(block.getLevel(), block.getFloorX(), block.getFloorZ())) {
+        if (block != null && flagDeniedAt(block.getLevel(), block.getFloorX(), block.getFloorZ(), "mob-grief")) {
             event.setCancelled(true);
         }
     }
@@ -249,7 +332,7 @@ final class ClaimModule implements Listener {
     @EventHandler
     public void onFireIgnite(BlockIgniteEvent event) {
         Block block = event.getBlock();
-        if (protectedAt(block.getLevel(), block.getFloorX(), block.getFloorZ())) {
+        if (flagDeniedAt(block.getLevel(), block.getFloorX(), block.getFloorZ(), "fire")) {
             event.setCancelled(true);
         }
     }
@@ -257,8 +340,19 @@ final class ClaimModule implements Listener {
     @EventHandler
     public void onFireBurn(BlockBurnEvent event) {
         Block block = event.getBlock();
-        if (protectedAt(block.getLevel(), block.getFloorX(), block.getFloorZ())) {
+        if (flagDeniedAt(block.getLevel(), block.getFloorX(), block.getFloorZ(), "fire")) {
             event.setCancelled(true);
+        }
+    }
+
+    @EventHandler
+    public void onPlayerDamage(EntityDamageByEntityEvent event) {
+        if (!(event.getEntity() instanceof Player victim)
+                || !(event.getDamager() instanceof Player attacker)) return;
+        if (flagDeniedAt(victim.getLevel(), victim.getFloorX(), victim.getFloorZ(), "pvp")
+                || flagDeniedAt(attacker.getLevel(), attacker.getFloorX(), attacker.getFloorZ(), "pvp")) {
+            event.setCancelled(true);
+            warn(attacker, "§cPvP отключено флагом региона.");
         }
     }
 
@@ -321,6 +415,10 @@ final class ClaimModule implements Listener {
         }
         if (args[0].equalsIgnoreCase("help")) {
             help(player);
+            return true;
+        }
+        if (args[0].equalsIgnoreCase("flag")) {
+            setFlag(player, java.util.Arrays.copyOfRange(args, 1, args.length));
             return true;
         }
         if (args[0].equalsIgnoreCase("wand")) {
@@ -411,6 +509,8 @@ final class ClaimModule implements Listener {
         player.sendMessage("§e/rg trust <игрок> §8— §7дать доступ к строительству");
         player.sendMessage("§e/rg untrust <игрок> §8— §7забрать доступ");
         player.sendMessage("§e/rg info §8— §7информация о регионе");
+        player.sendMessage("§e/rg flag §8— §7список флагов и их описание");
+        player.sendMessage("§e/rg flag <флаг> <allow|deny> §8— §7настроить флаг региона");
     }
 
     private void claim(Player player, String[] args) {
