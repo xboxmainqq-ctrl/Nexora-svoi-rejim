@@ -1,0 +1,18 @@
+name: NEXORA_Seller
+main: ru.nexora.seller.NEXORASeller
+version: "1.0.0"
+api: ["1.0.0"]
+author: NEXORA
+description: "Отдельный плагин скупщика ресурсов для NEXORA"
+softdepend: ["NEXORA_Survival"]
+commands:
+  sell:
+    description: Открыть меню скупщика или продать предметы
+    usage: "/sell [hand|all]"
+  seller:
+    description: Открыть меню скупщика
+    usage: "/seller"
+    aliases: ["sellmenu"]
+  prices:
+    description: Посмотреть цены скупщика
+    usage: "/prices"
