@@ -1,0 +1,15 @@
+name: NEXORA_RealisticWorldGen
+main: ru.nexora.worldgen.NexoraWorldGenPlugin
+version: "0.1.0"
+api: ["1.0.0"]
+load: POSTWORLD
+author: NEXORA
+description: Realistic terrain generator for Nukkit-MOT
+commands:
+  worldgen:
+    description: Create a world using the NEXORA generator
+    usage: "/worldgen create <name> [seed]"
+    permission: nexora.worldgen.create
+permissions:
+  nexora.worldgen.create:
+    default: op
