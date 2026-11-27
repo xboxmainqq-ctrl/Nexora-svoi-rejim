@@ -78,7 +78,7 @@ final class GearModule implements Listener {
     }
 
     boolean handle(CommandSender sender, String command, String[] args) {
-        if (!command.equals("arsenal") && !command.equals("gear")) return false;
+        if (!command.equals("weapons") && !command.equals("gear")) return false;
         if (command.equals("gear")) {
             if (!NEXORASurvival.isAdmin(sender)) {
                 sender.sendMessage(PREFIX + "§cНедостаточно прав.");
@@ -95,7 +95,7 @@ final class GearModule implements Listener {
             }
             Gear gear = find(args[2]);
             if (gear == null) {
-                sender.sendMessage(PREFIX + "§cНеизвестный ID. Посмотри список в /arsenal.");
+                sender.sendMessage(PREFIX + "§cНеизвестный ID. Посмотри список в /weapons.");
                 return true;
             }
             deliver(target, gear);
@@ -126,12 +126,22 @@ final class GearModule implements Listener {
                         + "\n§7Выбери категорию:");
         form.addButton(new ElementButton("§l§c⚔ ОРУЖИЕ\n§8Клинки, топоры, луки и посохи"));
         form.addButton(new ElementButton("§l§b✥ БРОНЯ\n§8Пять алмазных комплектов с разной защитой"));
-        form.addButton(new ElementButton("§l§7⛏ ДОБЫЧА\n§8Кирки"));\n        form.addButton(new ElementButton("§l§6⚒ ЛЕСОРУБ\n§8Топоры"));\n        form.addButton(new ElementButton("§l§e▰ ЗЕМЛЕКОП\n§8Лопаты"));\n        form.addButton(new ElementButton("§l§a♣ ФЕРМА\n§8Мотыги"));\n        form.addButton(new ElementButton("§l§b✦ ИНСТРУМЕНТЫ\n§8Ножницы, удочка, огниво"));\n        form.addButton(new ElementButton("§7Закрыть"));
+        form.addButton(new ElementButton("§l§7⛏ ДОБЫЧА\n§8Кирки"));
+        form.addButton(new ElementButton("§l§6⚒ ЛЕСОРУБ\n§8Топоры"));
+        form.addButton(new ElementButton("§l§e▰ ЗЕМЛЕКОП\n§8Лопаты"));
+        form.addButton(new ElementButton("§l§a♣ ФЕРМА\n§8Мотыги"));
+        form.addButton(new ElementButton("§l§b✦ ИНСТРУМЕНТЫ\n§8Ножницы, удочка, огниво"));
+        form.addButton(new ElementButton("§7Закрыть"));
         form.addHandler(FormResponseHandler.withoutPlayer(ignored -> {
             if (form.wasClosed()) return;
             int selected = form.getResponse().getClickedButtonId();
             if (selected == 0) openList(player, WEAPONS, false);
-            if (selected == 1) openList(player, ARMOR, true);\n            if (selected == 2) openList(player, MINING_TOOLS, false);\n            if (selected == 3) openList(player, WOOD_TOOLS, false);\n            if (selected == 4) openList(player, DIGGING_TOOLS, false);\n            if (selected == 5) openList(player, FARM_TOOLS, false);\n            if (selected == 6) openList(player, UTILITY_TOOLS, false);
+            if (selected == 1) openList(player, ARMOR, true);
+            if (selected == 2) openList(player, MINING_TOOLS, false);
+            if (selected == 3) openList(player, WOOD_TOOLS, false);
+            if (selected == 4) openList(player, DIGGING_TOOLS, false);
+            if (selected == 5) openList(player, FARM_TOOLS, false);
+            if (selected == 6) openList(player, UTILITY_TOOLS, false);
         }));
         player.showFormWindow(form);
     }
