@@ -83,12 +83,12 @@ public final class NEXORAAdminRanks extends PluginBase {
         if (rank.isEmpty()) return "";
         String label = getConfig().getString("ranks." + rank + ".label", "");
         int offset = switch (rank) {
-            case "helper" -> 171;
-            case "junior_moder" -> 189;
-            case "moder" -> 237;
-            case "senior_moder" -> 264;
-            case "admin" -> 312;
-            case "chief_admin" -> 351;
+            case "helper" -> 153;
+            case "junior_moder" -> 171;
+            case "moder" -> 219;
+            case "senior_moder" -> 246;
+            case "admin" -> 294;
+            case "chief_admin" -> 333;
             default -> -1;
         };
         return offset < 0 ? label : gradient(label, offset);
