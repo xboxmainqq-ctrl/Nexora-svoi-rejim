@@ -120,7 +120,7 @@ jobs:
                           "circle_tri", "circle_tri_inv", "circle_hex", "circle_star",
                           "circle_oct", "circle_sun", "circle_flower"):
                   required.add(f"textures/particle/nexora_{tex}.png")
-              required |= {f"font/glyph_{page:02X}.png" for page in range(0xE3, 0xF8)}
+              required |= {f"font/glyph_{page:02X}.png" for page in range(0xE3, 0xF9)}
               missing = required - names
               if missing:
                   raise SystemExit(f"Missing pack files: {sorted(missing)}")
