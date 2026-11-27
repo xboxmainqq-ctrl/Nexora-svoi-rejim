@@ -7,35 +7,64 @@ import cn.nukkit.form.element.ElementButton;
 import cn.nukkit.form.handler.FormResponseHandler;
 import cn.nukkit.form.window.FormWindowSimple;
 import cn.nukkit.plugin.PluginBase;
+import cn.nukkit.utils.Config;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.UUID;
 
 public final class NEXORADonate extends PluginBase {
     private static final String PREFIX = "§8[§dNEXORA§8] §r";
-    private static final String GLYPH_CHARSET =
-            "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
-            + "АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ"
-            + "абвгдеёжзийклмнопрстуфхцчшщъыьэюя"
-            + "0123456789_-";
-    private static final int GLYPH_BASE = 0xE300;
-    private static final int GRADIENT_STEPS = 10;
+    private static final int GLYPH_BASE = 0xF750;
+    private static final int GRADIENT_STEPS = 3;
+    private Config ranks;
 
     @Override
     public void onEnable() {
+        if (!getDataFolder().exists()) getDataFolder().mkdirs();
         saveDefaultConfig();
-        getLogger().info("Каталог уникальных привилегий NEXORA загружен.");
+        ranks = new Config(new File(getDataFolder(), "ranks.yml"), Config.YAML);
+        getLogger().info("Каталог и отдельная система донат-привилегий NEXORA загружены.");
     }
 
     @Override
+    public void onDisable() { if (ranks != null) ranks.save(); }
+
+    @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        if (!command.getName().equalsIgnoreCase("donate")) return false;
-        if (!(sender instanceof Player player)) {
-            sender.sendMessage("Команда доступна только игроку.");
+        if (command.getName().equalsIgnoreCase("donate")) {
+            if (!(sender instanceof Player player)) {
+                sender.sendMessage("Команда доступна только игроку."); return true;
+            }
+            openCatalog(player); return true;
+        }
+        if (!command.getName().equalsIgnoreCase("donaterank")) return false;
+        if (!sender.isOp() && !sender.hasPermission("nexora.donate.manage")) {
+            sender.sendMessage("§cНедостаточно прав."); return true;
+        }
+        if (args.length < 2) {
+            sender.sendMessage("§e/donaterank <игрок> <ранг|remove>");
+            sender.sendMessage("§7Ранги: aurvex, zyreth, veloria, kryon, nymeris, solvex, eclyra, nexorion");
             return true;
         }
-        openCatalog(player);
+        Player target = getServer().getPlayer(args[0]);
+        if (target == null) { sender.sendMessage("§cИгрок должен быть онлайн."); return true; }
+        String id = args[1].toLowerCase(Locale.ROOT);
+        if (id.equals("remove") || id.equals("none")) {
+            removeRank(target.getUniqueId());
+            sender.sendMessage("§aДонат-привилегия снята с " + target.getName() + ".");
+            target.sendMessage("§7Твоя донат-привилегия снята.");
+            return true;
+        }
+        if (!getConfig().exists("privileges." + id + ".label")) {
+            sender.sendMessage("§cНеизвестная привилегия. Используй /donaterank для списка.");
+            return true;
+        }
+        setRank(target.getUniqueId(), id);
+        sender.sendMessage("§aВыдана привилегия §f" + id.toUpperCase(Locale.ROOT) + " §aигроку " + target.getName() + ".");
+        target.sendMessage("§aТебе выдана привилегия §f" + id.toUpperCase(Locale.ROOT) + "§a.");
         return true;
     }
 
@@ -50,8 +79,7 @@ public final class NEXORADonate extends PluginBase {
     private void openCatalog(Player player) {
         List<String> ids = privilegeIds();
         if (ids.isEmpty()) {
-            player.sendMessage(PREFIX + "§cКаталог привилегий пока пуст.");
-            return;
+            player.sendMessage(PREFIX + "§cКаталог привилегий пока пуст."); return;
         }
         FormWindowSimple form = new FormWindowSimple(
                 getConfig().getString("title", "§l§0NEXORA"),
@@ -59,7 +87,7 @@ public final class NEXORADonate extends PluginBase {
         for (String id : ids) {
             String base = "privileges." + id;
             String label = getConfig().getString(base + ".label", id.toUpperCase(Locale.ROOT));
-            String gradient = getConfig().getString(base + ".gradient", "ocean");
+            String gradient = getConfig().getString(base + ".gradient", id);
             String subtitle = getConfig().getString(base + ".short", "");
             form.addButton(new ElementButton(gradientText(label, gradient)
                     + (subtitle.isEmpty() ? "" : "\n§8" + subtitle)));
@@ -75,25 +103,16 @@ public final class NEXORADonate extends PluginBase {
 
     private void openDetails(Player player, String id) {
         String base = "privileges." + id;
-        if (!getConfig().exists(base + ".label")) {
-            openCatalog(player);
-            return;
-        }
+        if (!getConfig().exists(base + ".label")) { openCatalog(player); return; }
         StringBuilder body = new StringBuilder();
         body.append(getConfig().getString(base + ".description", "§7Описание скоро появится.")).append("\n\n");
         body.append("§l§fОСОБЕННОСТИ ПРИВИЛЕГИИ\n");
-        for (String benefit : getConfig().getStringList(base + ".benefits")) {
-            body.append(benefit).append("\n");
-        }
-        body.append("\n§l§fСТОИМОСТЬ\n")
-                .append(getConfig().getString(base + ".price", "§eСкоро на сайте"));
-        if (!getConfig().getBoolean("purchase-enabled", false)) {
+        for (String benefit : getConfig().getStringList(base + ".benefits")) body.append(benefit).append("\n");
+        body.append("\n§l§fСТОИМОСТЬ\n").append(getConfig().getString(base + ".price", "§eСкоро на сайте"));
+        if (!getConfig().getBoolean("purchase-enabled", false))
             body.append("\n\n§8Покупка появится после запуска сайта NEXORA.");
-        }
-
         String label = getConfig().getString(base + ".label", id.toUpperCase(Locale.ROOT));
-        String gradient = getConfig().getString(base + ".gradient", "ocean");
-        FormWindowSimple form = new FormWindowSimple(gradientText(label, gradient), body.toString());
+        FormWindowSimple form = new FormWindowSimple(gradientText(label, id), body.toString());
         form.addButton(new ElementButton("§a↩ К СПИСКУ ПРИВИЛЕГИЙ"));
         form.addButton(new ElementButton("§c✕ ЗАКРЫТЬ"));
         form.addHandler(FormResponseHandler.withoutPlayer(ignored -> {
@@ -103,25 +122,59 @@ public final class NEXORADonate extends PluginBase {
         player.showFormWindow(form);
     }
 
-    private String gradientText(String value, String gradientId) {
-        int gradient = switch (gradientId.toLowerCase(Locale.ROOT)) {
-            case "sunset" -> 0;
-            case "ocean" -> 1;
-            case "neon" -> 2;
-            case "royal" -> 3;
-            default -> 1;
-        };
+    private String gradientText(String value, String id) {
         StringBuilder out = new StringBuilder();
-        int length = value.length();
-        for (int i = 0; i < length; i++) {
+        int offset = rankOffset(id);
+        int count = value.replace(" ", "").length(), position = 0;
+        for (int i = 0; i < value.length(); i++) {
             char ch = value.charAt(i);
             if (ch == ' ') { out.append(' '); continue; }
-            int charIndex = GLYPH_CHARSET.indexOf(ch);
-            if (charIndex < 0) { out.append(ch); continue; }
-            int step = length <= 1 ? 0 : (int) Math.round((double) i * (GRADIENT_STEPS - 1) / (length - 1));
-            int codePoint = GLYPH_BASE + ((gradient * GRADIENT_STEPS + step) * GLYPH_CHARSET.length()) + charIndex;
-            out.appendCodePoint(codePoint);
+            if (offset < 0) { out.append(ch); continue; }
+            int step = count <= 1 ? 0 : (int)Math.round((double)position * (GRADIENT_STEPS - 1) / (count - 1));
+            out.appendCodePoint(GLYPH_BASE + offset + position * GRADIENT_STEPS + step);
+            position++;
         }
         return out.toString();
+    }
+
+    private int rankOffset(String id) {
+        return switch (id.toLowerCase(Locale.ROOT)) {
+            case "aurvex" -> 0; case "zyreth" -> 18; case "veloria" -> 36;
+            case "kryon" -> 57; case "nymeris" -> 72; case "solvex" -> 93;
+            case "eclyra" -> 111; case "nexorion" -> 129; default -> -1;
+        };
+    }
+
+    public String getRankId(UUID id) {
+        String rank = ranks.getString("players." + id, "");
+        rank = switch (rank.toLowerCase(Locale.ROOT)) {
+            case "vip" -> "aurvex"; case "premium" -> "veloria";
+            case "elite" -> "solvex"; case "legend" -> "nexorion";
+            default -> rank;
+        };
+        return getConfig().exists("privileges." + rank + ".label") ? rank : "";
+    }
+
+    public void setRank(UUID id, String rank) {
+        ranks.set("players." + id, rank.toLowerCase(Locale.ROOT)); ranks.save();
+    }
+
+    public void removeRank(UUID id) { ranks.remove("players." + id); ranks.save(); }
+
+    public String getPrefix(UUID id) {
+        String rank = getRankId(id);
+        if (rank.isEmpty()) return "";
+        return gradientText(getConfig().getString("privileges." + rank + ".label", ""), rank);
+    }
+
+    public int getHomesLimit(UUID id) {
+        String rank = getRankId(id);
+        if (rank.isEmpty()) return -1;
+        return getConfig().getInt("privileges." + rank + ".homes", 3);
+    }
+
+    public boolean hasKit(UUID id, String kit) {
+        String rank = getRankId(id);
+        return !rank.isEmpty() && getConfig().getStringList("privileges." + rank + ".kits").contains(kit);
     }
 }
