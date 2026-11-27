@@ -98,20 +98,10 @@ final class SocialModule implements Listener {
         Player player = event.getPlayer();
         String message = NEXORASurvival.clean(event.getMessage());
         if (message.isEmpty()) return;
-        // {message} goes last so text typed by a player is never treated as a placeholder.
-        String format = plugin.getConfig().getString("chat.format",
-                "§8[§r{prefix}§8] {clan} §f{name}§7: §f{message}");
-        // Older config.yml files may not have the {clan} placeholder.
-        // Insert it automatically after the rank so clan tags remain visible
-        // without requiring server owners to delete their existing config.
-        if (!format.contains("{clan}")) {
-            format = format.replace("{prefix}", "{prefix} {clan}");
-        }
-        String line = format
-                .replace("{prefix}", prefix(player))
-                .replace("{clan}", plugin.clans().tag(player))
-                .replace("{name}", player.getName())
-                .replace("{message}", message);
+        String rankTag = "§8[§r" + prefix(player) + "§8]";
+        String clanTag = plugin.clans().tag(player);
+        String line = rankTag + (clanTag.isEmpty() ? "" : " " + clanTag)
+                + " §f" + player.getName() + "§7: §f" + message;
         plugin.getServer().broadcastMessage(line);
     }
 
