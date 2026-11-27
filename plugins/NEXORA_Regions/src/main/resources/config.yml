@@ -1,0 +1,7 @@
+regions:
+  claim-limit: 3
+  price: 0
+  expand-price-per-block: 0
+  refund-percent: 0
+spawn-protection:
+  radius: 16
