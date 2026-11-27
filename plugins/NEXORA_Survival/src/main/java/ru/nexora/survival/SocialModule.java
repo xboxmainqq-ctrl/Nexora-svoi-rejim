@@ -104,7 +104,6 @@ final class SocialModule implements Listener {
 
     boolean handle(CommandSender sender, String cmd, String[] args) {
         switch (cmd) {
-            case "rank" -> rank(sender, args);
             case "kit" -> {
                 if (!(sender instanceof Player player)) {
                     sender.sendMessage("§cКоманда доступна только игроку.");
@@ -115,57 +114,6 @@ final class SocialModule implements Listener {
             default -> { return false; }
         }
         return true;
-    }
-
-    private void rank(CommandSender sender, String[] args) {
-        String action = args.length == 0 ? "list" : args[0].toLowerCase(Locale.ROOT);
-        switch (action) {
-            case "list" -> {
-                sender.sendMessage(PREFIX + "§6Ранги:");
-                for (String id : plugin.getConfig().getSection("ranks").getKeys(false)) {
-                    sender.sendMessage("§8• §f" + id + " §8— " + plugin.getConfig().getString("ranks." + id + ".prefix", id)
-                            + " §8(дома: §f" + plugin.getConfig().getInt("ranks." + id + ".homes", 3)
-                            + "§8)");
-                }
-            }
-            case "info" -> {
-                Player target = args.length > 1 ? plugin.getServer().getPlayer(args[1])
-                        : (sender instanceof Player p ? p : null);
-                if (target == null) {
-                    sender.sendMessage(PREFIX + "§cИгрок не найден или не в сети.");
-                    return;
-                }
-                sender.sendMessage(PREFIX + "§f" + target.getName() + "§7: ранг §f" + rankId(target.getUniqueId())
-                        + " §8(" + prefix(target) + "§8)");
-            }
-            case "set" -> {
-                if (!NEXORASurvival.isAdmin(sender)) {
-                    sender.sendMessage("§cНедостаточно прав.");
-                    return;
-                }
-                if (args.length < 3) {
-                    sender.sendMessage(PREFIX + "§e/rank set <игрок> <ранг>");
-                    return;
-                }
-                Player target = plugin.getServer().getPlayer(args[1]);
-                String rank = args[2].toLowerCase(Locale.ROOT);
-                if (target == null) {
-                    sender.sendMessage(PREFIX + "§cИгрок не найден или не в сети.");
-                    return;
-                }
-                if (!plugin.getConfig().exists("ranks." + rank + ".prefix")) {
-                    sender.sendMessage(PREFIX + "§cТакого ранга нет. Список: §e/rank list");
-                    return;
-                }
-                ranks.cfg.set("players." + target.getUniqueId(), rank);
-                ranks.touch();
-                ranks.flush();
-                applyDisplay(target);
-                sender.sendMessage(PREFIX + "§aРанг игрока §f" + target.getName() + " §a— §f" + rank);
-                target.sendMessage(PREFIX + "§aТвой ранг теперь: " + prefix(target));
-            }
-            default -> sender.sendMessage(PREFIX + "§e/rank list §7| §e/rank info [игрок] §7| §e/rank set <игрок> <ранг>");
-        }
     }
 
     // ---- Kits ----
