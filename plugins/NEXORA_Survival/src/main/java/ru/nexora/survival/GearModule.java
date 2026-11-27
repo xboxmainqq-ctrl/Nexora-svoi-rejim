@@ -195,7 +195,7 @@ final class GearModule implements Listener {
     }
 
     private void openChestLater(Player player, Runnable action) {
-        plugin.getServer().getScheduler().scheduleDelayedTask(plugin, action, 2);
+        plugin.getServer().getScheduler().scheduleDelayedTask(plugin, action, 15);
     }
 
     /**
