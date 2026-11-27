@@ -76,6 +76,8 @@ final class TeleportModule implements Listener {
 
     /** True if the block column is inside the protected area around the spawn. */
     boolean inSpawnProtection(Level level, int x, int z) {
+        // BlockFromToEvent may expose a transient block with no attached Level.
+        if (level == null) return false;
         int radius = plugin.getConfig().getInt("teleport.spawn-protect-radius", 16);
         if (radius <= 0) return false;
         Location spawn = spawnLocation();
