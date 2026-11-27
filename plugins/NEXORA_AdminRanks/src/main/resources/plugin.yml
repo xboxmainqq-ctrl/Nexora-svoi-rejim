@@ -1,0 +1,14 @@
+name: NEXORA_AdminRanks
+main: ru.nexora.adminranks.NEXORAAdminRanks
+version: "1.0.0"
+api: ["1.0.0"]
+author: NEXORA
+description: "Отдельная система административных рангов NEXORA"
+commands:
+  adminrank:
+    description: Выдать или снять административный ранг
+    usage: "/adminrank <игрок> <ранг|remove>"
+permissions:
+  nexora.adminranks.manage:
+    description: Управление административными рангами NEXORA
+    default: op
