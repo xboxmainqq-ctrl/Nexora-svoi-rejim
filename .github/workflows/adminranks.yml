@@ -1,0 +1,28 @@
+name: Build NEXORA AdminRanks
+on:
+  push:
+    paths:
+      - "plugins/NEXORA_AdminRanks/**"
+      - ".github/workflows/adminranks.yml"
+  pull_request:
+    paths:
+      - "plugins/NEXORA_AdminRanks/**"
+      - ".github/workflows/adminranks.yml"
+  workflow_dispatch:
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+      - name: Build NEXORA_AdminRanks
+        working-directory: plugins/NEXORA_AdminRanks
+        run: mvn --batch-mode clean package
+      - uses: actions/upload-artifact@v4
+        with:
+          name: NEXORA_AdminRanks
+          path: plugins/NEXORA_AdminRanks/target/*.jar
