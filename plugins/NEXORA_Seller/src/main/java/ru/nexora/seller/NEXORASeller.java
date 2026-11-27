@@ -39,10 +39,10 @@ public final class NEXORASeller extends PluginBase implements Listener {
     public void onEnable() {
         saveDefaultConfig();
         survival = getServer().getPluginManager().getPlugin("NEXORA_Survival");
-        File data = survival != null ? survival.getDataFolder() : getDataFolder();
-        if (!data.exists()) data.mkdirs();
-        balanceFile = new File(data, "economy.yml");
-        balances = new Config(balanceFile, Config.YAML);
+        if (survival == null) {
+            balanceFile = new File(getDataFolder(), "seller-balances.yml");
+            balances = new Config(balanceFile, Config.YAML);
+        }
         economy = survival != null ? survival.getConfig() : getConfig();
         getServer().getPluginManager().registerEvents(this, this);
         getLogger().info("NEXORA_Seller включён. Скупщик вынесен в отдельный плагин.");
@@ -85,10 +85,22 @@ public final class NEXORASeller extends PluginBase implements Listener {
         return economy.getInt("economy.sell-prices." + item.getId() + ".price", 0);
     }
     private long balance(UUID id) {
+        if (survival != null) {
+            try { return ((Number) survival.getClass().getMethod("getBalance", UUID.class).invoke(survival, id)).longValue(); }
+            catch (ReflectiveOperationException ex) { getLogger().error("Не удалось получить баланс из NEXORA_Survival", ex); }
+        }
         return balances.getLong("balances." + id, economy.getLong("economy.start-balance", 100));
     }
     private void deposit(Player player, long amount) {
         UUID id = player.getUniqueId();
+        if (survival != null) {
+            try {
+                survival.getClass().getMethod("deposit", UUID.class, long.class).invoke(survival, id, amount);
+                return;
+            } catch (ReflectiveOperationException ex) {
+                getLogger().error("Не удалось зачислить деньги в NEXORA_Survival", ex);
+            }
+        }
         balances.set("balances." + id, balance(id) + amount);
         balances.set("names." + id, player.getName());
         balances.save();
