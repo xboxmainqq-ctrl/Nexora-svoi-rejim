@@ -59,7 +59,9 @@ final class SocialModule implements Listener {
 
     private void applyDisplay(Player player) {
         player.setDisplayName(player.getName());
-        player.setNameTag(prefix(player) + " " + plugin.clans().tag(player) + " §f" + player.getName());
+        String rankTag = "§8[§r" + prefix(player) + "§8]";
+        String clanTag = plugin.clans().tag(player);
+        player.setNameTag(rankTag + (clanTag.isEmpty() ? "" : " " + clanTag) + " §f" + player.getName());
     }
 
     void refreshDisplay(Player player) { applyDisplay(player); }
@@ -98,7 +100,7 @@ final class SocialModule implements Listener {
         if (message.isEmpty()) return;
         // {message} goes last so text typed by a player is never treated as a placeholder.
         String format = plugin.getConfig().getString("chat.format",
-                "§8[{prefix}§8] {clan} §f{name}§7: §f{message}");
+                "§8[§r{prefix}§8] {clan} §f{name}§7: §f{message}");
         // Older config.yml files may not have the {clan} placeholder.
         // Insert it automatically after the rank so clan tags remain visible
         // without requiring server owners to delete their existing config.
