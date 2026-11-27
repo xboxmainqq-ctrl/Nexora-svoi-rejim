@@ -45,6 +45,32 @@ final class GearModule implements Listener {
             new Gear("dragon", "§dКомплект дракона", "§7Алмазная броня · 7% защиты за часть · полный комплект: +8%", 310, 12500, 0, 0.07, true, "Драконья защита")
     );
 
+
+    private static final List<Gear> MINING_TOOLS = List.of(
+            new Gear("stone_pickaxe", "§7Каменная кирка", "§7Для добычи камня и руды", 274, 180, 0, 0, false, "Инструмент"),
+            new Gear("iron_pickaxe", "§fЖелезная кирка", "§7Прочная кирка для шахты", 257, 650, 0, 0, false, "Инструмент"),
+            new Gear("diamond_pickaxe", "§bАлмазная кирка", "§7Быстрая кирка для шахты", 278, 2400, 0, 0, false, "Инструмент")
+    );
+    private static final List<Gear> WOOD_TOOLS = List.of(
+            new Gear("stone_axe", "§7Каменный топор", "§7Для рубки деревьев", 275, 180, 0, 0, false, "Инструмент"),
+            new Gear("iron_axe", "§fЖелезный топор", "§7Прочный топор лесоруба", 258, 650, 0, 0, false, "Инструмент"),
+            new Gear("diamond_axe", "§bАлмазный топор", "§7Быстрый топор лесоруба", 279, 2400, 0, 0, false, "Инструмент")
+    );
+    private static final List<Gear> DIGGING_TOOLS = List.of(
+            new Gear("stone_shovel", "§7Каменная лопата", "§7Для земли, песка и гравия", 273, 120, 0, 0, false, "Инструмент"),
+            new Gear("iron_shovel", "§fЖелезная лопата", "§7Прочная лопата", 256, 450, 0, 0, false, "Инструмент"),
+            new Gear("diamond_shovel", "§bАлмазная лопата", "§7Быстрая лопата", 277, 1600, 0, 0, false, "Инструмент")
+    );
+    private static final List<Gear> FARM_TOOLS = List.of(
+            new Gear("iron_hoe", "§fЖелезная мотыга", "§7Для обработки грядок", 292, 400, 0, 0, false, "Инструмент"),
+            new Gear("diamond_hoe", "§bАлмазная мотыга", "§7Прочная мотыга для фермы", 293, 1200, 0, 0, false, "Инструмент")
+    );
+    private static final List<Gear> UTILITY_TOOLS = List.of(
+            new Gear("shears", "§fНожницы", "§7Для шерсти и листвы", 359, 300, 0, 0, false, "Инструмент"),
+            new Gear("fishing_rod", "§bУдочка", "§7Для рыбалки", 346, 350, 0, 0, false, "Инструмент"),
+            new Gear("flint_steel", "§6Огниво", "§7Для розжига огня", 259, 250, 0, 0, false, "Инструмент")
+    );
+
     private final NEXORASurvival plugin;
 
     GearModule(NEXORASurvival plugin) {
@@ -87,6 +113,8 @@ final class GearModule implements Listener {
     private Gear find(String id) {
         for (Gear gear : WEAPONS) if (gear.id().equalsIgnoreCase(id)) return gear;
         for (Gear gear : ARMOR) if (gear.id().equalsIgnoreCase(id)) return gear;
+        for (List<Gear> group : List.of(MINING_TOOLS, WOOD_TOOLS, DIGGING_TOOLS, FARM_TOOLS, UTILITY_TOOLS))
+            for (Gear gear : group) if (gear.id().equalsIgnoreCase(id)) return gear;
         return null;
     }
 
@@ -98,12 +126,12 @@ final class GearModule implements Listener {
                         + "\n§7Выбери категорию:");
         form.addButton(new ElementButton("§l§c⚔ ОРУЖИЕ\n§8Клинки, топоры, луки и посохи"));
         form.addButton(new ElementButton("§l§b✥ БРОНЯ\n§8Пять алмазных комплектов с разной защитой"));
-        form.addButton(new ElementButton("§7Закрыть"));
+        form.addButton(new ElementButton("§l§7⛏ ДОБЫЧА\n§8Кирки"));\n        form.addButton(new ElementButton("§l§6⚒ ЛЕСОРУБ\n§8Топоры"));\n        form.addButton(new ElementButton("§l§e▰ ЗЕМЛЕКОП\n§8Лопаты"));\n        form.addButton(new ElementButton("§l§a♣ ФЕРМА\n§8Мотыги"));\n        form.addButton(new ElementButton("§l§b✦ ИНСТРУМЕНТЫ\n§8Ножницы, удочка, огниво"));\n        form.addButton(new ElementButton("§7Закрыть"));
         form.addHandler(FormResponseHandler.withoutPlayer(ignored -> {
             if (form.wasClosed()) return;
             int selected = form.getResponse().getClickedButtonId();
             if (selected == 0) openList(player, WEAPONS, false);
-            if (selected == 1) openList(player, ARMOR, true);
+            if (selected == 1) openList(player, ARMOR, true);\n            if (selected == 2) openList(player, MINING_TOOLS, false);\n            if (selected == 3) openList(player, WOOD_TOOLS, false);\n            if (selected == 4) openList(player, DIGGING_TOOLS, false);\n            if (selected == 5) openList(player, FARM_TOOLS, false);\n            if (selected == 6) openList(player, UTILITY_TOOLS, false);
         }));
         player.showFormWindow(form);
     }
@@ -145,7 +173,7 @@ final class GearModule implements Listener {
         }
         for (Item item : items) player.getInventory().addItem(item);
         player.sendMessage(PREFIX + "§aПокупка успешна: " + gear.name() + "§a.");
-        player.sendMessage(PREFIX + (armor ? "§7Полный алмазный комплект выдан. Бонус полного комплекта активен только при ношении всех 4 частей." : "§7Особый эффект оружия срабатывает при попадании."));
+        player.sendMessage(PREFIX + (armor ? "§7Полный алмазный комплект выдан. Бонус полного комплекта активен только при ношении всех 4 частей." : (gear.perkDescription().equals("Инструмент") ? "§7Инструмент добавлен в инвентарь." : "§7Особый эффект оружия срабатывает при попадании.")));
         openList(player, list, armor);
     }
 
