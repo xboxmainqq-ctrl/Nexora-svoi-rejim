@@ -1,0 +1,28 @@
+name: Build NEXORA Donate
+on:
+  push:
+    paths:
+      - "plugins/NEXORA_Donate/**"
+      - ".github/workflows/donate.yml"
+  pull_request:
+    paths:
+      - "plugins/NEXORA_Donate/**"
+      - ".github/workflows/donate.yml"
+  workflow_dispatch:
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+      - name: Build NEXORA_Donate
+        working-directory: plugins/NEXORA_Donate
+        run: mvn --batch-mode clean package
+      - uses: actions/upload-artifact@v4
+        with:
+          name: NEXORA_Donate
+          path: plugins/NEXORA_Donate/target/*.jar
