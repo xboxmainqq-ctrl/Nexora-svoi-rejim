@@ -13,7 +13,7 @@ import java.util.UUID;
 
 public final class NEXORAAdminRanks extends PluginBase {
     private static final int GLYPH_BASE = 0xF750;
-    private static final int STEPS = 3;
+    private static final int STEPS = 5;
     private Config ranks;
 
     @Override
