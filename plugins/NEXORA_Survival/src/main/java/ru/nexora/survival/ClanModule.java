@@ -3,6 +3,8 @@ package ru.nexora.survival;
 import cn.nukkit.Player;
 import cn.nukkit.command.CommandSender;
 import cn.nukkit.event.Listener;
+import cn.nukkit.event.EventHandler;
+import cn.nukkit.event.player.PlayerJoinEvent;
 import cn.nukkit.form.element.ElementButton;
 import cn.nukkit.form.handler.FormResponseHandler;
 import cn.nukkit.form.window.FormWindowSimple;
@@ -29,6 +31,12 @@ final class ClanModule implements Listener {
     }
 
     void flush() { store.flush(); }
+
+    @EventHandler
+    public void onJoin(PlayerJoinEvent event) {
+        store.cfg.set("names." + event.getPlayer().getUniqueId(), event.getPlayer().getName());
+        store.touch();
+    }
 
     String clanId(UUID player) {
         ConfigSection all = store.cfg.getSection("clans");
