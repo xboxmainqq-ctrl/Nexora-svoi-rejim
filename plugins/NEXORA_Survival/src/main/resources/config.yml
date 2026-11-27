@@ -2,15 +2,14 @@
 # Item ids are legacy numeric ids: "id:meta:count". Keep the quotes around ids used as keys.
 
 teleport:
-  warmup-seconds: 3          # stand still this long before a teleport (admins skip it)
-  cooldown-seconds: 10       # pause between teleports (admins skip it)
-  tpa-timeout-seconds: 60    # how long a /tpa request stays valid
-  spawn-protect-radius: 16   # nobody but admins can build this close to the spawn (0 = off)
+  warmup-seconds: 3
+  cooldown-seconds: 10
+  tpa-timeout-seconds: 60
+  spawn-protect-radius: 16
 
 economy:
   currency: "монет"
   start-balance: 100
-  # Price per single item. Item meta is ignored, renamed or enchanted items are never sold.
   sell-prices:
     "263": {name: "Уголь", price: 2}
     "265": {name: "Железный слиток", price: 6}
@@ -25,7 +24,6 @@ economy:
     "287": {name: "Нить", price: 2}
     "289": {name: "Порох", price: 3}
     "352": {name: "Кость", price: 1}
-    # Еда
     "260": {name: "Яблоко", price: 2}
     "297": {name: "Хлеб", price: 3}
     "320": {name: "Жареная свинина", price: 5}
@@ -35,7 +33,6 @@ economy:
     "350": {name: "Жареная рыба", price: 4}
     "393": {name: "Печёный картофель", price: 3}
     "400": {name: "Тыквенный пирог", price: 7}
-    # Блоки и материалы
     "1": {name: "Камень", price: 1}
     "4": {name: "Булыжник", price: 1}
     "5": {name: "Доски", price: 1}
@@ -47,20 +44,17 @@ economy:
     "82": {name: "Глина", price: 2}
     "87": {name: "Незерак", price: 1}
     "121": {name: "Энд stone", price: 4}
-    # Ферма
     "295": {name: "Семена пшеницы", price: 1}
     "360": {name: "Ломтик арбуза", price: 1}
     "361": {name: "Семена тыквы", price: 1}
     "362": {name: "Семена арбуза", price: 1}
     "86": {name: "Тыква", price: 3}
     "103": {name: "Арбузный блок", price: 4}
-    # Добыча с мобов
     "288": {name: "Перо", price: 2}
     "334": {name: "Кожа", price: 3}
     "341": {name: "Слизь", price: 4}
     "367": {name: "Гнилая плоть", price: 1}
     "375": {name: "Паучий глаз", price: 3}
-
 
 chat:
   enabled: true
@@ -69,15 +63,18 @@ chat:
 default-rank: player
 ranks:
   player: {prefix: "§7Игрок", homes: 3, kits: [start, daily]}
-  vip: {prefix: "§bVIP", label: "VIP", homes: 6, kits: [start, daily, vip]}
-  premium: {prefix: "§dPREMIUM", label: "PREMIUM", homes: 8, kits: [start, daily, vip]}
-  elite: {prefix: "§dELITE", label: "ELITE", homes: 12, kits: [start, daily, vip]}
-  legend: {prefix: "§6LEGEND", label: "LEGEND", homes: 16, kits: [start, daily, vip]}
+  aurvex: {prefix: "§bAURVEX", label: "AURVEX", homes: 4, kits: [start, daily, vip]}
+  zyreth: {prefix: "§dZYRETH", label: "ZYRETH", homes: 5, kits: [start, daily, vip]}
+  veloria: {prefix: "§5VELORIA", label: "VELORIA", homes: 6, kits: [start, daily, vip]}
+  kryon: {prefix: "§bKRYON", label: "KRYON", homes: 7, kits: [start, daily, vip]}
+  nymeris: {prefix: "§6NYMERIS", label: "NYMERIS", homes: 8, kits: [start, daily, vip]}
+  solvex: {prefix: "§dSOLVEX", label: "SOLVEX", homes: 10, kits: [start, daily, vip]}
+  eclyra: {prefix: "§5ECLYRA", label: "ECLYRA", homes: 12, kits: [start, daily, vip]}
+  nexorion: {prefix: "§6NEXORION", label: "NEXORION", homes: 16, kits: [start, daily, vip]}
   moder: {prefix: "§9Модер", label: "МОДЕР", homes: 10, kits: [start, daily, vip]}
   admin: {prefix: "§cАдмин", label: "АДМИН", homes: 20, kits: [start, daily, vip]}
 
 start-kit-on-first-join: true
-# cooldown-hours: 0 means the kit can be taken only once.
 kits:
   start:
     name: "Стартовый набор"
@@ -88,6 +85,6 @@ kits:
     cooldown-hours: 24
     items: ["364:0:8", "50:0:16", "260:0:4"]
   vip:
-    name: "VIP-набор"
+    name: "Набор привилегии"
     cooldown-hours: 72
     items: ["264:0:2", "364:0:16"]
