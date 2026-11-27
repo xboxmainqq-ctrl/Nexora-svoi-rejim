@@ -1,6 +1,6 @@
 name: NEXORA_Survival
 main: ru.nexora.survival.NEXORASurvival
-version: "1.0.6"
+version: "1.0.7"
 api: ["1.0.0"]
 author: NEXORA
 description: "Survival: claims, economy, teleport, clans, reports, ranks, chat and kits"
@@ -16,8 +16,12 @@ commands:
     description: Richest players
     usage: "/baltop"
   sell:
-    description: Sell resources for coins
-    usage: "/sell hand [amount] | /sell all"
+    description: Open the category seller or sell resources
+    usage: "/sell [hand|all]"
+  seller:
+    description: Open the NEXORA category seller
+    usage: "/seller"
+    aliases: ["sellmenu"]
   prices:
     description: Sell price list
     usage: "/prices"
