@@ -12,6 +12,7 @@ import cn.nukkit.form.handler.FormResponseHandler;
 import cn.nukkit.form.window.FormWindowSimple;
 import cn.nukkit.item.Item;
 import cn.nukkit.potion.Effect;
+import ru.nexora.survival.internal.fakeinventories.inventory.ChestFakeInventory;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -180,34 +181,132 @@ final class GearModule implements Listener {
     }
 
 
+
+    private static final int[] SHOP_SLOTS = {
+            10, 11, 12, 13, 14, 15, 16, 19, 20, 21, 22, 23, 24, 25
+    };
+
+    private Item menuIcon(int id, int meta, int count, String name, String... lore) {
+        Item item = Item.get(id, meta, count);
+        item.setCustomName(name);
+        item.setLore(lore);
+        return item;
+    }
+
+    private void openChestLater(Player player, Runnable action) {
+        plugin.getServer().getScheduler().scheduleDelayedTask(plugin, action, 10);
+    }
+
     private void openRoot(Player player) {
-        FormWindowSimple form = new FormWindowSimple("§l§0✦ NEXORA · МАГАЗИН",
-                "§8━━━━━━━━━━━━━━━━━━\n§7Покупай полезные предметы за монеты.\n"
-                        + "§eТвой баланс: §f" + plugin.economy().balance(player.getUniqueId())
-                        + " §6монет\n§8━━━━━━━━━━━━━━━━━━\n§7Выбери раздел:");
-        form.addButton(new ElementButton("§l§6🍖 ЕДА\n§8Еда и золотые яблоки"));
-        form.addButton(new ElementButton("§l§c⚔ ОРУЖИЕ\n§8Мечи, топоры, луки и посохи"));
-        form.addButton(new ElementButton("§l§b✥ БРОНЯ\n§8Комплекты и защита"));
-        form.addButton(new ElementButton("§l§7⚒ ИНСТРУМЕНТЫ\n§8Кирки, топоры, лопаты и другое"));
-        form.addButton(new ElementButton("§l§6▦ БЛОКИ\n§8Строительство и укрепление базы"));
-        form.addButton(new ElementButton("§l§a♣ ФЕРМА\n§8Семена, растения и инвентарь"));
-        form.addButton(new ElementButton("§l§d✦ РЕСУРСЫ\n§8Руды и материалы для крафта"));
-        form.addButton(new ElementButton("§7Закрыть"));
-        form.addHandler(FormResponseHandler.withoutPlayer(ignored -> {
-            if (form.wasClosed()) return;
-            int selected = form.getResponse().getClickedButtonId();
-            switch (selected) {
-                case 0 -> openShopList(player, FOOD, "§l§0🍖 ЕДА");
-                case 1 -> openList(player, WEAPONS, false);
-                case 2 -> openList(player, ARMOR, true);
-                case 3 -> openList(player, combineTools(), false);
-                case 4 -> openShopList(player, BLOCKS, "§l§0▦ БЛОКИ");
-                case 5 -> openShopList(player, FARMING, "§l§0♣ ФЕРМА");
-                case 6 -> openShopList(player, MATERIALS, "§l§0✦ РЕСУРСЫ");
-                default -> { }
-            }
-        }));
-        player.showFormWindow(form);
+        ChestFakeInventory menu = new ChestFakeInventory(null, "§l§0NEXORA §8| §6МАГАЗИН");
+        Item pane = menuIcon( stainedGlassPaneId(), 7, 1, "§8 ");
+        for (int i = 0; i < 27; i++) menu.setItem(i, pane.clone());
+        menu.setItem(4, menuIcon( goldIngotId(), 1, 1, "§6ТВОИ МОНЕТЫ",
+                "§7Баланс: §e" + plugin.economy().balance(player.getUniqueId()),
+                "§8Покупай предметы за монеты"));
+        menu.setItem(10, menuIcon( 260, 0, 1, "§6ЕДА", "§7Хлеб, мясо, яблоки и другое", "§eНажми, чтобы открыть"));
+        menu.setItem(11, menuIcon( 276, 0, 1, "§cОРУЖИЕ", "§7Мечи, топоры, луки и особое оружие", "§eНажми, чтобы открыть"));
+        menu.setItem(12, menuIcon( 310, 0, 1, "§bБРОНЯ", "§7Комплекты защиты", "§eНажми, чтобы открыть"));
+        menu.setItem(13, menuIcon( 278, 0, 1, "§7ИНСТРУМЕНТЫ", "§7Кирки, топоры, лопаты и другое", "§eНажми, чтобы открыть"));
+        menu.setItem(14, menuIcon( 4, 0, 1, "§6БЛОКИ", "§7Строительные блоки и укрепления", "§eНажми, чтобы открыть"));
+        menu.setItem(15, menuIcon( 295, 0, 1, "§aФЕРМА", "§7Семена, растения и инвентарь", "§eНажми, чтобы открыть"));
+        menu.setItem(16, menuIcon( 264, 0, 1, "§dРЕСУРСЫ", "§7Руды и материалы для крафта", "§eНажми, чтобы открыть"));
+        menu.setItem(22, menuIcon(  barrierId(), 0, 1, "§cЗакрыть магазин", "§7Нажми, чтобы закрыть"));
+        menu.addListener(event -> {
+            event.setCancelled();
+            int slot = event.getAction().getSlot();
+            player.removeWindow(menu);
+            openChestLater(player, () -> {
+                switch (slot) {
+                    case 10 -> openShopItemCategory(player, FOOD, "§6ЕДА");
+                    case 11 -> openShopGearCategory(player, WEAPONS, false);
+                    case 12 -> openShopGearCategory(player, ARMOR, true);
+                    case 13 -> openShopGearCategory(player, combineTools(), false);
+                    case 14 -> openShopItemCategory(player, BLOCKS, "§6БЛОКИ");
+                    case 15 -> openShopItemCategory(player, FARMING, "§aФЕРМА");
+                    case 16 -> openShopItemCategory(player, MATERIALS, "§dРЕСУРСЫ");
+                    default -> { }
+                }
+            });
+        });
+        player.addWindow(menu);
+    }
+
+    private void fillShopFrame(ChestFakeInventory menu) {
+        Item pane = menuIcon(stainedGlassPaneId(), 7, 1, "§8 ");
+        for (int i = 0; i < 27; i++) menu.setItem(i, pane.clone());
+    }
+
+    private void openShopItemCategory(Player player, List<ShopItem> items, String title) {
+        ChestFakeInventory menu = new ChestFakeInventory(null, "§l§0NEXORA §8| " + title);
+        fillShopFrame(menu);
+        menu.setItem(4, menuIcon(goldIngotId(), 1, 1, "§6ТВОИ МОНЕТЫ",
+                "§7Баланс: §e" + plugin.economy().balance(player.getUniqueId())));
+        for (int i = 0; i < items.size() && i < SHOP_SLOTS.length; i++) {
+            ShopItem entry = items.get(i);
+            menu.setItem(SHOP_SLOTS[i], menuIcon(entry.itemId(), entry.meta(), entry.count(),
+                    entry.name(), entry.description(), "§7Количество: §f" + entry.count(),
+                    "§7Цена: §6" + entry.price() + " монет", "§aНажми, чтобы купить"));
+        }
+        menu.setItem(18, menuIcon( arrowId(), 0, 1, "§e← Назад", "§7Вернуться в магазин"));
+        menu.setItem(26, menuIcon(barrierId(), 0, 1, "§cЗакрыть"));
+        menu.addListener(event -> {
+            event.setCancelled();
+            int slot = event.getAction().getSlot();
+            player.removeWindow(menu);
+            openChestLater(player, () -> {
+                if (slot == 18) {
+                    openRoot(player);
+                    return;
+                }
+                int index = slotIndex(slot);
+                if (index >= 0 && index < items.size()) {
+                    purchaseShopItem(player, items.get(index), items, title);
+                } else if (slot != 26) {
+                    openShopItemCategory(player, items, title);
+                }
+            });
+        });
+        player.addWindow(menu);
+    }
+
+    private void openShopGearCategory(Player player, List<Gear> items, boolean armor) {
+        ChestFakeInventory menu = new ChestFakeInventory(null, armor
+                ? "§l§0NEXORA §8| §bБРОНЯ"
+                : (items.size() > 0 && items.get(0).id().equals("rust_blade")
+                    ? "§l§0NEXORA §8| §cОРУЖИЕ" : "§l§0NEXORA §8| §7ИНСТРУМЕНТЫ"));
+        fillShopFrame(menu);
+        menu.setItem(4, menuIcon(goldIngotId(), 1, 1, "§6ТВОИ МОНЕТЫ",
+                "§7Баланс: §e" + plugin.economy().balance(player.getUniqueId())));
+        for (int i = 0; i < items.size() && i < SHOP_SLOTS.length; i++) {
+            Gear entry = items.get(i);
+            int iconId = entry.armorSet() ? entry.itemId() : entry.itemId();
+            menu.setItem(SHOP_SLOTS[i], menuIcon(iconId, 0, 1, entry.name(),
+                    entry.description(), "§7Цена: §6" + entry.price() + " монет",
+                    "§aНажми, чтобы купить"));
+        }
+        menu.setItem(18, menuIcon(arrowId(), 0, 1, "§e← Назад", "§7Вернуться в магазин"));
+        menu.setItem(26, menuIcon(barrierId(), 0, 1, "§cЗакрыть"));
+        menu.addListener(event -> {
+            event.setCancelled();
+            int slot = event.getAction().getSlot();
+            player.removeWindow(menu);
+            openChestLater(player, () -> {
+                if (slot == 18) {
+                    openRoot(player);
+                    return;
+                }
+                int index = slotIndex(slot);
+                if (index >= 0 && index < items.size()) purchase(player, items.get(index), items, armor);
+                else if (slot != 26) openShopGearCategory(player, items, armor);
+            });
+        });
+        player.addWindow(menu);
+    }
+
+    private int slotIndex(int slot) {
+        for (int i = 0; i < SHOP_SLOTS.length; i++) if (SHOP_SLOTS[i] == slot) return i;
+        return -1;
     }
 
     private List<Gear> combineTools() {
@@ -220,29 +319,17 @@ final class GearModule implements Listener {
         return all;
     }
 
-    private void openShopList(Player player, List<ShopItem> items, String title) {
-        FormWindowSimple form = new FormWindowSimple(title,
-                "§7Выбери товар для покупки.\n§8Цены указаны за весь набор.");
-        for (ShopItem item : items) {
-            form.addButton(new ElementButton(item.name() + "\n" + item.description()
-                    + "\n§fКоличество: §e" + item.count() + " §8· §6" + item.price() + " монет"));
-        }
-        form.addButton(new ElementButton("§7← Назад"));
-        form.addHandler(FormResponseHandler.withoutPlayer(ignored -> {
-            if (form.wasClosed()) return;
-            int index = form.getResponse().getClickedButtonId();
-            if (index >= 0 && index < items.size()) purchaseShopItem(player, items.get(index), items, title);
-            else openRoot(player);
-        }));
-        player.showFormWindow(form);
-    }
+    private static int stainedGlassPaneId() { return 160; }
+    private static int goldIngotId() { return 266; }
+    private static int barrierId() { return 166; }
+    private static int arrowId() { return 262; }
 
     private void purchaseShopItem(Player player, ShopItem shopItem, List<ShopItem> list, String title) {
         long balance = plugin.economy().balance(player.getUniqueId());
         if (balance < shopItem.price()) {
             player.sendMessage(PREFIX + "§cНе хватает монет. Нужно §e" + shopItem.price()
                     + "§c, у тебя §e" + balance + "§c.");
-            openShopList(player, list, title);
+            openShopItemCategory(player, list, title);
             return;
         }
         Item item = Item.get(shopItem.itemId(), shopItem.meta(), shopItem.count());
@@ -281,7 +368,7 @@ final class GearModule implements Listener {
         long balance = plugin.economy().balance(player.getUniqueId());
         if (balance < gear.price()) {
             player.sendMessage(PREFIX + "§cНе хватает монет. Нужно §e" + gear.price() + "§c, у тебя §e" + balance + "§c.");
-            openList(player, list, armor);
+            openShopGearCategory(player, list, armor);
             return;
         }
         List<Item> items = createItems(gear);
