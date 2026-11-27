@@ -182,8 +182,13 @@ final class ClaimModule implements Listener {
     }
 
     private boolean overlapsClaim(Level level, int minX, int maxX, int minZ, int maxZ) {
+        return overlapsClaim(level, minX, maxX, minZ, maxZ, "");
+    }
+
+    private boolean overlapsClaim(Level level, int minX, int maxX, int minZ, int maxZ, String excludedId) {
         ConfigSection all = store.cfg.getSection("claims");
         for (String id : all.getKeys(false)) {
+            if (id.equals(excludedId)) continue;
             String base = "claims." + id;
             if (!store.cfg.getString(base + ".world", "").equals(level.getName())) continue;
             int a, b, c, d;
@@ -421,6 +426,10 @@ final class ClaimModule implements Listener {
             setFlag(player, java.util.Arrays.copyOfRange(args, 1, args.length));
             return true;
         }
+        if (args[0].equalsIgnoreCase("expand")) {
+            expand(player, java.util.Arrays.copyOfRange(args, 1, args.length));
+            return true;
+        }
         if (args[0].equalsIgnoreCase("wand")) {
             player.getInventory().addItem(Item.get(271, 0, 1));
             player.sendMessage(PREFIX + "§aТопор выделения: §eЛКМ §7— точка 1, §eПКМ §7— точка 2.");
@@ -452,7 +461,7 @@ final class ClaimModule implements Listener {
         NEXORASurvival.choose(player, "§l§6NEXORA • РЕГИОНЫ",
                 "§7Выдели территорию деревянным топором: ЛКМ — точка 1, ПКМ — точка 2.",
                 List.of("§aСоздать регион по выделению", "§cСнять приват здесь", "§bИнформация",
-                        "§eМои регионы", "§dДоверенные игроки", "§6Инструкция"),
+                        "§eМои регионы", "§dДоверенные игроки", "§6Расширить регион", "§7Инструкция"),
                 index -> {
                     switch (index) {
                         case 0 -> claim(player, new String[0]);
@@ -460,7 +469,13 @@ final class ClaimModule implements Listener {
                         case 2 -> info(player);
                         case 3 -> listClaims(player);
                         case 4 -> openTrustMenu(player);
-                        case 5 -> help(player);
+                        case 5 -> {
+                            player.sendMessage(PREFIX + "§e/rg expand <north|south|east|west> <блоки>");
+                            player.sendMessage("§7Расширяет регион в выбранную сторону за монеты.");
+                            player.sendMessage("§7Цена: §e" + plugin.getConfig().getLong("claims.expand-price-per-block", 2L)
+                                    + " §7монет за каждый добавленный блок.");
+                        }
+                        case 6 -> help(player);
                     }
                 });
     }
@@ -511,6 +526,7 @@ final class ClaimModule implements Listener {
         player.sendMessage("§e/rg info §8— §7информация о регионе");
         player.sendMessage("§e/rg flag §8— §7список флагов и их описание");
         player.sendMessage("§e/rg flag <флаг> <allow|deny> §8— §7настроить флаг региона");
+        player.sendMessage("§e/rg expand <north|south|east|west> <блоки> §8— §7расширить регион за монеты");
     }
 
     private void claim(Player player, String[] args) {
@@ -558,6 +574,110 @@ final class ClaimModule implements Listener {
         selections.remove(player.getUniqueId());
         player.sendMessage(PREFIX + "§aРегион §f" + name + " §aсоздан: §f" + minX + "," + minZ
                 + " §7— §f" + maxX + "," + maxZ + "§a. Защищена вся высота.");
+    }
+
+    private void expand(Player player, String[] args) {
+        if (args.length < 2) {
+            player.sendMessage(PREFIX + "§e/rg expand <north|south|east|west> <блоки>");
+            player.sendMessage("§7Стороны: north — север, south — юг, east — восток, west — запад.");
+            player.sendMessage("§7Стоимость: §e" + plugin.getConfig().getLong("claims.expand-price-per-block", 2L)
+                    + " §7монет за каждый добавленный блок.");
+            return;
+        }
+        String direction = args[0].toLowerCase(Locale.ROOT);
+        if (!List.of("north", "south", "east", "west").contains(direction)) {
+            player.sendMessage(PREFIX + "§cНаправление: north, south, east или west.");
+            return;
+        }
+        int blocks;
+        try {
+            blocks = Integer.parseInt(args[1]);
+        } catch (NumberFormatException ex) {
+            player.sendMessage(PREFIX + "§cКоличество блоков должно быть числом.");
+            return;
+        }
+        if (blocks < 1 || blocks > 64) {
+            player.sendMessage(PREFIX + "§cЗа одну покупку можно расширить максимум на 64 блока.");
+            return;
+        }
+
+        String id = claimKeyAt(player.getLevel(), player.getFloorX(), player.getFloorZ());
+        if (id.isEmpty()) {
+            player.sendMessage(PREFIX + "§cВстань внутрь своего региона, чтобы его расширить.");
+            return;
+        }
+        if (!isClaimOwnerOrAdmin(player, id)) {
+            player.sendMessage(PREFIX + "§cРасширять регион может только владелец или администратор.");
+            return;
+        }
+
+        String base = "claims." + id;
+        int minX, maxX, minZ, maxZ;
+        if (store.cfg.exists(base + ".minX")) {
+            minX = store.cfg.getInt(base + ".minX");
+            maxX = store.cfg.getInt(base + ".maxX");
+            minZ = store.cfg.getInt(base + ".minZ");
+            maxZ = store.cfg.getInt(base + ".maxZ");
+        } else {
+            minX = store.cfg.getInt(base + ".cx", 0) << 4;
+            maxX = minX + 15;
+            minZ = store.cfg.getInt(base + ".cz", 0) << 4;
+            maxZ = minZ + 15;
+        }
+
+        switch (direction) {
+            case "north" -> minZ -= blocks;
+            case "south" -> maxZ += blocks;
+            case "east" -> maxX += blocks;
+            case "west" -> minX -= blocks;
+        }
+        long width = (long) maxX - minX + 1L;
+        long depth = (long) maxZ - minZ + 1L;
+        long oldArea = (long) (store.cfg.exists(base + ".minX")
+                ? store.cfg.getInt(base + ".maxX") - store.cfg.getInt(base + ".minX") + 1 : 16)
+                * (store.cfg.exists(base + ".minZ")
+                ? store.cfg.getInt(base + ".maxZ") - store.cfg.getInt(base + ".minZ") + 1 : 16);
+        long newArea = width * depth;
+        if (width > 256 || depth > 256 || newArea > 65536L) {
+            player.sendMessage(PREFIX + "§cРазмер региона не может превышать 256×256 блоков.");
+            return;
+        }
+
+        Level level = player.getLevel();
+        if (overlapsClaim(level, minX, maxX, minZ, maxZ, id)) {
+            player.sendMessage(PREFIX + "§cРасширение пересекается с другим регионом.");
+            return;
+        }
+        if (plugin.teleports().inSpawnProtection(level, minX, minZ)
+                || plugin.teleports().inSpawnProtection(level, maxX, maxZ)
+                || plugin.teleports().inSpawnProtection(level, (minX + maxX) / 2, (minZ + maxZ) / 2)) {
+            player.sendMessage(PREFIX + "§cНельзя расширять регион в защищённую зону спавна.");
+            return;
+        }
+
+        long addedBlocks = newArea - oldArea;
+        long rate = Math.max(0L, plugin.getConfig().getLong("claims.expand-price-per-block", 2L));
+        if (rate > 0 && addedBlocks > Long.MAX_VALUE / rate) {
+            player.sendMessage(PREFIX + "§cСтоимость расширения слишком велика.");
+            return;
+        }
+        long price = addedBlocks * rate;
+        if (price > 0 && !NEXORASurvival.isAdmin(player)
+                && !plugin.economy().withdraw(player.getUniqueId(), price)) {
+            player.sendMessage(PREFIX + "§cНужно " + plugin.economy().money(price) + "§c, у тебя "
+                    + plugin.economy().money(plugin.economy().balance(player.getUniqueId())));
+            return;
+        }
+
+        store.cfg.set(base + ".minX", minX);
+        store.cfg.set(base + ".maxX", maxX);
+        store.cfg.set(base + ".minZ", minZ);
+        store.cfg.set(base + ".maxZ", maxZ);
+        store.cfg.set(base + ".world", level.getName());
+        store.touch();
+        player.sendMessage(PREFIX + "§aРегион расширен на §f" + blocks + " §aблоков в сторону §f"
+                + direction.toUpperCase(Locale.ROOT) + "§a. Добавлено блоков: §f" + addedBlocks
+                + "§a. Стоимость: " + plugin.economy().money(price) + "§a.");
     }
 
     private void unclaim(Player player) {
