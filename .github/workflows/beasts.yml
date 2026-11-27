@@ -28,6 +28,8 @@ jobs:
         with:
           name: NEXORA_Beasts
           path: plugins/NEXORA_Beasts/target/*.jar
+      - name: Install resource-pack font generator dependency
+        run: python3 -m pip install Pillow
       - name: Build NEXORA_Beasts Resource Pack
         run: python3 resource-pack/build_pack.py
       - name: Validate Bedrock resource pack
@@ -118,6 +120,7 @@ jobs:
                           "circle_tri", "circle_tri_inv", "circle_hex", "circle_star",
                           "circle_oct", "circle_sun", "circle_flower"):
                   required.add(f"textures/particle/nexora_{tex}.png")
+              required |= {f"font/glyph_{page:02X}.png" for page in range(0xE3, 0xF8)}
               missing = required - names
               if missing:
                   raise SystemExit(f"Missing pack files: {sorted(missing)}")
