@@ -1,9 +1,9 @@
 name: NEXORA_Survival
 main: ru.nexora.survival.NEXORASurvival
-version: "1.0.2"
+version: "1.0.3"
 api: ["1.0.0"]
 author: NEXORA
-description: "Vanilla survival basics: homes, spawn, warps, TPA, claims, economy, ranks, chat and kits"
+description: "Survival: claims, economy, teleport, clans, ranks, chat and kits"
 commands:
   balance:
     description: Show your balance
@@ -71,6 +71,13 @@ commands:
     description: Receive a kit
     usage: "/kit [name]"
     aliases: ["kits"]
+  clan:
+    description: Clan management
+    usage: "/clan [help]"
+    aliases: ["clans"]
+  cc:
+    description: Clan chat
+    usage: "/cc <message>"
   arsenal:
     description: Open the NEXORA equipment arsenal
     usage: "/arsenal"
