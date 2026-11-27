@@ -90,3 +90,11 @@ permissions:
   nexora.survival.admin:
     description: Administer NEXORA Survival (bypass claims, set spawn and warps, manage ranks and balances)
     default: op
+
+  arsenal:
+    description: Open the NEXORA equipment arsenal
+    usage: "/arsenal"
+    aliases: ["weapons", "armor"]
+  gear:
+    description: Give NEXORA equipment (admin)
+    usage: "/gear give <player> <id>"
