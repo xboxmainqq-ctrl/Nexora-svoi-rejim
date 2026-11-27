@@ -4,6 +4,7 @@ version: "1.0.9"
 api: ["1.0.0"]
 author: NEXORA
 description: "Survival: economy, teleport, clans, reports, chat and kits"
+depend: [NEXORA_Donate, NEXORA_AdminRanks]
 commands:
   balance:
     description: Show your balance
