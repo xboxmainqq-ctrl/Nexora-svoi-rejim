@@ -128,7 +128,11 @@ final class ClaimModule implements Listener {
             sender.sendMessage("§cКоманда доступна только игроку.");
             return true;
         }
-        if (args.length == 0 || args[0].equalsIgnoreCase("help")) {
+        if (args.length == 0 || args[0].equalsIgnoreCase("menu")) {
+            openMenu(player);
+            return true;
+        }
+        if (args[0].equalsIgnoreCase("help")) {
             help(player);
             return true;
         }
@@ -144,6 +148,30 @@ final class ClaimModule implements Listener {
             default -> help(player);
         }
         return true;
+    }
+
+    private void openMenu(Player player) {
+        NEXORASurvival.choose(player, "§l§6NEXORA • РЕГИОНЫ",
+                "§7Управление защитой территории\n§8Текущий участок: §f"
+                        + (player.getFloorX() >> 4) + ", " + (player.getFloorZ() >> 4)
+                        + "\n\n§7Выбери действие:",
+                List.of("§a✚  Заприватить участок", "§c✖  Снять приват здесь",
+                        "§b⌖  Информация об участке", "§e▤  Мои регионы", "§7❔  Помощь"),
+                index -> {
+                    switch (index) {
+                        case 0 -> claim(player);
+                        case 1 -> NEXORASurvival.choose(player, "§l§cСНЯТИЕ ПРИВАТА",
+                                "§7Освободить участок, на котором ты стоишь?\n§cЗащита территории будет снята.",
+                                List.of("§cДа, снять приват", "§aОтмена"), confirm -> {
+                                    if (confirm == 0) unclaim(player);
+                                    else openMenu(player);
+                                });
+                        case 2 -> info(player);
+                        case 3 -> listClaims(player);
+                        case 4 -> help(player);
+                        default -> openMenu(player);
+                    }
+                });
     }
 
     private void help(Player player) {
@@ -231,7 +259,7 @@ final class ClaimModule implements Listener {
 
     private void trust(Player player, String[] args) {
         if (args.length < 1) {
-            player.sendMessage(PREFIX + "§e/trust <игрок>");
+            player.sendMessage(PREFIX + "§e/rg trust <игрок>");
             return;
         }
         Player target = plugin.getServer().getPlayer(args[0]);
@@ -271,7 +299,7 @@ final class ClaimModule implements Listener {
         String claimKey = key(player.getLevel(), player.getFloorX() >> 4, player.getFloorZ() >> 4);
         String owner = ownerOf(claimKey);
         if (owner.isEmpty()) {
-            player.sendMessage(PREFIX + "§7Участок свободен. Занять: §e/claim");
+            player.sendMessage(PREFIX + "§7Участок свободен. Занять: §e/rg claim");
             return;
         }
         List<String> names = new ArrayList<>();
