@@ -96,11 +96,15 @@ final class RankBridge {
             };
             if (old.isEmpty() || old.equals("player")) continue;
             if (isStaff(old)) {
-                if (id(staff, "getAdminRankId", uuid).isEmpty()
-                        && call(staff, "setRank", new Class<?>[]{UUID.class, String.class}, uuid, old) != null) migrated++;
+                if (id(staff, "getAdminRankId", uuid).isEmpty()) {
+                    call(staff, "setRank", new Class<?>[]{UUID.class, String.class}, uuid, old);
+                    if (old.equals(id(staff, "getAdminRankId", uuid))) migrated++;
+                }
             } else if (isDonate(old)) {
-                if (id(donate, "getRankId", uuid).isEmpty()
-                        && call(donate, "setRank", new Class<?>[]{UUID.class, String.class}, uuid, old) != null) migrated++;
+                if (id(donate, "getRankId", uuid).isEmpty()) {
+                    call(donate, "setRank", new Class<?>[]{UUID.class, String.class}, uuid, old);
+                    if (old.equals(id(donate, "getRankId", uuid))) migrated++;
+                }
             }
         }
         marker.set("completed", true);
