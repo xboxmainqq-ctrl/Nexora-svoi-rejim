@@ -3,10 +3,16 @@ on:
   push:
     paths:
       - "plugins/NEXORA_Beasts/**"
+      - "plugins/NEXORA_Donate/**"
+      - "plugins/NEXORA_AdminRanks/**"
+      - "resource-pack/**"
       - ".github/workflows/beasts.yml"
   pull_request:
     paths:
       - "plugins/NEXORA_Beasts/**"
+      - "plugins/NEXORA_Donate/**"
+      - "plugins/NEXORA_AdminRanks/**"
+      - "resource-pack/**"
       - ".github/workflows/beasts.yml"
   workflow_dispatch:
 jobs:
@@ -26,3 +32,176 @@ jobs:
         with:
           name: NEXORA_Beasts
           path: plugins/NEXORA_Beasts/target/*.jar
+      - name: Install resource-pack font generator dependency
+        run: python3 -m pip install Pillow
+      - name: Build NEXORA_Beasts Resource Pack
+        run: python3 resource-pack/build_pack.py
+      - name: Verify rank glyph map matches the plugins
+        working-directory: resource-pack/tools
+        run: python3 verify_rank_glyph_map.py
+      - name: Validate Bedrock resource pack
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          from zipfile import ZipFile
+
+          root = Path("resource-pack/NEXORA_Beasts_RP")
+          for path in sorted(root.rglob("*.json")):
+              json.loads(path.read_text(encoding="utf-8"))
+              print(f"Valid JSON: {path}")
+
+          pack = Path("resource-pack/build/NEXORA_Beasts_RP.mcpack")
+          with ZipFile(pack) as archive:
+              names = set(archive.namelist())
+              required = {
+                  "manifest.json",
+                  "textures/font/glyph_E2.png",
+                  "entity/nexora_wolf.entity.json",
+                  "models/entity/nexora_wolf.geo.json",
+                  "animations/nexora_wolf.animation.json",
+                  "textures/entity/nexora_wolf.png",
+                  "entity/nexora_fox.entity.json",
+                  "models/entity/nexora_fox.geo.json",
+                  "animations/nexora_fox.animation.json",
+                  "textures/entity/nexora_fox.png",
+                  "entity/nexora_cat.entity.json",
+                  "models/entity/nexora_cat.geo.json",
+                  "animations/nexora_cat.animation.json",
+                  "textures/entity/nexora_cat.png",
+                  "entity/nexora_bee.entity.json",
+                  "models/entity/nexora_bee.geo.json",
+                  "animations/nexora_bee.animation.json",
+                  "textures/entity/nexora_bee.png",
+                  "entity/nexora_axolotl.entity.json",
+                  "models/entity/nexora_axolotl.geo.json",
+                  "animations/nexora_axolotl.animation.json",
+                  "textures/entity/nexora_axolotl.png",
+                  "entity/nexora_horse.entity.json",
+                  "models/entity/nexora_horse.geo.json",
+                  "animations/nexora_horse.animation.json",
+                  "textures/entity/nexora_horse.png",
+                  "entity/nexora_panda.entity.json",
+                  "models/entity/nexora_panda.geo.json",
+                  "animations/nexora_panda.animation.json",
+                  "textures/entity/nexora_panda.png",
+                  "entity/nexora_polar_bear.entity.json",
+                  "models/entity/nexora_polar_bear.geo.json",
+                  "animations/nexora_polar_bear.animation.json",
+                  "textures/entity/nexora_polar_bear.png",
+                  "entity/nexora_rabbit.entity.json",
+                  "models/entity/nexora_rabbit.geo.json",
+                  "animations/nexora_rabbit.animation.json",
+                  "textures/entity/nexora_rabbit.png",
+                  "entity/nexora_ocelot.entity.json",
+                  "models/entity/nexora_ocelot.geo.json",
+                  "animations/nexora_ocelot.animation.json",
+                  "textures/entity/nexora_ocelot.png",
+                  "entity/nexora_turtle.entity.json",
+                  "models/entity/nexora_turtle.geo.json",
+                  "animations/nexora_turtle.animation.json",
+                  "textures/entity/nexora_turtle.png",
+                  "entity/nexora_dolphin.entity.json",
+                  "models/entity/nexora_dolphin.geo.json",
+                  "animations/nexora_dolphin.animation.json",
+                  "textures/entity/nexora_dolphin.png",
+                  "entity/nexora_parrot.entity.json",
+                  "models/entity/nexora_parrot.geo.json",
+                  "animations/nexora_parrot.animation.json",
+                  "textures/entity/nexora_parrot.png",
+                  "entity/nexora_dragon.entity.json",
+                  "models/entity/nexora_dragon.geo.json",
+                  "animations/nexora_dragon.animation.json",
+                  "textures/entity/nexora_dragon.png",
+              }
+              looks = ("common", "uncommon", "rare", "epic", "legendary",
+                       "mythic", "ancient", "divine", "forbidden", "absolute")
+              required |= {"animations/nexora_looks.animation.json"}
+              for look in looks:
+                  required |= {f"models/entity/nexora_look_{look}.geo.json",
+                               f"textures/entity/looks/nexora_{look}.png"}
+              for rar in looks:
+                  for layer in range(1, 5):
+                      required.add(f"particles/aura_{rar}_{layer}.particle.json")
+              for tex in ("glow", "spark", "ember", "petal", "feather", "smoke", "halo",
+                          "circle_tri", "circle_tri_inv", "circle_hex", "circle_star",
+                          "circle_oct", "circle_sun", "circle_flower"):
+                  required.add(f"textures/particle/nexora_{tex}.png")
+              required |= {f"textures/font/glyph_{page:02X}.png" for page in range(0xE3, 0xF8)}
+              missing = required - names
+              if missing:
+                  raise SystemExit(f"Missing pack files: {sorted(missing)}")
+              species = (
+                  "wolf", "fox", "cat", "bee", "axolotl", "horse", "panda",
+                  "polar_bear", "rabbit", "ocelot", "turtle", "dolphin", "parrot",
+              )
+              for name in species:
+                  model_path = f"models/entity/nexora_{name}.geo.json"
+                  model = json.loads(archive.read(model_path))
+                  desc = model["minecraft:geometry"][0]["description"]
+                  if desc["texture_width"] != 128 or desc["texture_height"] != 128:
+                      raise SystemExit(f"Unexpected texture size in {model_path}")
+                  bones = {bone["name"] for bone in model["minecraft:geometry"][0]["bones"]}
+                  if not any(token in bone for bone in bones for token in
+                             ("wing", "fin", "gill", "horn", "spine", "armor", "feather", "ridge", "tuft", "ear")):
+                      raise SystemExit(f"No fantasy geometry found in {model_path}")
+                  texture = archive.read(f"textures/entity/nexora_{name}.png")
+                  if texture[:8] != bytes([137, 80, 78, 71, 13, 10, 26, 10]):
+                      raise SystemExit(f"Invalid PNG texture for {name}")
+                  width = int.from_bytes(texture[16:20], "big")
+                  height = int.from_bytes(texture[20:24], "big")
+                  if (width, height) != (128, 128):
+                      raise SystemExit(f"Unexpected texture dimensions for {name}: {width}x{height}")
+
+              # The dedicated dragon uses its own 256x256 texture and articulated bones.
+              dragon_model_path = "models/entity/nexora_dragon.geo.json"
+              dragon_model = json.loads(archive.read(dragon_model_path))
+              dragon_desc = dragon_model["minecraft:geometry"][0]["description"]
+              if (dragon_desc["texture_width"], dragon_desc["texture_height"]) != (256, 256):
+                  raise SystemExit("Dragon geometry must use a 256x256 texture atlas")
+              dragon_bones = {bone["name"] for bone in dragon_model["minecraft:geometry"][0]["bones"]}
+              dragon_required_bones = {
+                  "body", "chest", "neck", "head", "jaw", "horn_left", "horn_right",
+                  "wing_left", "wing_right", "leg_front_left", "leg_front_right",
+                  "leg_back_left", "leg_back_right", "tail_1", "tail_2", "tail_3",
+              }
+              missing_dragon_bones = dragon_required_bones - dragon_bones
+              if missing_dragon_bones:
+                  raise SystemExit(f"Dragon model is missing bones: {sorted(missing_dragon_bones)}")
+              dragon_texture = archive.read("textures/entity/nexora_dragon.png")
+              if dragon_texture[:8] != bytes([137, 80, 78, 71, 13, 10, 26, 10]):
+                  raise SystemExit("Invalid PNG texture for dragon")
+              dragon_width = int.from_bytes(dragon_texture[16:20], "big")
+              dragon_height = int.from_bytes(dragon_texture[20:24], "big")
+              if (dragon_width, dragon_height) != (256, 256):
+                  raise SystemExit(f"Unexpected dragon texture dimensions: {dragon_width}x{dragon_height}")
+              dragon_entity = json.loads(archive.read("entity/nexora_dragon.entity.json"))
+              dragon_animations = json.loads(archive.read("animations/nexora_dragon.animation.json"))
+              animation_names = dragon_entity["minecraft:client_entity"]["description"]["animations"]
+              expected_animations = {"rest", "walk", "flight", "attack", "sleep"}
+              if set(animation_names) != expected_animations:
+                  raise SystemExit(f"Dragon animation map mismatch: {sorted(animation_names)}")
+              for animation in expected_animations:
+                  if f"animation.nexora_dragon.{animation}" not in dragon_animations["animations"]:
+                      raise SystemExit(f"Missing dragon animation: {animation}")
+
+              for look in looks:
+                  geo = json.loads(archive.read(f"models/entity/nexora_look_{look}.geo.json"))
+                  bones = geo["minecraft:geometry"][0]["bones"]
+                  if not any(b.get("cubes") for b in bones):
+                      raise SystemExit(f"Empty rarity look geometry: {look}")
+              for entity, count in (("wolf", 6), ("turtle", 2), ("ocelot", 3), ("fox", 2), ("horse", 2)):
+                  rc = json.loads(archive.read(f"render_controllers/nexora_{entity}.render.json"))
+                  ctrl = next(iter(rc["render_controllers"].values()))
+                  if len(ctrl["arrays"]["geometries"]["Array.geo"]) != count:
+                      raise SystemExit(f"Wrong look variant count for {entity}")
+
+              bad = archive.testzip()
+              if bad:
+                  raise SystemExit(f"Corrupt archive member: {bad}")
+          print(f"Resource pack OK: {pack.stat().st_size} bytes")
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: NEXORA_Beasts_RP
+          path: resource-pack/build/NEXORA_Beasts_RP.mcpack

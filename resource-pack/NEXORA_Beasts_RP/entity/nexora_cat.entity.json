@@ -1,0 +1,32 @@
+{
+  "format_version": "1.10.0",
+  "minecraft:client_entity": {
+    "description": {
+      "identifier": "nexora:beast_cat",
+      "materials": {
+        "default": "entity_alphatest"
+      },
+      "textures": {
+        "default": "textures/entity/nexora_cat"
+      },
+      "geometry": {
+        "default": "geometry.nexora_cat"
+      },
+      "animations": {
+        "idle": "animation.nexora_cat.idle",
+        "walk": "animation.nexora_cat.walk"
+      },
+      "scripts": {
+        "animate": [
+          "idle",
+          {
+            "walk": "query.modified_move_speed > 0.01"
+          }
+        ]
+      },
+      "render_controllers": [
+        "controller.render.nexora_cat"
+      ]
+    }
+  }
+}

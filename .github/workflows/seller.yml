@@ -1,0 +1,28 @@
+name: Build NEXORA Seller
+on:
+  push:
+    paths:
+      - "plugins/NEXORA_Seller/**"
+      - ".github/workflows/seller.yml"
+  pull_request:
+    paths:
+      - "plugins/NEXORA_Seller/**"
+      - ".github/workflows/seller.yml"
+  workflow_dispatch:
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+      - name: Build NEXORA_Seller
+        working-directory: plugins/NEXORA_Seller
+        run: mvn --batch-mode clean package
+      - uses: actions/upload-artifact@v4
+        with:
+          name: NEXORA_Seller
+          path: plugins/NEXORA_Seller/target/*.jar

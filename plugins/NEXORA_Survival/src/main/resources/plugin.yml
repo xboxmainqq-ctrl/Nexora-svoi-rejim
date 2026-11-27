@@ -1,0 +1,100 @@
+name: NEXORA_Survival
+main: ru.nexora.survival.NEXORASurvival
+version: "1.0.9"
+api: ["1.0.0"]
+author: NEXORA
+description: "Survival: economy, teleport, clans, reports, chat and kits"
+depend: [NEXORA_Donate, NEXORA_AdminRanks]
+commands:
+  balance:
+    description: Show your balance
+    usage: "/balance [player]"
+    aliases: ["bal", "money"]
+  pay:
+    description: Send coins to a player
+    usage: "/pay <player> <amount>"
+  baltop:
+    description: Richest players
+    usage: "/baltop"
+  eco:
+    description: Manage balances (admin)
+    usage: "/eco <give|take|set> <player> <amount>"
+  sethome:
+    description: Save a home
+    usage: "/sethome [name]"
+  home:
+    description: Teleport to a home
+    usage: "/home [name]"
+  delhome:
+    description: Delete a home
+    usage: "/delhome <name>"
+  homes:
+    description: List your homes
+    usage: "/homes"
+  spawn:
+    description: Teleport to spawn
+    usage: "/spawn"
+  setspawn:
+    description: Set the spawn (admin)
+    usage: "/setspawn"
+  warp:
+    description: Teleport to a warp
+    usage: "/warp [name]"
+    aliases: ["warps"]
+  setwarp:
+    description: Create a warp (admin)
+    usage: "/setwarp <name>"
+  delwarp:
+    description: Delete a warp (admin)
+    usage: "/delwarp <name>"
+  tpa:
+    description: Ask to teleport to a player
+    usage: "/tpa <player>"
+  tpaccept:
+    description: Accept a teleport request
+    usage: "/tpaccept"
+  tpdeny:
+    description: Deny a teleport request
+    usage: "/tpdeny"
+  kit:
+    description: Receive a kit
+    usage: "/kit [name]"
+    aliases: ["kits"]
+  kick:
+    description: Kick a player (admin)
+    usage: "/kick <player> <reason>"
+  ban:
+    description: Ban a player (admin)
+    usage: "/ban <player> [duration] <reason>"
+  unban:
+    description: Remove a player ban (admin)
+    usage: "/unban <player>"
+  mute:
+    description: Mute a player (admin)
+    usage: "/mute <player> [duration] <reason>"
+  unmute:
+    description: Remove a player mute (admin)
+    usage: "/unmute <player>"
+  report:
+    description: Submit a player report or close a report (admin)
+    usage: "/report <player> <reason>"
+  reports:
+    description: View open player reports (admin)
+    usage: "/reports"
+  clan:
+    description: Clan management
+    usage: "/clan [help]"
+    aliases: ["clans"]
+  cc:
+    description: Clan chat
+    usage: "/cc <message>"
+  shop:
+    description: Open the NEXORA coin shop
+    usage: "/shop"
+  gear:
+    description: Give NEXORA equipment (admin)
+    usage: "/gear give <player> <id>"
+permissions:
+  nexora.survival.admin:
+    description: Administer NEXORA Survival (set spawn and warps, manage balances)
+    default: op

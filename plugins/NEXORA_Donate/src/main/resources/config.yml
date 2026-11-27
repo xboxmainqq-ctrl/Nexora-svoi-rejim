@@ -1,0 +1,112 @@
+# Уникальные игровые привилегии NEXORA. Покупки подключим через сайт позднее.
+title: "§l§0✦ NEXORA"
+subtitle: "§7Выбери особый статус и посмотри его возможности."
+purchase-enabled: false
+website: ""
+display-order: [aurvex, zyreth, veloria, kryon, nymeris, solvex, eclyra, nexorion]
+privileges:
+  aurvex:
+    homes: 4
+    kits: [start, daily, aurvex]
+
+    label: "AURVEX"
+    gradient: "aurvex"
+    short: "Искра нового пути"
+    price: "§eСкоро на сайте"
+    description: "AURVEX — первый знак отличия NEXORA. Спокойная сила океана для тех, кто только начинает собирать свою историю."
+    benefits:
+      - "§8▪ §fАвторский градиентный префикс AURVEX"
+      - "§8▪ §fДо 4 точек дома"
+      - "§8▪ §fДоступ к особому стартовому набору"
+  zyreth:
+    homes: 5
+    kits: [start, daily, zyreth]
+
+    label: "ZYRETH"
+    gradient: "zyreth"
+    short: "Энергия движения"
+    price: "§eСкоро на сайте"
+    description: "ZYRETH создан для активных игроков. Его яркое свечение выделяет тех, кто постоянно в движении."
+    benefits:
+      - "§8▪ §fАвторский градиентный префикс ZYRETH"
+      - "§8▪ §fДо 5 точек дома"
+      - "§8▪ §fРасширенный набор"
+  veloria:
+    homes: 6
+    kits: [start, daily, veloria]
+
+    label: "VELORIA"
+    gradient: "veloria"
+    short: "Грань совершенства"
+    price: "§eСкоро на сайте"
+    description: "VELORIA — элегантный статус с королевским переливом. Для игроков, которым важны стиль и комфорт."
+    benefits:
+      - "§8▪ §fАвторский градиентный префикс VELORIA"
+      - "§8▪ §fДо 6 точек дома"
+      - "§8▪ §fРасширенный набор"
+  kryon:
+    homes: 7
+    kits: [start, daily, kryon]
+
+    label: "KRYON"
+    gradient: "kryon"
+    short: "Холодная мощь"
+    price: "§eСкоро на сайте"
+    description: "KRYON воплощает ледяное спокойствие и уверенность. Его холодный оттенок заметен в каждом сообщении."
+    benefits:
+      - "§8▪ §fАвторский градиентный префикс KRYON"
+      - "§8▪ §fДо 7 точек дома"
+      - "§8▪ §fОсобый набор KRYON"
+  nymeris:
+    homes: 8
+    kits: [start, daily, nymeris]
+
+    label: "NYMERIS"
+    gradient: "nymeris"
+    short: "Пламя глубин"
+    price: "§eСкоро на сайте"
+    description: "NYMERIS — редкий статус с переливом закатного пламени. Для тех, кто уже оставил след в мире NEXORA."
+    benefits:
+      - "§8▪ §fАвторский градиентный префикс NYMERIS"
+      - "§8▪ §fДо 8 точек дома"
+      - "§8▪ §fОсобый набор NYMERIS"
+  solvex:
+    homes: 10
+    kits: [start, daily, solvex]
+
+    label: "SOLVEX"
+    gradient: "solvex"
+    short: "Импульс звезды"
+    price: "§eСкоро на сайте"
+    description: "SOLVEX — мощный сияющий ранг для уверенных игроков, которым доступно ещё больше удобства."
+    benefits:
+      - "§8▪ §fАвторский градиентный префикс SOLVEX"
+      - "§8▪ §fДо 10 точек дома"
+      - "§8▪ §fУлучшенный набор SOLVEX"
+  eclyra:
+    homes: 12
+    kits: [start, daily, eclyra]
+
+    label: "ECLYRA"
+    gradient: "eclyra"
+    short: "Сияние вне времени"
+    price: "§eСкоро на сайте"
+    description: "ECLYRA — почти мифический статус NEXORA. Глубокий королевский градиент подчёркивает его редкость."
+    benefits:
+      - "§8▪ §fАвторский градиентный префикс ECLYRA"
+      - "§8▪ §fДо 12 точек дома"
+      - "§8▪ §fПремиальный набор ECLYRA"
+  nexorion:
+    homes: 16
+    kits: [start, daily, nexorion]
+
+    label: "NEXORION"
+    gradient: "nexorion"
+    short: "Легенда вселенной NEXORA"
+    price: "§eСкоро на сайте"
+    description: "NEXORION — вершина игровой линейки. Имя, созданное для тех, кто хочет носить самый высокий статус проекта."
+    benefits:
+      - "§8▪ §fЭксклюзивный градиентный префикс NEXORION"
+      - "§8▪ §fДо 16 точек дома"
+      - "§8▪ §fМаксимальный набор NEXORION"
+      - "§8▪ §fСамое заметное оформление в чате"

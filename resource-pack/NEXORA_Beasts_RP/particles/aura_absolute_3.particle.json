@@ -1,0 +1,82 @@
+{
+  "format_version": "1.10.0",
+  "particle_effect": {
+    "description": {
+      "identifier": "nexora:aura_absolute_3",
+      "basic_render_parameters": {
+        "material": "particles_add",
+        "texture": "textures/particle/nexora_halo"
+      }
+    },
+    "components": {
+      "minecraft:emitter_local_space": {
+        "position": true,
+        "rotation": false
+      },
+      "minecraft:emitter_lifetime_once": {
+        "active_time": 0.1
+      },
+      "minecraft:emitter_shape_point": {
+        "offset": [
+          0,
+          0,
+          0
+        ],
+        "direction": [
+          0,
+          0,
+          0
+        ]
+      },
+      "minecraft:particle_lifetime_expression": {
+        "max_lifetime": 0.9
+      },
+      "minecraft:particle_initial_speed": 0,
+      "minecraft:particle_motion_parametric": {
+        "relative_position": [
+          "0",
+          "2.45",
+          "0"
+        ]
+      },
+      "minecraft:particle_appearance_billboard": {
+        "size": [
+          "0.6",
+          "0.6"
+        ],
+        "facing_camera_mode": "emitter_transform_xz",
+        "uv": {
+          "texture_width": 128,
+          "texture_height": 128,
+          "uv": [
+            0,
+            0
+          ],
+          "uv_size": [
+            128,
+            128
+          ]
+        }
+      },
+      "minecraft:particle_appearance_tinting": {
+        "color": {
+          "interpolant": "variable.particle_age / variable.particle_lifetime",
+          "gradient": {
+            "0.0": "#00FFFFFF",
+            "0.15": "#F2FFFFFF",
+            "0.5": "#F2C0ACFF",
+            "0.78": "#CE7E5CEC",
+            "1.0": "#007E5CEC"
+          }
+        }
+      },
+      "minecraft:emitter_rate_instant": {
+        "num_particles": 1
+      },
+      "minecraft:particle_initial_spin": {
+        "rotation": "0",
+        "rotation_rate": 70
+      }
+    }
+  }
+}

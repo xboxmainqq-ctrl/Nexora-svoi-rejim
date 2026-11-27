@@ -1,0 +1,19 @@
+name: NEXORA_Quests
+main: ru.nexora.quests.NEXORAQuests
+version: "1.0.0"
+api: ["1.0.0"]
+author: NEXORA
+softdepend: [NEXORA_Beasts]
+description: "Daily and weekly quests with a touch-friendly RPG menu"
+commands:
+  quests:
+    description: Open NEXORA quest journal
+    usage: "/quests"
+    aliases: ["quest", " задания"]
+permissions:
+  nexora.quests.use:
+    description: Use the quest journal
+    default: true
+  nexora.quests.admin:
+    description: Manage NEXORA quests
+    default: op

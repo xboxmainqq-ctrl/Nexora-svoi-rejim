@@ -1,0 +1,14 @@
+{
+  "format_version": "1.10.0",
+  "minecraft:client_entity": {
+    "description": {
+      "identifier": "nexora:beast_bee",
+      "materials": {"default": "entity_alphatest"},
+      "textures": {"default": "textures/entity/nexora_bee"},
+      "geometry": {"default": "geometry.nexora_bee"},
+      "animations": {"idle": "animation.nexora_bee.idle", "fly": "animation.nexora_bee.fly"},
+      "scripts": {"animate": ["idle", {"fly": "query.is_moving"}]},
+      "render_controllers": ["controller.render.nexora_bee"]
+    }
+  }
+}

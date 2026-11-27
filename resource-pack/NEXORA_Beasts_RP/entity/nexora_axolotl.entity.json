@@ -1,0 +1,14 @@
+{
+  "format_version":"1.10.0",
+  "minecraft:client_entity": {
+    "description": {
+      "identifier": "nexora:beast_axolotl",
+      "materials": {"default": "entity_alphatest"},
+      "textures": {"default": "textures/entity/nexora_axolotl"},
+      "geometry": {"default": "geometry.nexora_axolotl"},
+      "animations": {"idle": "animation.nexora_axolotl.idle", "swim": "animation.nexora_axolotl.swim"},
+      "scripts": {"animate": ["idle", {"swim": "query.modified_move_speed > 0.01"}]},
+      "render_controllers": ["controller.render.nexora_axolotl"]
+    }
+  }
+}

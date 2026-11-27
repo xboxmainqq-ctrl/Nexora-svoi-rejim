@@ -1,0 +1,18 @@
+name: NEXORA_Dungeons
+main: ru.nexora.dungeons.NEXORADungeons
+version: "1.0.0"
+api: ["1.0.0"]
+author: NEXORA
+softdepend: [NEXORA_Beasts]
+description: Волновые подземелья с боссами и наградами
+commands:
+  dungeon:
+    description: Меню подземелий NEXORA
+    usage: "/dungeon"
+    aliases: ["dungeons", "подземелье"]
+    permission: nexora.dungeons.use
+permissions:
+  nexora.dungeons.use:
+    default: true
+  nexora.dungeons.admin:
+    default: op

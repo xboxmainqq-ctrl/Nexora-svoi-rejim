@@ -1,0 +1,32 @@
+{
+  "format_version": "1.8.0",
+  "render_controllers": {
+    "controller.render.nexora_ocelot": {
+      "arrays": {
+        "geometries": {
+          "Array.geo": [
+            "Geometry.default",
+            "Geometry.look_epic",
+            "Geometry.look_legendary"
+          ]
+        },
+        "textures": {
+          "Array.tex": [
+            "Texture.default",
+            "Texture.look_epic",
+            "Texture.look_legendary"
+          ]
+        }
+      },
+      "geometry": "Array.geo[query.variant]",
+      "materials": [
+        {
+          "*": "Material.default"
+        }
+      ],
+      "textures": [
+        "Array.tex[query.variant]"
+      ]
+    }
+  }
+}
