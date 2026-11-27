@@ -677,7 +677,7 @@ final class ClaimModule implements Listener {
         store.touch();
         player.sendMessage(PREFIX + "§aРегион расширен на §f" + blocks + " §aблоков в сторону §f"
                 + direction.toUpperCase(Locale.ROOT) + "§a. Добавлено блоков: §f" + addedBlocks
-                + "§a. Стоимость: " + plugin.economy().money(price) + "§a.");
+                + "§a. Стоимость: " + plugin.economy().money(NEXORASurvival.isAdmin(player) ? 0L : price) + "§a.");
     }
 
     private void unclaim(Player player) {
