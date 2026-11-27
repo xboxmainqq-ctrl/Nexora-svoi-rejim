@@ -7,12 +7,9 @@ import cn.nukkit.event.EventHandler;
 import cn.nukkit.event.Listener;
 import cn.nukkit.event.entity.EntityDamageByEntityEvent;
 import cn.nukkit.event.entity.EntityDamageEvent;
-import cn.nukkit.form.element.ElementButton;
-import cn.nukkit.form.handler.FormResponseHandler;
-import cn.nukkit.form.window.FormWindowSimple;
 import cn.nukkit.item.Item;
 import cn.nukkit.potion.Effect;
-import ru.nexora.survival.internal.fakeinventories.inventory.ChestFakeInventory;
+import com.nukkitx.fakeinventories.inventory.ChestFakeInventory;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -200,7 +197,7 @@ final class GearModule implements Listener {
     private void openRoot(Player player) {
         ChestFakeInventory menu = new ChestFakeInventory(null, "§l§0NEXORA §8| §6МАГАЗИН");
         Item pane = menuIcon( stainedGlassPaneId(), 7, 1, "§8 ");
-        for (int i = 0; i < 27; i++) menu.setItem(i, pane.clone());
+        for (int i = 0; i < 27; i++) menu.setItem(i, menuIcon(stainedGlassPaneId(), 7, 1, "§8 "));
         menu.setItem(4, menuIcon( goldIngotId(), 1, 1, "§6ТВОИ МОНЕТЫ",
                 "§7Баланс: §e" + plugin.economy().balance(player.getUniqueId()),
                 "§8Покупай предметы за монеты"));
@@ -233,8 +230,7 @@ final class GearModule implements Listener {
     }
 
     private void fillShopFrame(ChestFakeInventory menu) {
-        Item pane = menuIcon(stainedGlassPaneId(), 7, 1, "§8 ");
-        for (int i = 0; i < 27; i++) menu.setItem(i, pane.clone());
+        for (int i = 0; i < 27; i++) menu.setItem(i, menuIcon(stainedGlassPaneId(), 7, 1, "§8 "));
     }
 
     private void openShopItemCategory(Player player, List<ShopItem> items, String title) {
@@ -344,24 +340,7 @@ final class GearModule implements Listener {
         player.getInventory().addItem(item);
         player.sendMessage(PREFIX + "§aКуплено: " + shopItem.name() + " §7×" + shopItem.count()
                 + " §8за §e" + shopItem.price() + " монет§a.");
-        openShopList(player, list, title);
-    }
-
-    private void openList(Player player, List<Gear> items, boolean armor) {
-        FormWindowSimple form = new FormWindowSimple(
-                armor ? "§l§0✥ БРОНЯ И КОМПЛЕКТЫ" : (items.get(0).id().equals("rust_blade") ? "§l§0⚔ ОРУЖИЕ" : "§l§0⚒ ИНСТРУМЕНТЫ"),
-                "§7Выбери предмет. Его указанный эффект действительно работает.\n§8Цены в монетах.");
-        for (Gear gear : items) {
-            form.addButton(new ElementButton(gear.name() + "\n" + gear.description() + "\n§e" + gear.price() + " монет"));
-        }
-        form.addButton(new ElementButton("§7← Назад"));
-        form.addHandler(FormResponseHandler.withoutPlayer(ignored -> {
-            if (form.wasClosed()) return;
-            int index = form.getResponse().getClickedButtonId();
-            if (index >= 0 && index < items.size()) purchase(player, items.get(index), items, armor);
-            else openRoot(player);
-        }));
-        player.showFormWindow(form);
+        openShopItemCategory(player, list, title);
     }
 
     private void purchase(Player player, Gear gear, List<Gear> list, boolean armor) {
@@ -385,7 +364,7 @@ final class GearModule implements Listener {
         for (Item item : items) player.getInventory().addItem(item);
         player.sendMessage(PREFIX + "§aПокупка успешна: " + gear.name() + "§a.");
         player.sendMessage(PREFIX + (armor ? "§7Полный алмазный комплект выдан. Бонус полного комплекта активен только при ношении всех 4 частей." : (gear.perkDescription().equals("Инструмент") ? "§7Инструмент добавлен в инвентарь." : "§7Особый эффект оружия срабатывает при попадании.")));
-        openList(player, list, armor);
+        openShopGearCategory(player, list, armor);
     }
 
     private void deliver(Player player, Gear gear) {
