@@ -5,7 +5,7 @@ import cn.nukkit.command.CommandSender;
 import cn.nukkit.event.EventHandler;
 import cn.nukkit.event.Listener;
 import cn.nukkit.event.player.PlayerChatEvent;
-import cn.nukkit.event.player.PlayerLoginEvent;
+import cn.nukkit.event.player.PlayerJoinEvent;
 import cn.nukkit.utils.ConfigSection;
 
 import java.io.File;
@@ -148,12 +148,18 @@ final class ModerationModule implements Listener {
         if (online != null && !ban) online.sendMessage("§a§lNEXORA §8» §r§aТвой мут снят администрацией.");
     }
 
+    /**
+     * NetherNet clients can show a generic connection error when the login is
+     * rejected during PlayerLoginEvent. Let the Bedrock session finish joining,
+     * then send a normal kick packet with the moderation screen.
+     */
     @EventHandler
-    public void onLogin(PlayerLoginEvent event) {
+    public void onJoin(PlayerJoinEvent event) {
         Player player = event.getPlayer();
         String key = player.getName().toLowerCase(Locale.ROOT);
         String base = "bans." + key;
         if (!store.cfg.exists(base + ".name")) return;
+
         long expires = store.cfg.getLong(base + ".expires", 0L);
         if (expires > 0L && System.currentTimeMillis() >= expires) {
             store.cfg.remove(base);
@@ -161,11 +167,19 @@ final class ModerationModule implements Listener {
             store.flush();
             return;
         }
+
         String why = store.cfg.getString(base + ".reason", "Нарушение правил сервера");
         long remaining = expires == 0L ? 0L : expires - System.currentTimeMillis();
         String duration = remaining == 0L ? "навсегда" : prettyDuration(remaining);
-        event.setCancelled(true);
-        event.setKickMessage(banScreen(why, duration));
+
+        // Do not announce a banned player as having joined the server.
+        event.setJoinMessage("");
+        plugin.getServer().getScheduler().scheduleDelayedTask(plugin, () -> {
+            Player current = plugin.getServer().getPlayerExact(player.getName());
+            if (current != null) {
+                current.kick(banScreen(why, duration), false);
+            }
+        }, 1);
     }
 
     @EventHandler
