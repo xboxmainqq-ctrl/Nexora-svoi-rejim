@@ -6,6 +6,9 @@ website: ""
 display-order: [aurvex, zyreth, veloria, kryon, nymeris, solvex, eclyra, nexorion]
 privileges:
   aurvex:
+    homes: 4
+    kits: [start, daily, vip]
+
     label: "AURVEX"
     gradient: "aurvex"
     short: "Искра нового пути"
@@ -16,6 +19,9 @@ privileges:
       - "§8▪ §fДо 4 точек дома"
       - "§8▪ §fДоступ к особому стартовому набору"
   zyreth:
+    homes: 5
+    kits: [start, daily, vip]
+
     label: "ZYRETH"
     gradient: "zyreth"
     short: "Энергия движения"
@@ -26,6 +32,9 @@ privileges:
       - "§8▪ §fДо 5 точек дома"
       - "§8▪ §fРасширенный набор"
   veloria:
+    homes: 6
+    kits: [start, daily, vip]
+
     label: "VELORIA"
     gradient: "veloria"
     short: "Грань совершенства"
@@ -36,6 +45,9 @@ privileges:
       - "§8▪ §fДо 6 точек дома"
       - "§8▪ §fРасширенный набор"
   kryon:
+    homes: 7
+    kits: [start, daily, vip]
+
     label: "KRYON"
     gradient: "kryon"
     short: "Холодная мощь"
@@ -46,6 +58,9 @@ privileges:
       - "§8▪ §fДо 7 точек дома"
       - "§8▪ §fОсобый набор KRYON"
   nymeris:
+    homes: 8
+    kits: [start, daily, vip]
+
     label: "NYMERIS"
     gradient: "nymeris"
     short: "Пламя глубин"
@@ -56,6 +71,9 @@ privileges:
       - "§8▪ §fДо 8 точек дома"
       - "§8▪ §fОсобый набор NYMERIS"
   solvex:
+    homes: 10
+    kits: [start, daily, vip]
+
     label: "SOLVEX"
     gradient: "solvex"
     short: "Импульс звезды"
@@ -66,6 +84,9 @@ privileges:
       - "§8▪ §fДо 10 точек дома"
       - "§8▪ §fУлучшенный набор SOLVEX"
   eclyra:
+    homes: 12
+    kits: [start, daily, vip]
+
     label: "ECLYRA"
     gradient: "eclyra"
     short: "Сияние вне времени"
@@ -76,6 +97,9 @@ privileges:
       - "§8▪ §fДо 12 точек дома"
       - "§8▪ §fПремиальный набор ECLYRA"
   nexorion:
+    homes: 16
+    kits: [start, daily, vip]
+
     label: "NEXORION"
     gradient: "nexorion"
     short: "Легенда вселенной NEXORA"
@@ -86,19 +110,3 @@ privileges:
       - "§8▪ §fДо 16 точек дома"
       - "§8▪ §fМаксимальный набор NEXORION"
       - "§8▪ §fСамое заметное оформление в чате"
-    homes: 4
-    kits: [start, daily, vip]
-    homes: 5
-    kits: [start, daily, vip]
-    homes: 6
-    kits: [start, daily, vip]
-    homes: 7
-    kits: [start, daily, vip]
-    homes: 8
-    kits: [start, daily, vip]
-    homes: 10
-    kits: [start, daily, vip]
-    homes: 12
-    kits: [start, daily, vip]
-    homes: 16
-    kits: [start, daily, vip]
