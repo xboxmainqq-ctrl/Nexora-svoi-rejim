@@ -3,6 +3,21 @@
   <groupId>ru.nexora</groupId><artifactId>nexora-survival</artifactId><version>1.0.0</version>
   <properties><maven.compiler.release>21</maven.compiler.release><project.build.sourceEncoding>UTF-8</project.build.sourceEncoding></properties>
   <repositories><repository><id>lanink</id><url>https://repo.lanink.cn/repository/maven-public/</url></repository></repositories>
-  <dependencies><dependency><groupId>com.nukkit-mot</groupId><artifactId>nukkit-mot</artifactId><version>1.26.60-R1</version><scope>provided</scope></dependency></dependencies>
-  <build><plugins><plugin><groupId>org.apache.maven.plugins</groupId><artifactId>maven-compiler-plugin</artifactId><version>3.13.0</version></plugin></plugins></build>
+  <dependencies>
+    <dependency><groupId>com.nukkit-mot</groupId><artifactId>nukkit-mot</artifactId><version>1.26.60-R1</version><scope>provided</scope></dependency>
+    <dependency><groupId>com.nukkitx</groupId><artifactId>fakeinventories</artifactId><version>1.0.3-MOT-SNAPSHOT</version></dependency>
+  </dependencies>
+  <build><plugins>
+    <plugin><groupId>org.apache.maven.plugins</groupId><artifactId>maven-compiler-plugin</artifactId><version>3.13.0</version></plugin>
+    <plugin>
+      <groupId>org.apache.maven.plugins</groupId><artifactId>maven-shade-plugin</artifactId><version>3.6.0</version>
+      <executions><execution><phase>package</phase><goals><goal>shade</goal></goals>
+        <configuration>
+          <createDependencyReducedPom>false</createDependencyReducedPom>
+          <filters><filter><artifact>*:*</artifact><excludes><exclude>plugin.yml</exclude><exclude>META-INF/*.SF</exclude><exclude>META-INF/*.DSA</exclude><exclude>META-INF/*.RSA</exclude></excludes></filter></filters>
+          <relocations><relocation><pattern>com.nukkitx.fakeinventories</pattern><shadedPattern>ru.nexora.survival.internal.fakeinventories</shadedPattern></relocation></relocations>
+        </configuration>
+      </execution></executions>
+    </plugin>
+  </plugins></build>
 </project>
