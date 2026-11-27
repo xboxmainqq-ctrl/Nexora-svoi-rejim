@@ -22,6 +22,7 @@ public final class NEXORASurvival extends PluginBase {
     private ClaimModule claims;
     private SocialModule social;
     private GearModule gear;
+    private ClanModule clans;
 
     @Override
     public void onEnable() {
@@ -36,12 +37,13 @@ public final class NEXORASurvival extends PluginBase {
         claims = new ClaimModule(this);
         social = new SocialModule(this);
         gear = new GearModule(this);
-        for (Listener listener : new Listener[]{economy, teleports, claims, social, gear}) {
+        clans = new ClanModule(this);
+        for (Listener listener : new Listener[]{economy, teleports, claims, social, gear, clans}) {
             getServer().getPluginManager().registerEvents(listener, this);
         }
         // Data files are written once a minute and on shutdown, not after every change.
         getServer().getScheduler().scheduleRepeatingTask(this, this::flushAll, 20 * 60);
-        getLogger().info("NEXORA_Survival включён: экономика, приваты, телепорты, ранги, киты и арсенал оружия/брони.");
+        getLogger().info("NEXORA_Survival включён: экономика, приваты, телепорты, кланы, ранги, киты и арсенал.");
     }
 
     @Override
@@ -54,6 +56,7 @@ public final class NEXORASurvival extends PluginBase {
         if (teleports != null) teleports.flush();
         if (claims != null) claims.flush();
         if (social != null) social.flush();
+        if (clans != null) clans.flush();
     }
 
     @Override
@@ -63,12 +66,14 @@ public final class NEXORASurvival extends PluginBase {
                 || teleports.handle(sender, name, args)
                 || claims.handle(sender, name, args)
                 || social.handle(sender, name, args)
+                || clans.handle(sender, name, args)
                 || gear.handle(sender, name, args);
     }
 
     EconomyModule economy() { return economy; }
     TeleportModule teleports() { return teleports; }
     SocialModule social() { return social; }
+    ClanModule clans() { return clans; }
 
     static boolean isAdmin(CommandSender sender) {
         return sender.isOp() || sender.hasPermission("nexora.survival.admin");
