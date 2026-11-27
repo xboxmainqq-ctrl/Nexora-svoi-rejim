@@ -8,6 +8,7 @@ import zlib
 import zipfile
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+sys.path.insert(0, str(Path(__file__).resolve().parent / "tools"))
 ROOT = Path(__file__).resolve().parent / "NEXORA_Beasts_RP"
 BUILD = Path(__file__).resolve().parent / "build"
 WIDTH = HEIGHT = 128
