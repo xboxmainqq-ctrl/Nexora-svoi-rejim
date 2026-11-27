@@ -61,24 +61,9 @@ commands:
   tpdeny:
     description: Deny a teleport request
     usage: "/tpdeny"
-  claim:
-    description: Claim the current chunk
-    usage: "/claim"
-  unclaim:
-    description: Release the current chunk
-    usage: "/unclaim"
-  claims:
-    description: List your claims
-    usage: "/claims"
-  trust:
-    description: Let a player build on your claims
-    usage: "/trust <player>"
-  untrust:
-    description: Take building rights away
-    usage: "/untrust <player>"
-  claiminfo:
-    description: Who owns this chunk
-    usage: "/claiminfo"
+  rg:
+    description: Region protection commands
+    usage: "/rg help"
   rank:
     description: Ranks
     usage: "/rank [list|info|set]"
