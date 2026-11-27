@@ -123,20 +123,37 @@ final class ClaimModule implements Listener {
     // ---- Commands ----
 
     boolean handle(CommandSender sender, String cmd, String[] args) {
-        if (!List.of("claim", "unclaim", "claims", "trust", "untrust", "claiminfo").contains(cmd)) return false;
+        if (!"rg".equals(cmd)) return false;
         if (!(sender instanceof Player player)) {
             sender.sendMessage("§cКоманда доступна только игроку.");
             return true;
         }
-        switch (cmd) {
-            case "claim" -> claim(player);
-            case "unclaim" -> unclaim(player);
-            case "claims" -> listClaims(player);
-            case "trust" -> trust(player, args);
-            case "untrust" -> untrust(player, args);
-            default -> info(player);
+        if (args.length == 0 || args[0].equalsIgnoreCase("help")) {
+            help(player);
+            return true;
+        }
+        String sub = args[0].toLowerCase(Locale.ROOT);
+        String[] subArgs = java.util.Arrays.copyOfRange(args, 1, args.length);
+        switch (sub) {
+            case "claim", "create" -> claim(player);
+            case "unclaim", "remove" -> unclaim(player);
+            case "list", "claims" -> listClaims(player);
+            case "trust" -> trust(player, subArgs);
+            case "untrust" -> untrust(player, subArgs);
+            case "info" -> info(player);
+            default -> help(player);
         }
         return true;
+    }
+
+    private void help(Player player) {
+        player.sendMessage("§6§l✦ NEXORA • Регион");
+        player.sendMessage("§e/rg claim §8— §7заприватить текущий участок");
+        player.sendMessage("§e/rg unclaim §8— §7освободить текущий участок");
+        player.sendMessage("§e/rg list §8— §7список твоих приватов");
+        player.sendMessage("§e/rg trust <игрок> §8— §7дать доступ к строительству");
+        player.sendMessage("§e/rg untrust <игрок> §8— §7забрать доступ");
+        player.sendMessage("§e/rg info §8— §7информация о регионе");
     }
 
     private void claim(Player player) {
@@ -156,7 +173,7 @@ final class ClaimModule implements Listener {
         }
         int limit = plugin.social().claimsLimit(player);
         if (claimCount(player.getUniqueId()) >= limit) {
-            player.sendMessage(PREFIX + "§cЛимит приватов: §e" + limit + "§c. Освободи ненужный: §e/unclaim");
+            player.sendMessage(PREFIX + "§cЛимит приватов: §e" + limit + "§c. Освободи ненужный: §e/rg unclaim");
             return;
         }
         long price = plugin.getConfig().getLong("claims.price", 50L);
@@ -173,7 +190,7 @@ final class ClaimModule implements Listener {
         store.cfg.set(base + ".cx", cx);
         store.cfg.set(base + ".cz", cz);
         store.touch();
-        player.sendMessage(PREFIX + "§aУчасток §f" + cx + ", " + cz + " §aтеперь твой. Друзей добавляй: §e/trust <игрок>");
+        player.sendMessage(PREFIX + "§aУчасток §f" + cx + ", " + cz + " §aтеперь твой. Друзей добавляй: §e/rg trust <игрок>");
     }
 
     private void unclaim(Player player) {
@@ -209,7 +226,7 @@ final class ClaimModule implements Listener {
         }
         player.sendMessage(PREFIX + "§7Твои участки (" + rows.size() + "/" + plugin.social().claimsLimit(player) + "):");
         for (String row : rows) player.sendMessage("§8• §f" + row);
-        if (rows.isEmpty()) player.sendMessage("§7Пока нет. Встань на нужный участок и напиши §e/claim");
+        if (rows.isEmpty()) player.sendMessage("§7Пока нет. Встань на нужный участок и напиши §e/rg claim");
     }
 
     private void trust(Player player, String[] args) {
@@ -234,7 +251,7 @@ final class ClaimModule implements Listener {
 
     private void untrust(Player player, String[] args) {
         if (args.length < 1) {
-            player.sendMessage(PREFIX + "§e/untrust <игрок>");
+            player.sendMessage(PREFIX + "§e/rg untrust <игрок>");
             return;
         }
         String section = "trust." + player.getUniqueId();
