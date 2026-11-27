@@ -1,0 +1,11 @@
+name: NEXORA_Donate
+main: ru.nexora.donate.NEXORADonate
+version: "1.0.0"
+api: ["1.0.0"]
+author: NEXORA
+description: "Красивое меню привилегий NEXORA"
+commands:
+  donate:
+    description: Открыть каталог привилегий NEXORA
+    usage: "/donate"
+    aliases: ["донат", "привилегии"]
