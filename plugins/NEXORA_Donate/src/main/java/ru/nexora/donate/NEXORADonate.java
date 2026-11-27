@@ -7,6 +7,7 @@ import cn.nukkit.form.element.ElementButton;
 import cn.nukkit.form.handler.FormResponseHandler;
 import cn.nukkit.form.window.FormWindowSimple;
 import cn.nukkit.plugin.Plugin;
+import cn.nukkit.plugin.Plugin;
 import cn.nukkit.plugin.PluginBase;
 import cn.nukkit.utils.Config;
 
@@ -158,9 +159,18 @@ public final class NEXORADonate extends PluginBase {
 
     public void setRank(UUID id, String rank) {
         ranks.set("players." + id, rank.toLowerCase(Locale.ROOT)); ranks.save();
+        refreshOnlinePlayer(id);
     }
 
-    public void removeRank(UUID id) { ranks.remove("players." + id); ranks.save(); }
+    public void removeRank(UUID id) { ranks.remove("players." + id); ranks.save(); refreshOnlinePlayer(id); }
+
+    private void refreshOnlinePlayer(UUID id) {
+        Player player = getServer().getPlayer(id).orElse(null);
+        Plugin survival = getServer().getPluginManager().getPlugin("NEXORA_Survival");
+        if (player == null || survival == null || !survival.isEnabled()) return;
+        try { survival.getClass().getMethod("refreshRankDisplay", Player.class).invoke(survival, player); }
+        catch (ReflectiveOperationException ex) { getLogger().warning("Не удалось обновить отображение ранга: " + ex.getMessage()); }
+    }
 
     public String getPrefix(UUID id) {
         String rank = getRankId(id);
