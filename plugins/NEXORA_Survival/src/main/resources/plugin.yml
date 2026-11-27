@@ -88,10 +88,9 @@ commands:
   cc:
     description: Clan chat
     usage: "/cc <message>"
-  weapons:
-    description: Open the NEXORA weapons and equipment menu
-    usage: "/weapons"
-    aliases: ["armor"]
+  shop:
+    description: Open the NEXORA coin shop
+    usage: "/shop"
   gear:
     description: Give NEXORA equipment (admin)
     usage: "/gear give <player> <id>"
