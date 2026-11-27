@@ -12,6 +12,8 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static ru.nexora.survival.NEXORASurvival.PREFIX;
 
@@ -76,7 +78,7 @@ final class ModerationModule implements Listener {
         if (!requireAdmin(sender)) return;
         if (args.length < 2) {
             sender.sendMessage(ban ? PREFIX + "§e/ban <игрок> [время] <причина>" : PREFIX + "§e/mute <игрок> [время] <причина>");
-            sender.sendMessage("§7Время: §f30m, 2h, 7d §8| §fperm §7— навсегда");
+            sender.sendMessage("§7Время: §f30s, 5m, 2h, 7d, 2w, 1d12h §8| §fperm §7— навсегда");
             return;
         }
         String name = NEXORASurvival.clean(args[0]);
@@ -196,24 +198,40 @@ final class ModerationModule implements Listener {
                 + "§7Причина: §f" + why + "\n§7Срок: §f" + duration;
     }
 
+    /**
+     * Accepts compact durations such as 30m, 2h, 7d, 2w and combinations
+     * such as 1d12h30m. The total duration is capped at ten years.
+     */
     private long parseDuration(String value) {
         String v = value.toLowerCase(Locale.ROOT);
         if (v.equals("perm") || v.equals("permanent")) return 0L;
-        if (v.length() < 2) return -1L;
+        if (v.isEmpty()) return -1L;
+
+        Pattern part = Pattern.compile("(\\\\d+)([smhdw])");
+        Matcher matcher = part.matcher(v);
+        long total = 0L;
+        int end = 0;
         try {
-            long n = Long.parseLong(v.substring(0, v.length() - 1));
-            if (n <= 0 || n > 3650) return -1L;
-            long unit = switch (v.charAt(v.length() - 1)) {
-                case 'm' -> 60_000L;
-                case 'h' -> 3_600_000L;
-                case 'd' -> 86_400_000L;
-                case 'w' -> 604_800_000L;
-                default -> -1L;
-            };
-            return unit < 0 ? -1L : n * unit;
-        } catch (NumberFormatException ex) {
+            while (matcher.find()) {
+                if (matcher.start() != end) return -1L;
+                long amount = Long.parseLong(matcher.group(1));
+                if (amount <= 0L) return -1L;
+                long unit = switch (matcher.group(2).charAt(0)) {
+                    case 's' -> 1_000L;
+                    case 'm' -> 60_000L;
+                    case 'h' -> 3_600_000L;
+                    case 'd' -> 86_400_000L;
+                    case 'w' -> 604_800_000L;
+                    default -> -1L;
+                };
+                total = Math.addExact(total, Math.multiplyExact(amount, unit));
+                if (total > 3650L * 86_400_000L) return -1L;
+                end = matcher.end();
+            }
+        } catch (ArithmeticException | NumberFormatException ex) {
             return -1L;
         }
+        return end == v.length() && end > 0 ? total : -1L;
     }
 
     private String prettyDuration(long millis) {
