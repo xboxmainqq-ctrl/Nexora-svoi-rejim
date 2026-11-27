@@ -103,6 +103,10 @@ final class ModerationModule implements Listener {
                 reasonAt = 2;
             } else if (args[1].equalsIgnoreCase("perm") || args[1].equalsIgnoreCase("permanent")) {
                 reasonAt = 2;
+            } else if (args[1].matches(".*\\d.*")) {
+                sender.sendMessage(PREFIX + "§cНеверный срок наказания: §f" + args[1]);
+                sender.sendMessage("§7Примеры: §f30s, 5m, 2h, 7d, 2w, 1d12h30m, perm");
+                return;
             }
         }
         String why = reason(args, reasonAt);
@@ -207,7 +211,7 @@ final class ModerationModule implements Listener {
         if (v.equals("perm") || v.equals("permanent")) return 0L;
         if (v.isEmpty()) return -1L;
 
-        Pattern part = Pattern.compile("(\\\\d+)([smhdw])");
+        Pattern part = Pattern.compile("(\\d+)([smhdw])");
         Matcher matcher = part.matcher(v);
         long total = 0L;
         int end = 0;
