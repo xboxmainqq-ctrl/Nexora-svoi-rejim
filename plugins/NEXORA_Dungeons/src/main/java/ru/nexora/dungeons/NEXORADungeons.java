@@ -306,9 +306,21 @@ public final class NEXORADungeons extends PluginBase implements Listener {
             run.player.getInventory().addItem(Item.get(266, 0, run.difficulty.rewardGold));
             run.player.sendMessage("§6✦ NEXORA §8» §aПОДЗЕМЕЛЬЕ ПРОЙДЕНО!");
             run.player.sendMessage("§7Награда: §b+" + run.difficulty.rewardXp + " XP §8и §6+" + run.difficulty.rewardGold + " золотых слитков§7.");
+            awardBeastXp(run.player, run.difficulty.rewardXp / 2);
         } else run.player.sendMessage("§cПодземелье завершено без награды.");
         Position exit = readPosition("exit");
         if (exit != null) run.player.teleport(exit);
+    }
+
+    /** Gives XP to the player's active beast team. Does nothing when NEXORA_Beasts is not installed. */
+    private void awardBeastXp(Player player, int amount) {
+        var beasts = getServer().getPluginManager().getPlugin("NEXORA_Beasts");
+        if (beasts == null || !beasts.isEnabled()) return;
+        try {
+            beasts.getClass().getMethod("awardTeamXp", Player.class, int.class).invoke(beasts, player, amount);
+        } catch (ReflectiveOperationException | RuntimeException ex) {
+            getLogger().warning("Не удалось начислить опыт питомцам: " + ex);
+        }
     }
 
     private void cleanupMobs(Run run) {

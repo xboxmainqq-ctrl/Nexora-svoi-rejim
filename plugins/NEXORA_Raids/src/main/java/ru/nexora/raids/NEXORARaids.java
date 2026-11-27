@@ -285,8 +285,20 @@ public final class NEXORARaids extends PluginBase implements Listener {
             run.player.getInventory().addItem(Item.get(266,0,run.difficulty.diamonds*3));
             run.player.sendMessage("§6✦ NEXORA §8» §aРЕЙД ПРОЙДЕН!");
             run.player.sendMessage("§7Награда: §b+"+run.difficulty.xp+" XP §8· §b"+run.difficulty.diamonds+" алм. §8· §6"+(run.difficulty.diamonds*3)+" золота");
+            awardBeastXp(run.player, run.difficulty.xp / 2);
         } else run.player.sendMessage("§cРейд завершён без награды.");
         Position exit=readPosition("exit"); if(exit!=null) run.player.teleport(exit);
+    }
+
+    /** Gives XP to the player's active beast team. Does nothing when NEXORA_Beasts is not installed. */
+    private void awardBeastXp(Player player, int amount) {
+        var beasts = getServer().getPluginManager().getPlugin("NEXORA_Beasts");
+        if (beasts == null || !beasts.isEnabled()) return;
+        try {
+            beasts.getClass().getMethod("awardTeamXp", Player.class, int.class).invoke(beasts, player, amount);
+        } catch (ReflectiveOperationException | RuntimeException ex) {
+            getLogger().warning("Не удалось начислить опыт питомцам: " + ex);
+        }
     }
 
     @EventHandler public void onQuit(PlayerQuitEvent event) {

@@ -3,6 +3,7 @@ main: ru.nexora.raids.NEXORARaids
 version: "1.1.0"
 api: ["1.0.0"]
 author: NEXORA
+softdepend: [NEXORA_Beasts]
 description: Трёхзальный рейд с механиками боссов и наградами
 commands:
   raid:

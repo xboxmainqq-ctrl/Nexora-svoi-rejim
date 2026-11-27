@@ -3,6 +3,7 @@ main: ru.nexora.dungeons.NEXORADungeons
 version: "1.0.0"
 api: ["1.0.0"]
 author: NEXORA
+softdepend: [NEXORA_Beasts]
 description: Волновые подземелья с боссами и наградами
 commands:
   dungeon:

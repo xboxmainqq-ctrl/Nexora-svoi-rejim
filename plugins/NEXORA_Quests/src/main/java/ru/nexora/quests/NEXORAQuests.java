@@ -10,6 +10,7 @@ import cn.nukkit.event.entity.EntityDeathEvent;
 import cn.nukkit.event.player.PlayerJoinEvent;
 import cn.nukkit.form.element.ElementButton;
 import cn.nukkit.form.handler.FormResponseHandler;
+import cn.nukkit.form.window.FormWindowModal;
 import cn.nukkit.form.window.FormWindowSimple;
 import cn.nukkit.item.Item;
 import cn.nukkit.plugin.PluginBase;
@@ -130,7 +131,7 @@ public final class NEXORAQuests extends PluginBase implements Listener {
         p.addExperience(rewardXp(id));
         p.sendMessage("§6✦ NEXORA §8» §aЗадание выполнено!");
         p.sendMessage("§7Награда: §e+" + rewardTokens(id) + " жетонов §8и §b+" + rewardXp(id) + " XP§7.");
-        p.sendMessage("§8Жетоны можно будет использовать в будущих системах NEXORA.");
+        p.sendMessage("§8Жетоны можно потратить в магазине: /quests → Магазин.");
     }
     private String bar(int value, int max) {
         int filled = Math.min(10, (int)Math.floor(value * 10.0 / max));
@@ -151,6 +152,7 @@ public final class NEXORAQuests extends PluginBase implements Listener {
         form.addButton(new ElementButton("§l§e☀ ЕЖЕДНЕВНЫЕ ЗАДАНИЯ\n§8Новые испытания каждый день"));
         form.addButton(new ElementButton("§l§6♛ НЕДЕЛЬНЫЕ ИСПЫТАНИЯ\n§8Большие цели и награды"));
         form.addButton(new ElementButton("§l§b✦ МОИ ЖЕТОНЫ\n§8Баланс и информация"));
+        form.addButton(new ElementButton("§l§d✚ МАГАЗИН\n§8Яйца, сферы и припасы за жетоны"));
         form.addButton(new ElementButton("§l§7✕ ЗАКРЫТЬ"));
         form.addHandler(FormResponseHandler.withoutPlayer(ignored -> {
             if (form.wasClosed()) return;
@@ -158,10 +160,107 @@ public final class NEXORAQuests extends PluginBase implements Listener {
                 case 0 -> openList(p, "daily");
                 case 1 -> openList(p, "weekly");
                 case 2 -> openTokens(p);
+                case 3 -> openShop(p);
                 default -> { }
             }
         }));
         p.showFormWindow(form);
+    }
+
+    // ---- Token shop ----
+
+    /** kind: "egg" (arg = rarity id), "orb" (amount = spheres), "wheat" (amount = items). */
+    private record ShopItem(String title, String info, int price, String kind, String arg, int amount) { }
+
+    private static final ShopItem[] SHOP = {
+            new ShopItem("§7Яйцо: Обычное", "Случайный питомец обычной редкости.", 60, "egg", "common", 1),
+            new ShopItem("§aЯйцо: Необычное", "Случайный питомец необычной редкости.", 120, "egg", "uncommon", 1),
+            new ShopItem("§bЯйцо: Редкое", "Случайный питомец редкой редкости.", 300, "egg", "rare", 1),
+            new ShopItem("§5Яйцо: Эпическое", "Случайный питомец эпической редкости.", 700, "egg", "epic", 1),
+            new ShopItem("§6Яйцо: Легендарное", "Случайный питомец легендарной редкости.", 1800, "egg", "legendary", 1),
+            new ShopItem("§bЛовчие сферы ×3", "Три сферы, чтобы приручать существ в мире.", 80, "orb", "", 3),
+            new ShopItem("§eПшеница ×16", "Корм для тренировки питомцев (25 опыта за штуку).", 20, "wheat", "", 16),
+    };
+
+    private void openShop(Player p) {
+        int tokens = data.getInt(path(p) + ".tokens", 0);
+        FormWindowSimple form = new FormWindowSimple("§l§0✚ МАГАЗИН NEXORA",
+                "§e✦ Твои жетоны: §f" + tokens + "\n§8Жетоны выдаются за ежедневные и недельные задания.\n\n§7Выбери товар:");
+        for (ShopItem item : SHOP) {
+            form.addButton(new ElementButton(item.title() + "\n§8" + item.price() + " жетонов"
+                    + (tokens >= item.price() ? "" : " §c(не хватает)")));
+        }
+        form.addButton(new ElementButton("§7← НАЗАД В ЖУРНАЛ"));
+        form.addHandler(FormResponseHandler.withoutPlayer(ignored -> {
+            if (form.wasClosed()) return;
+            int selected = form.getResponse().getClickedButtonId();
+            if (selected < SHOP.length) confirmPurchase(p, SHOP[selected]); else openJournal(p);
+        }));
+        p.showFormWindow(form);
+    }
+
+    private void confirmPurchase(Player p, ShopItem item) {
+        int tokens = data.getInt(path(p) + ".tokens", 0);
+        FormWindowModal form = new FormWindowModal("§l§0ПОКУПКА",
+                item.title() + "\n§7" + item.info()
+                        + "\n\n§fЦена: §e" + item.price() + " жетонов\n§fУ тебя: §e" + tokens + " жетонов",
+                "§aКУПИТЬ", "§7НАЗАД");
+        form.addHandler(FormResponseHandler.withoutPlayer(ignored -> {
+            if (form.wasClosed()) return;
+            if (form.getResponse().getClickedButtonId() == 0) buy(p, item);
+            openShop(p);
+        }));
+        p.showFormWindow(form);
+    }
+
+    private void buy(Player p, ShopItem item) {
+        String key = path(p) + ".tokens";
+        int tokens = data.getInt(key, 0);
+        if (tokens < item.price()) {
+            p.sendMessage("§cНе хватает жетонов: нужно " + item.price() + ", у тебя " + tokens + ".");
+            return;
+        }
+        // Tokens are charged only after the goods were really handed over.
+        if (!deliver(p, item)) return;
+        data.set(key, tokens - item.price());
+        data.save();
+        p.sendMessage("§6✦ NEXORA §8» §aПокупка: §f" + item.title() + " §8(−" + item.price() + " жетонов)");
+    }
+
+    private boolean deliver(Player p, ShopItem item) {
+        switch (item.kind()) {
+            case "wheat" -> {
+                Item wheat = Item.get(296, 0, item.amount());
+                if (!p.getInventory().canAddItem(wheat)) {
+                    p.sendMessage("§cНе хватает места в инвентаре. Жетоны не списаны.");
+                    return false;
+                }
+                p.getInventory().addItem(wheat);
+                return true;
+            }
+            case "egg" -> { return callBeasts(p, "giveShopEgg", String.class, item.arg()); }
+            case "orb" -> { return callBeasts(p, "giveShopOrbs", int.class, item.amount()); }
+            default -> { return false; }
+        }
+    }
+
+    /** Calls a NEXORA_Beasts API method by reflection; it returns false when the goods did not fit. */
+    private boolean callBeasts(Player p, String method, Class<?> argType, Object arg) {
+        var beasts = getServer().getPluginManager().getPlugin("NEXORA_Beasts");
+        if (beasts == null || !beasts.isEnabled()) {
+            p.sendMessage("§cСистема питомцев сейчас недоступна. Жетоны не списаны.");
+            return false;
+        }
+        try {
+            Object result = beasts.getClass().getMethod(method, Player.class, argType).invoke(beasts, p, arg);
+            if (Boolean.TRUE.equals(result)) return true;
+            p.sendMessage("§cНе хватает места в инвентаре. Жетоны не списаны.");
+            return false;
+        } catch (ReflectiveOperationException | RuntimeException ex) {
+            getLogger().warning("Магазин: не удалось выдать товар через NEXORA_Beasts: " + ex);
+            p.sendMessage("§cНе удалось выдать товар. Жетоны не списаны.");
+            return false;
+        }
     }
     private void openList(Player p, String period) {
         prepare(p);
@@ -207,9 +306,13 @@ public final class NEXORAQuests extends PluginBase implements Listener {
         int tokens = data.getInt(path(p) + ".tokens", 0);
         FormWindowSimple form = new FormWindowSimple("§l§0✦ КОШЕЛЁК ПРИКЛЮЧЕНЦА",
                 "§e✦ ТВОИ ЖЕТОНЫ: §f" + tokens + "\n\n§7Жетоны выдаются за выполненные задания.\n"
-                + "§8В следующих обновлениях их можно будет тратить в магазине NEXORA.");
+                + "§8Трать их в магазине: яйца питомцев, ловчие сферы и корм.");
+        form.addButton(new ElementButton("§l§d✚ В МАГАЗИН"));
         form.addButton(new ElementButton("§7← НАЗАД"));
-        form.addHandler(FormResponseHandler.withoutPlayer(ignored -> { if (!form.wasClosed()) openJournal(p); }));
+        form.addHandler(FormResponseHandler.withoutPlayer(ignored -> {
+            if (form.wasClosed()) return;
+            if (form.getResponse().getClickedButtonId() == 0) openShop(p); else openJournal(p);
+        }));
         p.showFormWindow(form);
     }
     private void tickPlaytime() {

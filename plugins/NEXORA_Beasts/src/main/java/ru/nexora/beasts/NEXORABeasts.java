@@ -2104,6 +2104,47 @@ public final class NEXORABeasts extends PluginBase implements Listener {
         data.save();
     }
 
+    // ---- Public API for other NEXORA plugins (Raids, Dungeons, Quests). ----
+    // They call these methods through reflection, so they need no compile-time dependency.
+
+    /** Gives {@code amount} XP to every beast in the player's active team. Returns how many beasts got it. */
+    public int awardTeamXp(Player player, int amount) {
+        if (player == null || amount <= 0) return 0;
+        int rewarded = 0;
+        for (int slot = 1; slot <= 3; slot++) {
+            String id = data.getString(playerPath(player) + ".team." + slot, "");
+            if (id.isEmpty() || !hasBeast(player, id)) continue;
+            gainBeastXp(player, id, amount);
+            rewarded++;
+        }
+        if (rewarded > 0) {
+            player.sendMessage("§6✦ NEXORA §8» §7Питомцы команды получили §e+" + amount + " §7опыта.");
+        }
+        return rewarded;
+    }
+
+    /** Shop helper: puts one egg of the given rarity into the inventory. False if it does not fit. */
+    public boolean giveShopEgg(Player player, String rarity) {
+        if (player == null || rarity == null) return false;
+        String key = rarity.toLowerCase(Locale.ROOT);
+        if (!isRarity(key)) return false;
+        Item egg = createEgg("random", key);
+        if (!player.getInventory().canAddItem(egg)) return false;
+        player.getInventory().addItem(egg);
+        return true;
+    }
+
+    /** Shop helper: gives capture spheres. False if they do not fit in the inventory. */
+    public boolean giveShopOrbs(Player player, int amount) {
+        if (player == null || amount <= 0 || amount > 64) return false;
+        Item orb = Item.get(368, 0, amount);
+        orb.setCustomName(ORB_NAME);
+        orb.setLore("§7Нажми по существу, чтобы попытаться приручить его.", "§8NEXORA: BEASTS");
+        if (!player.getInventory().canAddItem(orb)) return false;
+        player.getInventory().addItem(orb);
+        return true;
+    }
+
     private String evolutionRank(int level) {
         if (level >= 100) return "Абсолютный зверь";
         if (level >= 75) return "Пробуждённый";
