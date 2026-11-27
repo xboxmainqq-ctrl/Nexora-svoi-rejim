@@ -261,8 +261,10 @@ final class EconomyModule implements Listener {
             if (form.wasClosed()) return;
             int index = form.getResponse().getClickedButtonId();
             if (index >= 0 && index < SELL_CATEGORIES.size()) openSellCategory(player, SELL_CATEGORIES.get(index));
-            else if (index == SELL_CATEGORIES.size()) sellAll(player);
-            else if (index == SELL_CATEGORIES.size() + 1) prices(player);
+            else if (index == SELL_CATEGORIES.size()) {
+                sellAll(player);
+                openSeller(player);
+            } else if (index == SELL_CATEGORIES.size() + 1) openPricesMenu(player);
         }));
         player.showFormWindow(form);
     }
@@ -285,7 +287,8 @@ final class EconomyModule implements Listener {
         }
         form.addButton(new ElementButton("§l§a✦ ПРОДАТЬ ВЕСЬ ОТДЕЛ\n§8Получить "
                 + sellableValue(player, category.id()) + " монет"));
-        form.addButton(new ElementButton("§7← НАЗАД"));
+        form.addButton(new ElementButton("§c🟥 СТЕКЛО · НАЗАД К ОТДЕЛАМ"));
+        form.addButton(new ElementButton("§8⬛ ЗАКРЫТЬ МЕНЮ"));
         form.addHandler(FormResponseHandler.withoutPlayer(ignored -> {
             if (form.wasClosed()) return;
             int index = form.getResponse().getClickedButtonId();
@@ -293,7 +296,8 @@ final class EconomyModule implements Listener {
             else if (index == ids.size()) {
                 sellCategory(player, category.id());
                 openSellCategory(player, category);
-            } else openSeller(player);
+            } else if (index == ids.size() + 1) openSeller(player);
+            else openSeller(player);
         }));
         player.showFormWindow(form);
     }
@@ -389,6 +393,23 @@ final class EconomyModule implements Listener {
         player.sendMessage(PREFIX + "§aПродано предметов: §f" + items + " §aза " + money(total));
     }
 
+    private void openPricesMenu(Player player) {
+        ConfigSection section = plugin.getConfig().getSection("economy.sell-prices");
+        StringBuilder text = new StringBuilder("§7Цена за 1 штуку:\n");
+        for (String id : section.getKeys(false)) {
+            text.append("\n§f").append(plugin.getConfig().getString("economy.sell-prices." + id + ".name", id))
+                    .append(" §8— ").append(money(plugin.getConfig().getInt("economy.sell-prices." + id + ".price", 0)));
+        }
+        FormWindowSimple form = new FormWindowSimple("§l§0ЦЕНЫ СКУПКИ", text.toString());
+        form.addButton(new ElementButton("§c🟥 СТЕКЛО · НАЗАД К СКУПЩИКУ"));
+        form.addButton(new ElementButton("§8⬛ ЗАКРЫТЬ МЕНЮ"));
+        form.addHandler(FormResponseHandler.withoutPlayer(ignored -> {
+            if (form.wasClosed()) return;
+            if (form.getResponse().getClickedButtonId() == 0) openSeller(player);
+        }));
+        player.showFormWindow(form);
+    }
+
     private void prices(CommandSender sender) {
         ConfigSection section = plugin.getConfig().getSection("economy.sell-prices");
         StringBuilder text = new StringBuilder("§7Цена за 1 штуку:\n");
@@ -398,10 +419,7 @@ final class EconomyModule implements Listener {
         }
         text.append("\n\n§8Продать: §e/sell hand §8или §e/sell all");
         if (sender instanceof Player player) {
-            FormWindowSimple form = new FormWindowSimple("§l§0ЦЕНЫ СКУПКИ", text.toString());
-            form.addButton(new ElementButton("§7ЗАКРЫТЬ"));
-            form.addHandler(FormResponseHandler.withoutPlayer(ignored -> { }));
-            player.showFormWindow(form);
+            openPricesMenu(player);
         } else {
             sender.sendMessage(text.toString());
         }
