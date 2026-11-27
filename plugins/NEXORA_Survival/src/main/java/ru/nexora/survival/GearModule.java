@@ -156,7 +156,7 @@ final class GearModule implements Listener {
             }
             Gear gear = find(args[2]);
             if (gear == null) {
-                sender.sendMessage(PREFIX + "§cНеизвестный ID. Посмотри список в /weapons.");
+                sender.sendMessage(PREFIX + "§cНеизвестный ID экипировки.");
                 return true;
             }
             deliver(target, gear);
@@ -262,7 +262,7 @@ final class GearModule implements Listener {
 
     private void openList(Player player, List<Gear> items, boolean armor) {
         FormWindowSimple form = new FormWindowSimple(
-                armor ? "§l§0✥ АЛМАЗНАЯ БРОНЯ" : "§l§0⚔ КОЛЛЕКЦИЯ ОРУЖИЯ",
+                armor ? "§l§0✥ БРОНЯ И КОМПЛЕКТЫ" : (items.get(0).id().equals("rust_blade") ? "§l§0⚔ ОРУЖИЕ" : "§l§0⚒ ИНСТРУМЕНТЫ"),
                 "§7Выбери предмет. Его указанный эффект действительно работает.\n§8Цены в монетах.");
         for (Gear gear : items) {
             form.addButton(new ElementButton(gear.name() + "\n" + gear.description() + "\n§e" + gear.price() + " монет"));
