@@ -72,3 +72,7 @@ tested on the exact server and client versions.
 These are still prototypes. The remaining species, rarity-specific
 appearances/effects, and live in-game rendering/animation tests are not
 complete yet.
+
+## Privilege gradients
+
+The Survival chat and player name tags reuse the same pre-rendered bitmap glyph gradients as clan names. VIP uses Ocean, Premium uses Royal, Elite uses Neon, and Legend uses Sunset. These are actual resource-pack glyph textures, not Minecraft RGB formatting codes. The separate NEXORA_Donate plugin provides the /donate catalogue; purchases are intentionally disabled until the NEXORA website and payment flow are ready.
