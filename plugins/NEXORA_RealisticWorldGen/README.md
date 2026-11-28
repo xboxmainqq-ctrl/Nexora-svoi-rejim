@@ -34,3 +34,6 @@ mvn -U clean package
 
 ## Статус
 Это начальная версия проекта. Перед использованием на основном сервере нужно собрать JAR и проверить генерацию на тестовом мире.
+
+
+Build fix: removed a water block constant not present in the targeted Nukkit-MOT API.
