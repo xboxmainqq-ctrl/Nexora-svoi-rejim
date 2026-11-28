@@ -14,7 +14,7 @@ public final class NexoraWorldGenPlugin extends PluginBase {
         if (!Generator.addGenerator(NexoraGenerator.class, "nexora", Generator.TYPE_INFINITE)) {
             getLogger().warning("Generator name 'nexora' is already registered; keeping the existing registration.");
         }
-        getServer().getCommandMap().register("nexora", new Command("worldgen", "Create a NEXORA world", "/worldgen create <name> [seed]") {
+        getServer().getCommandMap().register("nexora", new Command("nexoraworld", "Create a NEXORA world", "/nexoraworld create <name> [seed]") {
             {
                 setPermission("nexora.worldgen.create");
             }
@@ -26,7 +26,7 @@ public final class NexoraWorldGenPlugin extends PluginBase {
                     return true;
                 }
                 if (args.length < 2 || !args[0].equalsIgnoreCase("create")) {
-                    sender.sendMessage("§eUsage: /worldgen create <name> [seed]");
+                    sender.sendMessage("§eUsage: /nexoraworld create <name> [seed]");
                     return true;
                 }
 
