@@ -23,8 +23,8 @@ mvn -U clean package
 3. Выполнить от оператора:
 
 ```
-/worldgen create my_nexora_world
-/worldgen create my_nexora_world_2 123456789
+/nexoraworld create my_nexora_world
+/nexoraworld create my_nexora_world_2 123456789
 ```
 
 Мир создаётся отдельно. Уже существующие миры не перегенерируются и не изменяются.
