@@ -6,9 +6,9 @@ load: POSTWORLD
 author: NEXORA
 description: Realistic terrain generator for Nukkit-MOT
 commands:
-  worldgen:
+  nexoraworld:
     description: Create a world using the NEXORA generator
-    usage: "/worldgen create <name> [seed]"
+    usage: "/nexoraworld create <name> [seed]"
     permission: nexora.worldgen.create
 permissions:
   nexora.worldgen.create:
