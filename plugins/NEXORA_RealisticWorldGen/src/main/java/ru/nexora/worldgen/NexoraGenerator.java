@@ -85,7 +85,7 @@ public final class NexoraGenerator extends Normal {
     private int findSurface(BaseFullChunk chunk, int x, int z) {
         for (int y = 319; y >= -64; y--) {
             int id = chunk.getBlockId(x, y, z);
-            if (id != AIR && id != STILL_WATER && id != FLOWING_WATER) {
+            if (id != AIR && id != STILL_WATER) {
                 return y;
             }
         }
